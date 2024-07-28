@@ -1,0 +1,79 @@
+
+*******************************************************************************
+                                      io
+*******************************************************************************
+
+CUPL(WM)        5.0a Serial# 60008009
+Device          g16v8as  Library DLIB-h-40-2
+Created         Sat Jul 27 14:46:59 2024
+Name            io
+Partno          00 
+Revision        01 
+Date            27.07.2024 
+Designer        Roland 
+Company         Scholz Electronics 
+Assembly        None 
+Location        
+
+===============================================================================
+                            Expanded Product Terms
+===============================================================================
+
+!BITWN =>
+    A4 & !A5 & A6 & !A7 & !IORQN & !WRN
+
+!CTCEN =>
+    !A4 & !A5 & !A6 & A7 & !IORQN
+
+!DSWN =>
+    A4 & A5 & !A6 & !A7 & !IORQN & !WRN
+
+!FDCEN =>
+    !A4 & !A5 & A6 & !A7 & !IORQN
+
+!PRTRN =>
+    !A4 & A5 & !A6 & !A7 & !IORQN & !RDN
+
+!PRTWN =>
+    !A4 & A5 & !A6 & !A7 & !IORQN & !WRN
+
+!RS232RN =>
+    A4 & !A5 & A6 & !A7 & !IORQN & !RDN
+
+!SIORN =>
+    A4 & A5 & A6 & !A7 & !IORQN & !RDN
+
+
+===============================================================================
+                                 Symbol Table
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+    A4                          1        V        -       -       -     
+    A5                          2        V        -       -       -     
+    A6                          3        V        -       -       -     
+    A7                          4        V        -       -       -     
+    BITWN                       14       V        1       8       1     
+    CTCEN                       16       V        1       8       1     
+    DSWN                        15       V        1       8       1     
+    FDCEN                       17       V        1       8       1     
+    IORQN                       5        V        -       -       -     
+    NC0                         8        V        -       -       -     
+    NC1                         9        V        -       -       -     
+    NC2                         11       V        -       -       -     
+    PRTRN                       19       V        1       8       1     
+    PRTWN                       18       V        1       8       1     
+    RDN                         6        V        -       -       -     
+    RS232RN                     13       V        1       8       1     
+    SIORN                       12       V        1       8       1     
+    WRN                         7        V        -       -       -     
+
+
+LEGEND    D : default variable         F : field      G : group
+          I : intermediate variable    N : node       M : extended node
+          U : undefined                V : variable   X : extended variable
+          T : function
+

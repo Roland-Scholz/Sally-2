@@ -1,0 +1,50 @@
+%SIGNAL
+PIN   1 =  A4 
+PIN   2 =  A5 
+PIN   3 =  A6 
+PIN   4 =  A7 
+PIN  14 =  BITWN 
+PIN  16 =  CTCEN 
+PIN  15 =  DSWN 
+PIN  17 =  FDCEN 
+PIN   5 =  IORQN 
+PIN   8 =  NC0 
+PIN   9 =  NC1 
+PIN  11 =  NC2 
+PIN  19 =  PRTRN 
+PIN  18 =  PRTWN 
+PIN   6 =  RDN 
+PIN  13 =  RS232RN 
+PIN  12 =  SIORN 
+PIN   7 =  WRN 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+!BITWN =>
+    A4 & !A5 & A6 & !A7 & !IORQN & !WRN
+
+!CTCEN =>
+    !A4 & !A5 & !A6 & A7 & !IORQN
+
+!DSWN =>
+    A4 & A5 & !A6 & !A7 & !IORQN & !WRN
+
+!FDCEN =>
+    !A4 & !A5 & A6 & !A7 & !IORQN
+
+!PRTRN =>
+    !A4 & A5 & !A6 & !A7 & !IORQN & !RDN
+
+!PRTWN =>
+    !A4 & A5 & !A6 & !A7 & !IORQN & !WRN
+
+!RS232RN =>
+    A4 & !A5 & A6 & !A7 & !IORQN & !RDN
+
+!SIORN =>
+    A4 & A5 & A6 & !A7 & !IORQN & !RDN
+
+%END

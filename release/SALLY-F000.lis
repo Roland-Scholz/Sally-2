@@ -1,0 +1,2247 @@
+SALLY-F000.asm:
+     1                          ;--------------------------------------------------
+     2                          ; Init Sequence
+     3                          ;--------------------------------------------------
+     4                          ; 50	01	Bit0	set ATARI DATA
+     5                          ; 51	01 	Bit1	set RS232 TX
+     6                          ; 80	03	CTC	Channel 0 reset
+     7                          ; 80	10	CTC	Channel 0 interrupt vector
+     8                          ; 81	07     	CTC	Channel 1 reset + set time constant
+     9                          ; 81	01	CTC	Channel 1 time contant 1
+    10                          ; 82	03 	CTC	Channel 2 reset
+    11                          ; 83	03     	CTC	Channel 3 reset
+    12                          ; 57	01	Bit7	ATARI 0=CMD / *** 1=RXD ***
+    13                          ; 30	00 	DSE	Floppy Control (74LS273) 0=Drive1,  1=Drive2,  2=Drive3,  3=Drive4,  4=Reset FDC,  5=Side,  6=B\S,  7=S/D\
+    14                          ; 40	d0      DWR/DRW	FDC read-write	d0 = force int (with no interrupt)
+    15                          ;--------------------------------------------------
+    16                          ; out\ ports
+    17                          ;--------------------------------------------------
+    18                          ; $2x 	Printer DATA
+    19                          ; $3x	Port Floppy Control
+    20                          ; $4x	FDC 1797
+    21                          ; $5x	U52 74LS259
+    22                          ; 	$50	ATARI Out data
+    23                          ; 	$51	RS232 TX
+    24                          ; 	$52	ROM switch
+    25                          ; 	$53	printer strobe
+    26                          ; 	$54	reset index-pulse
+    27                          ; 	$55	RS232 DTR
+    28                          ; 	$56	set index pulse
+    29                          ; 	$57	0=CMD,  1=SIO
+    30                          ; $8x	CTC
+    31                          ;--------------------------------------------------
+    32                          ; in\ ports
+    33                          ;--------------------------------------------------
+    34                          ; $2x	Printer Control
+    35                          ; $4x	FDC 1797
+    36                          ; $5x	RS232	D7=RX,  D3=1,  D2=?,  D1=FlowControl
+    37                          ; $70	SIO	D7=RX,  D3=RDY/+5V, D1=CMD
+    38                          ;--------------------------------------------------
+    39                               		ORG	0f000h
+    40                          
+    41   000000 c31bf0           jmpboot:    	jp	0f01bh				;wboot?			f000
+    42   000003 c3de03           jmpSallyMon:   jp	sallymon        		;Sally Monitor		f003
+    43   000006 c335f6               		jp	0f635h          		;const			f006
+    44   000009 c340f6           jmpCONIN:    	jp	0f640h          		;conin			f009
+    45   00000c c350f6           jmpCONOUT:    	jp	0f650h          		;conout			f00c
+    46   00000f c322f0               		jp	0f022h          		;list			f00f
+    47   000012 c3dcf4               		jp	0f4dch          		;punch			f012
+    48   000015 c3ebf4               		jp	0f4ebh          		;reader			f015
+    49   000018 c315f6               		jp	0f615h          		;home?		ATARI mode = f7e1 = return
+    50                          
+    51   00001b f3              f01b:     	di
+    52   00001c af                   		xor	a
+    53   00001d d352                 		out	(52h), a
+    54   00001f c30000               		jp	0000h
+    55   000022 cdcbf3               		call	0f3cbh
+    56   000025 dd7e00               		ld	a, (ix+00h)
+    57   000028 b7                   		or	a
+    58   000029 284d                 		jr	z, f078		; (+4dh)
+    59   00002b 0688                 		ld	b, 88h
+    60   00002d 3d                   		dec	a
+    61   00002e 287b                 		jr	z, f0ab		; (+7bh)
+    62   000030 06a8                 		ld	b, 0a8h
+    63   000032 3d                   		dec	a
+    64   000033 2876                 		jr	z, f0ab		; (+76h)
+    65   000035 3d                   		dec	a
+    66   000036 285f                 		jr	z, f097		; (+5fh)
+    67   000038 dd3608ff             		ld	(ix+08h), 0ffh
+    68   00003c f3                   		di
+    69   00003d 3ea7                 		ld	a, 0a7h
+    70   00003f d383                 		out	(83h), a
+    71   000041 af                   		xor	a
+    72   000042 d383                 		out	(83h), a
+    73   000044 3d                   		dec	a
+    74   000045 32c9ff               		ld	(0ffc9h), a
+    75   000048 2150f0               		ld	hl, 0f050h
+    76   00004b 2216ff               		ld	(0ff16h), hl
+    77   00004e fb                   		ei
+    78   00004f c9                   		ret
+    79                          
+    80   000050 f5                   		push	af
+    81   000051 3ac9ff               		ld	a, (0ffc9h)
+    82   000054 3d                   		dec	a
+    83   000055 32c9ff               		ld	(0ffc9h), a
+    84   000058 200a                 		jr	nz, f064		; (+0ah)
+    85   00005a cd68f0               		call	0f068h
+    86   00005d 3e21                 		ld	a, 21h
+    87   00005f d383                 		out	(83h), a
+    88   000061 322eff               		ld	(0ff2eh), a
+    89   000064 f1              f064:		pop	af
+    90   000065 fb                   		ei
+    91   000066 ed4d                 		reti
+    92                          
+    93   000068 db41                 		in	a, (41h)
+    94   00006a d343                 		out	(43h), a
+    95   00006c 3e10                 		ld	a, 10h
+    96   00006e d340                 		out	(40h), a
+    97   000070 3a2fff               		ld	a, (0ff2fh)
+    98   000073 e6f0                 		and	0f0h
+    99   000075 d330                 		out	(30h), a
+   100   000077 c9                   		ret
+   101                          
+   102   000078 cd1af1          f078:		call	0f11ah
+   103   00007b cb7f                 		bit	7, a
+   104   00007d 2805                 		jr	z, f084		; (+05h)
+   105   00007f 2130ff               		ld	hl, 0ff30h
+   106   000082 3600                 		ld	(hl), 00h
+   107   000084 dd7708          f084:		ld	(ix+08h), a
+   108   000087 3a2fff               		ld	a, (0ff2fh)
+   109   00008a dd7706               		ld	(ix+06h), a
+   110   00008d 3a30ff               		ld	a, (0ff30h)
+   111   000090 dd7707               		ld	(ix+07h), a
+   112   000093 cd3cf0               		call	0f03ch
+   113   000096 c9                   		ret
+   114                          
+   115   000097 dd360606        f097:		ld	(ix+06h), 06h
+   116   00009b dd360700             		ld	(ix+07h), 00h
+   117   00009f 06c0                 		ld	b, 0c0h
+   118   0000a1 cdb3f0               		call	0f0b3h
+   119   0000a4 3a2fff               		ld	a, (0ff2fh)
+   120   0000a7 dd7706               		ld	(ix+06h), a
+   121   0000aa c9                   		ret
+   122                          
+   123   0000ab ddcb017e        f0ab:		bit	7, (ix+01h)
+   124   0000af 2802                 		jr	z, f0b3		; (+02h)
+   125   0000b1 cbc8                 		set	1, b
+   126   0000b3 78              f0b3:		ld	a, b
+   127   0000b4 32c5ff               		ld	(0ffc5h), a
+   128   0000b7 cd1af1               		call	0f11ah
+   129   0000ba cb7f                 		bit	7, a
+   130   0000bc 2052                 		jr	nz, f110		; (+52h)
+   131   0000be 3a2dff               		ld	a, (0ff2dh)
+   132   0000c1 feff                 		cp	0ffh
+   133   0000c3 2805                 		jr	z, f0ca		; (+05h)
+   134   0000c5 ddbe02               		cp	(ix+02h)
+   135   0000c8 2805                 		jr	z, f0cf		; (+05h)
+   136   0000ca cdf8f1          f0ca:		call	0f1f8h
+   137   0000cd 2041                 		jr	nz, f110		; (+41h)
+   138   0000cf 3a12ff          f0cf:		ld	a, (0ff12h)
+   139   0000d2 3c                   		inc	a
+   140   0000d3 20fa                 		jr	nz, f0cf		; (-06h)
+   141   0000d5 f3                   		di
+   142   0000d6 3e03                 		ld	a, 03h
+   143   0000d8 d380                 		out	(80h), a
+   144   0000da 3e27                 		ld	a, 27h
+   145   0000dc d382                 		out	(82h), a
+   146   0000de 3e3d                 		ld	a, 3dh
+   147   0000e0 d382                 		out	(82h), a
+   148   0000e2 21a8f3               		ld	hl, 0f3a8h
+   149   0000e5 2216ff               		ld	(0ff16h), hl
+   150   0000e8 3a33ff               		ld	a, (0ff33h)
+   151   0000eb 32c6ff               		ld	(0ffc6h), a
+   152   0000ee dd7e03          f0ee:		ld	a, (ix+03h)
+   153   0000f1 d342                 		out	(42h), a
+   154   0000f3 dd7e02               		ld	a, (ix+02h)
+   155   0000f6 d341                 		out	(41h), a
+   156   0000f8 3ac5ff               		ld	a, (0ffc5h)
+   157   0000fb d340                 		out	(40h), a
+   158   0000fd cdb5f2               		call	0f2b5h
+   159   000100 280e                 		jr	z, f110		; (+0eh)
+   160   000102 f5                   		push	af
+   161   000103 cd0ef3               		call	0f30eh
+   162   000106 c1                   		pop	bc
+   163   000107 2006                 		jr	nz, f10f		; (+06h)
+   164   000109 21c6ff               		ld	hl, 0ffc6h
+   165   00010c 35                   		dec	(hl)
+   166   00010d 20df                 		jr	nz, f0ee		; (-21h)
+   167   00010f 78              f10f:		ld	a, b
+   168   000110 dd7708          f110:		ld	(ix+08h), a
+   169   000113 cd18f0               		call	0f018h
+   170   000116 cd3cf0               		call	0f03ch
+   171   000119 c9                   		ret
+   172                          
+   173   00011a dd7e01               		ld	a, (ix+01h)
+   174   00011d cbbf                 		res	7, a
+   175   00011f fe04                 		cp	04h
+   176   000121 306b                 		jr	nc, f18e		; (+6bh)
+   177   000123 0600                 		ld	b, 00h
+   178   000125 4f                   		ld	c, a
+   179   000126 212cff               		ld	hl, 0ff2ch
+   180   000129 96                   		sub	(hl)
+   181   00012a f5                   		push	af
+   182   00012b 50                   		ld	d, b
+   183   00012c 5e                   		ld	e, (hl)
+   184   00012d 71                   		ld	(hl), c
+   185   00012e 2120ff               		ld	hl, 0ff20h
+   186   000131 19                   		add	hl, de
+   187   000132 3a2dff               		ld	a, (0ff2dh)
+   188   000135 77                   		ld	(hl), a
+   189   000136 1e04                 		ld	e, 04h
+   190   000138 19                   		add	hl, de
+   191   000139 3a2fff               		ld	a, (0ff2fh)
+   192   00013c 77                   		ld	(hl), a
+   193   00013d 2120ff               		ld	hl, 0ff20h
+   194   000140 09                   		add	hl, bc
+   195   000141 7e                   		ld	a, (hl)
+   196   000142 322dff               		ld	(0ff2dh), a
+   197   000145 19                   		add	hl, de
+   198   000146 d1                   		pop	de
+   199   000147 7e                   		ld	a, (hl)
+   200   000148 b7                   		or	a
+   201   000149 201f                 		jr	nz, f16a		; (+1fh)
+   202   00014b 2198f1               		ld	hl, 0f198h
+   203   00014e 09                   		add	hl, bc
+   204   00014f 7e                   		ld	a, (hl)
+   205   000150 d330                 		out	(30h), a
+   206   000152 f5                   		push	af
+   207   000153 cd9cf1               		call	0f19ch
+   208   000156 c1                   		pop	bc
+   209   000157 fede                 		cp	0deh
+   210   000159 3033                 		jr	nc, f18e		; (+33h)
+   211   00015b cbf0                 		set	6, b
+   212   00015d feb5                 		cp	0b5h
+   213   00015f 3006                 		jr	nc, f167		; (+06h)
+   214   000161 cbb0                 		res	6, b
+   215   000163 fe99                 		cp	99h
+   216   000165 3827                 		jr	c, f18e		; (+27h)
+   217   000167 78              f167:		ld	a, b
+   218   000168 1600                 		ld	d, 00h
+   219   00016a cbaf            f16a:		res	5, a
+   220   00016c ddcb017e             		bit	7, (ix+01h)
+   221   000170 2802                 		jr	z, f174		; (+02h)
+   222   000172 cbef                 		set	5, a
+   223   000174 d330            f174:		out	(30h), a
+   224   000176 322fff               		ld	(0ff2fh), a
+   225   000179 14                   		inc	d
+   226   00017a 15                   		dec	d
+   227   00017b c499f3               		call	nz, 0f399h
+   228   00017e cd91f3               		call	0f391h
+   229   000181 cb6f                 		bit	5, a
+   230   000183 c0                   		ret	nz
+   231                          
+   232   000184 cd9cf1               		call	0f19ch
+   233   000187 b7                   		or	a				;clear carry
+   234   000188 2804            f188:     	jr	z, f18e				;jr	c, xxh
+   235   00018a cd91f3               		call	0f391h				;if ATARI mode never executed
+   236   00018d c9                   		ret
+   237                          
+   238   00018e af              f18e:		xor	a
+   239   00018f d330                 		out	(30h), a
+   240   000191 322fff               		ld	(0ff2fh), a
+   241   000194 3e80                 		ld	a, 80h
+   242   000196 b7                   		or	a
+   243   000197 c9                   		ret
+   244                          
+   245   000198 010204               		ld	bc, 0402h
+   246   00019b 08                   		ex	af, af'
+   247   00019c af                   		xor	a
+   248   00019d d356                 		out	(56h), a
+   249   00019f 3c                   		inc	a
+   250   0001a0 d354                 		out	(54h), a
+   251   0001a2 db41                 		in	a, (41h)
+   252   0001a4 d343                 		out	(43h), a
+   253   0001a6 3e18                 		ld	a, 18h
+   254   0001a8 d340                 		out	(40h), a
+   255   0001aa cdbaf3               		call	0f3bah
+   256   0001ad cd91f3               		call	0f391h
+   257   0001b0 4f                   		ld	c, a
+   258   0001b1 0606                 		ld	b, 06h
+   259   0001b3 210000               		ld	hl, 0000h
+   260   0001b6 22c7ff               		ld	(0ffc7h), hl
+   261   0001b9 ed5bc7ff        f1b9:		ld	de, (0ffc7h)
+   262   0001bd cde3f1               		call	0f1e3h
+   263   0001c0 380d                 		jr	c, f1cf		; (+0dh)
+   264   0001c2 cde3f1               		call	0f1e3h
+   265   0001c5 3808                 		jr	c, f1cf		; (+08h)
+   266   0001c7 10f0                 		djnz	f1b9		; (-10h)
+   267   0001c9 2ac7ff               		ld	hl, (0ffc7h)
+   268   0001cc b7                   		or	a
+   269   0001cd ed52                 		sbc	hl, de
+   270   0001cf cdcbf3          f1cf:		call	0f3cbh
+   271   0001d2 af                   		xor	a
+   272   0001d3 d354                 		out	(54h), a
+   273   0001d5 3c                   		inc	a
+   274   0001d6 d356                 		out	(56h), a
+   275   0001d8 7d                   		ld	a, l
+   276   0001d9 24                   		inc	h
+   277   0001da 25                   		dec	h
+   278   0001db 2802                 		jr	z, f1df		; (+02h)
+   279   0001dd 3eff                 		ld	a, 0ffh
+   280   0001df 3230ff          f1df:		ld	(0ff30h), a
+   281   0001e2 c9                   		ret
+   282                          
+   283   0001e3 cd91f3          f1e3:		call	0f391h
+   284   0001e6 a9                   		xor	c
+   285   0001e7 e602                 		and	02h
+   286   0001e9 2009                 		jr	nz, f1f4		; (+09h)
+   287   0001eb 3ac8ff               		ld	a, (0ffc8h)
+   288   0001ee fe08                 		cp	08h
+   289   0001f0 38f1                 		jr	c, f1e3		; (-0fh)
+   290   0001f2 37                   		scf
+   291   0001f3 c9                   		ret
+   292                          
+   293   0001f4 79              f1f4:		ld	a, c
+   294   0001f5 2f                   		cpl
+   295   0001f6 4f                   		ld	c, a
+   296   0001f7 c9                   		ret
+   297                          
+   298   0001f8 3a2dff               		ld	a, (0ff2dh)
+   299   0001fb feff                 		cp	0ffh
+   300   0001fd 2005                 		jr	nz, f204		; (+05h)
+   301   0001ff cd37f2               		call	0f237h
+   302   000202 202a                 		jr	nz, f22e		; (+2ah)
+   303   000204 0601            f204:		ld	b, 01h
+   304   000206 cd57f2               		call	0f257h
+   305   000209 c8                   		ret	z
+   306                          
+   307   00020a 3005                 		jr	nc, f211		; (+05h)
+   308   00020c cd37f2               		call	0f237h
+   309   00020f 201d                 		jr	nz, f22e		; (+1dh)
+   310   000211 0602            f211:		ld	b, 02h
+   311   000213 cd57f2               		call	0f257h
+   312   000216 c8                   		ret	z
+   313                          
+   314   000217 3815                 		jr	c, f22e		; (+15h)
+   315   000219 216400               		ld	hl, 0064h
+   316   00021c cd9ef3               		call	0f39eh
+   317   00021f 2128ff               		ld	hl, 0ff28h
+   318   000222 3a2cff               		ld	a, (0ff2ch)
+   319   000225 85                   		add	a, l
+   320   000226 6f                   		ld	l, a
+   321   000227 34                   		inc	(hl)
+   322   000228 7e                   		ld	a, (hl)
+   323   000229 e603                 		and	03h
+   324   00022b 20e4                 		jr	nz, f211		; (-1ch)
+   325   00022d 35                   		dec	(hl)
+   326   00022e 3eff            f22e:		ld	a, 0ffh
+   327   000230 322dff               		ld	(0ff2dh), a
+   328   000233 3e10                 		ld	a, 10h
+   329   000235 b7                   		or	a
+   330   000236 c9                   		ret
+   331                          
+   332   000237 3a2fff               		ld	a, (0ff2fh)
+   333   00023a cbe7                 		set	4, a
+   334   00023c d330                 		out	(30h), a
+   335   00023e 060f                 		ld	b, 0fh
+   336   000240 10fe            f240:		djnz	f240		; (-02h)
+   337   000242 cba7                 		res	4, a
+   338   000244 d330                 		out	(30h), a
+   339   000246 0600                 		ld	b, 00h
+   340   000248 10fe            f248:		djnz	f248		; (-02h)
+   341   00024a cd91f3               		call	0f391h
+   342   00024d 3e0b                 		ld	a, 0bh
+   343   00024f cd6bf3               		call	0f36bh
+   344   000252 ee04                 		xor	04h
+   345   000254 e684                 		and	84h
+   346   000256 c9                   		ret
+   347                          
+   348   000257 c5              f257:		push	bc
+   349   000258 3a2dff               		ld	a, (0ff2dh)
+   350   00025b 47                   		ld	b, a
+   351   00025c dd4e02               		ld	c, (ix+02h)
+   352   00025f cd75f2               		call	0f275h
+   353   000262 cd95f2               		call	0f295h
+   354   000265 c1                   		pop	bc
+   355   000266 37                   		scf
+   356   000267 c0                   		ret	nz
+   357                          
+   358   000268 db42                 		in	a, (42h)
+   359   00026a 322dff               		ld	(0ff2dh), a
+   360   00026d dd9602               		sub	(ix+02h)
+   361   000270 c8                   		ret	z
+   362                          
+   363   000271 10e4                 		djnz	f257		; (-1ch)
+   364   000273 b7                   		or	a
+   365   000274 c9                   		ret
+   366                          
+   367   000275 78                   		ld	a, b
+   368   000276 d341                 		out	(41h), a
+   369   000278 79                   		ld	a, c
+   370   000279 d343                 		out	(43h), a
+   371   00027b 2128ff               		ld	hl, 0ff28h
+   372   00027e 3a2cff               		ld	a, (0ff2ch)
+   373   000281 85                   		add	a, l
+   374   000282 6f                   		ld	l, a
+   375   000283 7e                   		ld	a, (hl)
+   376   000284 e603                 		and	03h
+   377   000286 f618                 		or	18h
+   378   000288 cd6bf3               		call	0f36bh
+   379   00028b 7e                   		ld	a, (hl)
+   380   00028c e6fc                 		and	0fch
+   381   00028e 2600                 		ld	h, 00h
+   382   000290 6f                   		ld	l, a
+   383   000291 cd9ef3               		call	0f39eh
+   384   000294 c9                   		ret
+   385                          
+   386   000295 3ec0                 		ld	a, 0c0h
+   387   000297 cd62f3               		call	0f362h
+   388   00029a e698                 		and	98h
+   389   00029c c8                   		ret	z
+   390                          
+   391   00029d 3a2fff               		ld	a, (0ff2fh)
+   392   0002a0 ee80                 		xor	80h
+   393   0002a2 322fff               		ld	(0ff2fh), a
+   394   0002a5 d330                 		out	(30h), a
+   395   0002a7 213200               		ld	hl, 0032h
+   396   0002aa cd9ef3               		call	0f39eh
+   397   0002ad 3ec0                 		ld	a, 0c0h
+   398   0002af cd62f3               		call	0f362h
+   399   0002b2 e698                 		and	98h
+   400   0002b4 c9                   		ret
+   401                          
+   402   0002b5 2a6600               		ld	hl, (0066h)
+   403   0002b8 e5                   		push	hl
+   404   0002b9 2a6800               		ld	hl, (0068h)
+   405   0002bc e5                   		push	hl
+   406   0002bd 21eda2               		ld	hl, 0a2edh
+   407   0002c0 cb6f                 		bit	5, a
+   408   0002c2 2801                 		jr	z, f2c5		; (+01h)
+   409   0002c4 24                   		inc	h
+   410   0002c5 226600          f2c5:		ld	(0066h), hl
+   411   0002c8 216800               		ld	hl, 0068h
+   412   0002cb 36c9                 		ld	(hl), 0c9h
+   413   0002cd f3                   		di
+   414   0002ce 3ec7                 		ld	a, 0c7h
+   415   0002d0 d383                 		out	(83h), a
+   416   0002d2 af                   		xor	a
+   417   0002d3 d383                 		out	(83h), a
+   418   0002d5 fb                   		ei
+   419   0002d6 dd6e04               		ld	l, (ix+04h)
+   420   0002d9 dd6605               		ld	h, (ix+05h)
+   421   0002dc dd4606               		ld	b, (ix+06h)
+   422   0002df 0e43                 		ld	c, 43h
+   423   0002e1 dd7e07               		ld	a, (ix+07h)
+   424   0002e4 cb3f                 		srl	a
+   425   0002e6 280d                 		jr	z, f2f5		; (+0dh)
+   426   0002e8 cb3f                 		srl	a
+   427   0002ea 2806                 		jr	z, f2f2		; (+06h)
+   428   0002ec 76              f2ec:		halt
+   429   0002ed 20fd                 		jr	nz, f2ec		; (-03h)
+   430   0002ef 76              f2ef:		halt
+   431   0002f0 20fd                 		jr	nz, f2ef		; (-03h)
+   432   0002f2 76              f2f2:		halt
+   433   0002f3 20fd                 		jr	nz, f2f2		; (-03h)
+   434   0002f5 76              f2f5:		halt
+   435   0002f6 20fd                 		jr	nz, f2f5		; (-03h)
+   436   0002f8 db40            f2f8:		in	a, (40h)
+   437   0002fa cb47                 		bit	0, a
+   438   0002fc 20fa                 		jr	nz, f2f8		; (-06h)
+   439   0002fe 47                   		ld	b, a
+   440   0002ff cdcbf3               		call	0f3cbh
+   441   000302 78                   		ld	a, b
+   442   000303 e1                   		pop	hl
+   443   000304 226800               		ld	(0068h), hl
+   444   000307 e1                   		pop	hl
+   445   000308 226600               		ld	(0066h), hl
+   446   00030b e6fd                 		and	0fdh
+   447   00030d c9                   		ret
+   448                          
+   449   00030e 47                   		ld	b, a
+   450   00030f e6e7                 		and	0e7h
+   451   000311 2808                 		jr	z, f31b		; (+08h)
+   452   000313 f5                   		push	af
+   453   000314 cd91f3               		call	0f391h
+   454   000317 f1                   		pop	af
+   455   000318 e6e1                 		and	0e1h
+   456   00031a c9                   		ret
+   457                          
+   458   00031b cb60            f31b:		bit	4, b
+   459   00031d 2023                 		jr	nz, f342		; (+23h)
+   460   00031f 3a33ff               		ld	a, (0ff33h)
+   461   000322 21c6ff               		ld	hl, 0ffc6h
+   462   000325 96                   		sub	(hl)
+   463   000326 c8                   		ret	z
+   464                          
+   465   000327 3a2dff               		ld	a, (0ff2dh)
+   466   00032a 47                   		ld	b, a
+   467   00032b b7                   		or	a
+   468   00032c 2004                 		jr	nz, f332		; (+04h)
+   469   00032e 0e01                 		ld	c, 01h
+   470   000330 1802                 		jr	f334		; (+02h)
+   471   000332 3d              f332:		dec	a
+   472   000333 4f                   		ld	c, a
+   473   000334 c5              f334:		push	bc
+   474   000335 cd75f2               		call	0f275h
+   475   000338 d1                   		pop	de
+   476   000339 43                   		ld	b, e
+   477   00033a 4a                   		ld	c, d
+   478   00033b cd75f2               		call	0f275h
+   479   00033e cd95f2               		call	0f295h
+   480   000341 c9                   		ret
+   481                          
+   482   000342 cd95f2          f342:		call	0f295h
+   483   000345 2012                 		jr	nz, f359		; (+12h)
+   484   000347 db42                 		in	a, (42h)
+   485   000349 ddbe02               		cp	(ix+02h)
+   486   00034c 200d                 		jr	nz, f35b		; (+0dh)
+   487   00034e 3a33ff               		ld	a, (0ff33h)
+   488   000351 21c6ff               		ld	hl, 0ffc6h
+   489   000354 96                   		sub	(hl)
+   490   000355 c8                   		ret	z
+   491                          
+   492   000356 3e10                 		ld	a, 10h
+   493   000358 c9                   		ret
+   494                          
+   495   000359 3eff            f359:		ld	a, 0ffh
+   496   00035b 322dff          f35b:		ld	(0ff2dh), a
+   497   00035e cdf8f1               		call	0f1f8h
+   498   000361 c9                   		ret
+   499                          
+   500   000362 cd89f3               		call	0f389h
+   501   000365 c5                   		push	bc
+   502   000366 016a18               		ld	bc, 186ah
+   503   000369 1807                 		jr	f372		; (+07h)
+   504   00036b cd89f3               		call	0f389h
+   505   00036e c5                   		push	bc
+   506   00036f 017c92               		ld	bc, 927ch
+   507   000372 db40            f372:		in	a, (40h)
+   508   000374 cb47                 		bit	0, a
+   509   000376 280a                 		jr	z, f382		; (+0ah)
+   510   000378 cd8bf3               		call	0f38bh
+   511   00037b 0b                   		dec	bc
+   512   00037c 78                   		ld	a, b
+   513   00037d b1                   		or	c
+   514   00037e 20f2                 		jr	nz, f372		; (-0eh)
+   515   000380 3e10                 		ld	a, 10h
+   516   000382 47              f382:		ld	b, a
+   517   000383 cd91f3               		call	0f391h
+   518   000386 78                   		ld	a, b
+   519   000387 c1                   		pop	bc
+   520   000388 c9                   		ret
+   521                          
+   522   000389 d340                 		out	(40h), a
+   523   00038b 3e0e                 		ld	a, 0eh
+   524   00038d 3d              f38d:		dec	a
+   525   00038e 20fd                 		jr	nz, f38d		; (-03h)
+   526   000390 c9                   		ret
+   527                          
+   528   000391 3ed0                 		ld	a, 0d0h
+   529   000393 cd89f3               		call	0f389h
+   530   000396 db40                 		in	a, (40h)
+   531   000398 c9                   		ret
+   532                          
+   533   000399 2a32ff               		ld	hl, (0ff32h)
+   534   00039c 2600                 		ld	h, 00h
+   535   00039e af              f39e:		xor	a
+   536   00039f 3d              f39f:		dec	a
+   537   0003a0 20fd                 		jr	nz, f39f		; (-03h)
+   538   0003a2 2b                   		dec	hl
+   539   0003a3 7c                   		ld	a, h
+   540   0003a4 b5                   		or	l
+   541   0003a5 20f7                 		jr	nz, f39e		; (-09h)
+   542   0003a7 c9                   		ret
+   543                          
+   544   0003a8 3ed0                 		ld	a, 0d0h
+   545   0003aa d340                 		out	(40h), a
+   546   0003ac 3e01                 		ld	a, 01h
+   547   0003ae d383                 		out	(83h), a
+   548   0003b0 2103f3               		ld	hl, 0f303h
+   549   0003b3 e3                   		ex	(sp), hl
+   550   0003b4 3e10                 		ld	a, 10h
+   551   0003b6 b7                   		or	a
+   552   0003b7 fb                   		ei
+   553   0003b8 ed4d                 		reti
+   554                          
+   555   0003ba f3                   		di
+   556   0003bb 3e87                 		ld	a, 87h
+   557   0003bd d383                 		out	(83h), a
+   558   0003bf 3efa                 		ld	a, 0fah
+   559   0003c1 d383                 		out	(83h), a
+   560   0003c3 21d2f3               		ld	hl, 0f3d2h
+   561   0003c6 2216ff               		ld	(0ff16h), hl
+   562   0003c9 fb                   		ei
+   563   0003ca c9                   		ret
+   564                          
+   565   0003cb f3                   		di
+   566   0003cc 3e01                 		ld	a, 01h
+   567   0003ce d383                 		out	(83h), a
+   568   0003d0 fb                   		ei
+   569   0003d1 c9                   		ret
+   570                          
+   571   0003d2 e5                   		push	hl
+   572   0003d3 fb                   		ei
+   573   0003d4 2ac7ff               		ld	hl, (0ffc7h)
+   574   0003d7 23                   		inc	hl
+   575   0003d8 22c7ff               		ld	(0ffc7h), hl
+   576   0003db e1                   		pop	hl
+   577   0003dc ed4d                 		reti
+   578                          
+   579                          ;--------------------------------------------------
+   580                          ; SALLY Monitor
+   581                          ;--------------------------------------------------
+   582                          ;f3de
+   583   0003de 3e01            sallymon:     	ld	a, 01h
+   584   0003e0 d352                 		out	(52h), a			; turn off ROM
+   585   0003e2 cdfcf5               		call	0f5fch
+   586   0003e5 cdc904               		call	printstr
+   587   0003e8 0d0a53414c4c5931		db	"\r\n",  "SALLY1",  0
+                00              
+   588                          
+   589   0003f1 21f103          monloop:	ld	hl,  monloop			; loop here
+   590   0003f4 e5                   		push	hl
+   591   0003f5 cdc904               		call	printstr
+   592   0003f8 0d0a232000      		db	"\r\n# ",  0
+   593                          
+   594   0003fd cdb204          f3fd:		call	getchar
+   595   000400 fe20                 		cp	20h
+   596   000402 d8                   		ret	c				;
+   597                          
+   598   000403 4f                   		ld	c, a
+   599   000404 af                   		xor	a
+   600   000405 67                   		ld	h, a
+   601   000406 6f                   		ld	l, a
+   602   000407 29              f407:		add	hl, hl
+   603   000408 29                   		add	hl, hl
+   604   000409 29                   		add	hl, hl
+   605   00040a 29                   		add	hl, hl
+   606   00040b b5                   		or	l
+   607   00040c 6f                   		ld	l, a
+   608   00040d cdb204               		call	getchar
+   609   000410 fe0d                 		cp	0dh
+   610   000412 280c                 		jr	z, f420		; (+0ch)
+   611   000414 cd83f4               		call	0f483h
+   612   000417 30ee                 		jr	nc, f407		; (-12h)
+   613   000419 cdc9f4          f419:		call	0f4c9h
+   614   00041c 203f00          		db	" ?",  0
+   615   00041f c9                   		ret
+   616                          
+   617   000420 cdd504          f420:		call	newline
+   618   000423 79                   		ld	a, c
+   619   000424 fe47                 		cp	47h
+   620   000426 2836                 		jr	z, f45e		; (+36h)
+   621   000428 fe42                 		cp	42h
+   622   00042a 2833                 		jr	z, f45f		; (+33h)
+   623   00042c fe4d                 		cp	4dh
+   624   00042e 20e9                 		jr	nz, f419		; (-17h)
+   625   000430 cd93f4          f430:		call	0f493h
+   626   000433 7e                   		ld	a, (hl)
+   627   000434 cd98f4               		call	0f498h
+   628   000437 cdb204               		call	getchar
+   629   00043a fe0d                 		cp	0dh
+   630   00043c 2818                 		jr	z, f456		; (+18h)
+   631   00043e fe2d                 		cp	2dh
+   632   000440 2816                 		jr	z, f458		; (+16h)
+   633   000442 cd83f4               		call	0f483h
+   634   000445 3f                   		ccf
+   635   000446 d0                   		ret	nc
+   636                          
+   637   000447 07                   		rlca
+   638   000448 07                   		rlca
+   639   000449 07                   		rlca
+   640   00044a 07                   		rlca
+   641   00044b 4f                   		ld	c, a
+   642   00044c cdb204               		call	getchar
+   643   00044f cd83f4               		call	0f483h
+   644   000452 3f                   		ccf
+   645   000453 d0                   		ret	nc
+   646                          
+   647   000454 b1                   		or	c
+   648   000455 77                   		ld	(hl), a
+   649   000456 23              f456:		inc	hl
+   650   000457 23                   		inc	hl
+   651   000458 2b              f458:		dec	hl
+   652   000459 cdd504               		call	newline
+   653   00045c 18d2                 		jr	f430		; (-2eh)
+   654   00045e e9              f45e:		jp	(hl)
+   655   00045f dd217af4        f45f:		ld	ix, 0f47ah
+   656   000463 cd22f0               		call	0f022h
+   657   000466 dd7e08               		ld	a, (ix+08h)
+   658   000469 b7                   		or	a
+   659   00046a cc8000               		call	z, 0080h
+   660   00046d f5                   		push	af
+   661   00046e cdc9f4               		call	0f4c9h
+   662   000471 2045                 		jr	nz, f4b8		; (+45h)
+   663   000473 52                   		ld	d, d
+   664   000474 52                   		ld	d, d
+   665   000475 2000                 		jr	nz, f477		; (+00h)
+   666   000477 f1              f477:		pop	af
+   667   000478 1825                 		jr	f49f		; (+25h)
+   668   00047a 010000               		ld	bc, 0000h
+   669   00047d 018000               		ld	bc, 0080h
+   670   000480 80                   		add	a, b
+   671   000481 00                   		nop
+   672   000482 00                   		nop
+   673   000483 d630                 		sub	30h
+   674   000485 d8                   		ret	c
+   675                          
+   676   000486 fe0a                 		cp	0ah
+   677   000488 3f                   		ccf
+   678   000489 d0                   		ret	nc
+   679                          
+   680   00048a d607                 		sub	07h
+   681   00048c fe0a                 		cp	0ah
+   682   00048e d8                   		ret	c
+   683                          
+   684   00048f fe10                 		cp	10h
+   685   000491 3f                   		ccf
+   686   000492 c9                   		ret
+   687                          
+   688   000493 7c                   		ld	a, h
+   689   000494 cd9ff4               		call	0f49fh
+   690   000497 7d                   		ld	a, l
+   691   000498 cd9ff4               		call	0f49fh
+   692   00049b 3e20                 		ld	a, 20h
+   693   00049d 181f                 		jr	putchar		; (+1fh)
+   694   00049f f5              f49f:		push	af
+   695   0004a0 1f                   		rra
+   696   0004a1 1f                   		rra
+   697   0004a2 1f                   		rra
+   698   0004a3 1f                   		rra
+   699   0004a4 cda8f4               		call	0f4a8h
+   700   0004a7 f1                   		pop	af
+   701   0004a8 e60f                 		and	0fh
+   702   0004aa c690                 		add	a, 90h
+   703   0004ac 27                   		daa
+   704   0004ad ce40                 		adc	a, 40h
+   705   0004af 27                   		daa
+   706   0004b0 180c                 		jr	putchar		; (+0ch)
+   707                          
+   708   0004b2 e5              getchar:     	push	hl
+   709   0004b3 c5                   		push	bc
+   710   0004b4 cd09f0               		call	0f009h				;CONIN in jumptable
+   711   0004b7 c1                   		pop	bc
+   712   0004b8 e1              f4b8:		pop	hl
+   713   0004b9 cbbf                 		res	7, a
+   714   0004bb fe20                 		cp	20h				;char < 20h = control char?
+   715   0004bd d8                   		ret	c				;yes, return
+   716                          
+   717   0004be e5              putchar:	push	hl				;echo CONOUT
+   718   0004bf c5                   		push	bc
+   719   0004c0 f5                   		push	af
+   720   0004c1 4f                   		ld	c, a
+   721   0004c2 cd0c00               		call	jmpCONOUT
+   722   0004c5 f1                   		pop	af
+   723   0004c6 c1                   		pop	bc
+   724   0004c7 e1                   		pop	hl
+   725   0004c8 c9                   		ret
+   726                          
+   727   0004c9 e3              printstr:    	ex	(sp), hl			;exchange (load) hl with stackpointer
+   728   0004ca 7e              printstr1:	ld	a, (hl)				;load char
+   729   0004cb cdbe04               		call	putchar				;print it
+   730   0004ce 7e                   		ld	a, (hl)				;load it again
+   731   0004cf 23                   		inc	hl				;increment hl
+   732   0004d0 b7                   		or	a				;char <> 0?
+   733   0004d1 20f7                 		jr	nz, printstr1			;loop
+   734   0004d3 e3                   		ex	(sp), hl			;write hl back to stack
+   735   0004d4 c9                   		ret
+   736                          
+   737   0004d5 cdc904          newline:     	call	printstr
+   738   0004d8 0d0a00          		db	"\r\n", 0
+   739   0004db c9                   		ret
+   740                          
+   741   0004dc 79                   		ld	a, c
+   742   0004dd d320                 		out	(20h), a
+   743   0004df e3                   		ex	(sp), hl
+   744   0004e0 e3                   		ex	(sp), hl
+   745   0004e1 3e19                 		ld	a, 19h
+   746   0004e3 d353                 		out	(53h), a
+   747   0004e5 3d              f4e5:		dec	a
+   748   0004e6 20fd                 		jr	nz, f4e5		; (-03h)
+   749   0004e8 d353                 		out	(53h), a
+   750   0004ea c9                   		ret
+   751                          
+   752   0004eb 2a47ff          f4eb:     	ld	hl, (0ff47h)
+   753   0004ee db20                 		in	a, (20h)			;printer control
+   754   0004f0 a5                   		and	l
+   755   0004f1 ac                   		xor	h
+   756   0004f2 c9                   		ret
+   757                          
+   758   0004f3 95                   		sub	l
+   759   0004f4 00                   		nop
+   760   0004f5 00                   		nop
+   761   0004f6 00                   		nop
+   762   0004f7 00                   		nop
+   763   0004f8 00                   		nop
+   764   0004f9 00                   		nop
+   765   0004fa 00                   		nop
+   766   0004fb 00                   		nop
+   767   0004fc 00                   		nop
+   768   0004fd 00                   		nop
+   769   0004fe 00                   		nop
+   770   0004ff 00                   		nop
+   771   000500 f5                   		push	af
+   772   000501 3e87                 		ld	a, 87h
+   773   000503 d380                 		out	(80h), a
+   774   000505 3e1a                 		ld	a, 1ah
+   775   000507 d380                 		out	(80h), a
+   776   000509 3e17                 		ld	a, 17h
+   777   00050b 3210ff               		ld	(0ff10h), a
+   778   00050e 3e7f                 		ld	a, 7fh
+   779   000510 321cf5          f510:		ld	(0f51ch), a
+   780   000513 f1                   		pop	af
+   781   000514 fb                   		ei
+   782   000515 ed4d                 		reti
+   783                          
+   784   000517 f5                   		push	af
+   785   000518 db70                 		in	a, (70h)
+   786   00051a 17                   		rla
+   787   00051b 3e00                 		ld	a, 00h
+   788   00051d 1f                   		rra
+   789   00051e 38f0                 		jr	c, f510		; (-10h)
+   790   000520 3200ff               		ld	(0ff00h), a
+   791   000523 3e2c                 		ld	a, 2ch
+   792   000525 3210ff               		ld	(0ff10h), a
+   793   000528 f1                   		pop	af
+   794   000529 fb                   		ei
+   795   00052a ed4d                 		reti
+   796                          
+   797   00052c f5                   		push	af
+   798   00052d 3ec7                 		ld	a, 0c7h
+   799   00052f d380                 		out	(80h), a
+   800   000531 3e01                 		ld	a, 01h
+   801   000533 d380                 		out	(80h), a
+   802   000535 3a21f5               		ld	a, (0f521h)
+   803   000538 3c                   		inc	a
+   804   000539 e60f                 		and	0fh
+   805   00053b 3221f5               		ld	(0f521h), a
+   806   00053e 3e00                 		ld	a, 00h
+   807   000540 3210ff               		ld	(0ff10h), a
+   808   000543 f1                   		pop	af
+   809   000544 fb                   		ei
+   810   000545 ed4d                 		reti
+   811                          
+   812   000547 f5                   		push	af
+   813   000548 af                   		xor	a
+   814   000549 d350                 		out	(50h), a
+   815   00054b 3e54                 		ld	a, 54h
+   816   00054d 3212ff               		ld	(0ff12h), a
+   817   000550 f1                   		pop	af
+   818   000551 fb                   		ei
+   819   000552 ed4d                 		reti
+   820                          
+   821   000554 f5                   		push	af
+   822   000555 3e00                 		ld	a, 00h
+   823   000557 d350                 		out	(50h), a
+   824   000559 1f                   		rra
+   825   00055a 3268f5               		ld	(0f568h), a
+   826   00055d 3e66                 		ld	a, 66h
+   827   00055f 3212ff               		ld	(0ff12h), a
+   828   000562 f1                   		pop	af
+   829   000563 fb                   		ei
+   830   000564 ed4d                 		reti
+   831                          
+   832   000566 f5                   		push	af
+   833   000567 3e00                 		ld	a, 00h
+   834   000569 d350                 		out	(50h), a
+   835   00056b 1f                   		rra
+   836   00056c 327af5               		ld	(0f57ah), a
+   837   00056f 3e78                 		ld	a, 78h
+   838   000571 3212ff               		ld	(0ff12h), a
+   839   000574 f1                   		pop	af
+   840   000575 fb                   		ei
+   841   000576 ed4d                 		reti
+   842                          
+   843   000578 f5                   		push	af
+   844   000579 3e00                 		ld	a, 00h
+   845   00057b d350                 		out	(50h), a
+   846   00057d 1f                   		rra
+   847   00057e 328cf5               		ld	(0f58ch), a
+   848   000581 3e8a                 		ld	a, 8ah
+   849   000583 3212ff               		ld	(0ff12h), a
+   850   000586 f1                   		pop	af
+   851   000587 fb                   		ei
+   852   000588 ed4d                 		reti
+   853                          
+   854   00058a f5                   		push	af
+   855   00058b 3e00                 		ld	a, 00h
+   856   00058d d350                 		out	(50h), a
+   857   00058f 1f                   		rra
+   858   000590 329ef5               		ld	(0f59eh), a
+   859   000593 3e9c                 		ld	a, 9ch
+   860   000595 3212ff               		ld	(0ff12h), a
+   861   000598 f1                   		pop	af
+   862   000599 fb                   		ei
+   863   00059a ed4d                 		reti
+   864                          
+   865   00059c f5                   		push	af
+   866   00059d 3e00                 		ld	a, 00h
+   867   00059f d350                 		out	(50h), a
+   868   0005a1 1f                   		rra
+   869   0005a2 32b0f5               		ld	(0f5b0h), a
+   870   0005a5 3eae                 		ld	a, 0aeh
+   871   0005a7 3212ff               		ld	(0ff12h), a
+   872   0005aa f1                   		pop	af
+   873   0005ab fb                   		ei
+   874   0005ac ed4d                 		reti
+   875                          
+   876   0005ae f5                   		push	af
+   877   0005af 3e00                 		ld	a, 00h
+   878   0005b1 d350                 		out	(50h), a
+   879   0005b3 1f                   		rra
+   880   0005b4 32c2f5               		ld	(0f5c2h), a
+   881   0005b7 3ec0                 		ld	a, 0c0h
+   882   0005b9 3212ff               		ld	(0ff12h), a
+   883   0005bc f1                   		pop	af
+   884   0005bd fb                   		ei
+   885   0005be ed4d                 		reti
+   886                          
+   887   0005c0 f5                   		push	af
+   888   0005c1 3e00                 		ld	a, 00h
+   889   0005c3 d350                 		out	(50h), a
+   890   0005c5 1f                   		rra
+   891   0005c6 32d4f5               		ld	(0f5d4h), a
+   892   0005c9 3ed2                 		ld	a, 0d2h
+   893   0005cb 3212ff               		ld	(0ff12h), a
+   894   0005ce f1                   		pop	af
+   895   0005cf fb                   		ei
+   896   0005d0 ed4d                 		reti
+   897                          
+   898   0005d2 f5                   		push	af
+   899   0005d3 3e00                 		ld	a, 00h
+   900   0005d5 d350                 		out	(50h), a
+   901   0005d7 3ee0                 		ld	a, 0e0h
+   902   0005d9 3212ff               		ld	(0ff12h), a
+   903   0005dc f1                   		pop	af
+   904   0005dd fb                   		ei
+   905   0005de ed4d                 		reti
+   906                          
+   907   0005e0 f5                   		push	af
+   908   0005e1 3e01                 		ld	a, 01h
+   909   0005e3 d350                 		out	(50h), a
+   910   0005e5 3eee                 		ld	a, 0eeh
+   911   0005e7 3212ff               		ld	(0ff12h), a
+   912   0005ea f1                   		pop	af
+   913   0005eb fb                   		ei
+   914   0005ec ed4d                 		reti
+   915                          
+   916   0005ee f5                   		push	af
+   917   0005ef 3e01                 		ld	a, 01h
+   918   0005f1 d381                 		out	(81h), a
+   919   0005f3 3eff                 		ld	a, 0ffh
+   920   0005f5 3212ff               		ld	(0ff12h), a
+   921   0005f8 f1                   		pop	af
+   922   0005f9 fb                   		ei
+   923   0005fa ed4d                 		reti
+   924                          
+   925   0005fc f3                   		di
+   926   0005fd 21eef5               		ld	hl, 0f5eeh
+   927   000600 2212ff               		ld	(0ff12h), hl
+   928   000603 3e07                 		ld	a, 07h
+   929   000605 d381                 		out	(81h), a
+   930   000607 3a06f5               		ld	a, (0f506h)
+   931   00060a d381                 		out	(81h), a
+   932   00060c 2100ff               		ld	hl, 0ff00h
+   933   00060f 2221f5               		ld	(0f521h), hl
+   934   000612 2233f6               		ld	(0f633h), hl
+   935   000615 f3                   		di
+   936   000616 3e01                 		ld	a, 01h
+   937   000618 d357                 		out	(57h), a
+   938   00061a 067e            f61a:		ld	b, 7eh
+   939   00061c db70            f61c:		in	a, (70h)
+   940   00061e 17                   		rla
+   941   00061f 30f9                 		jr	nc, f61a		; (-07h)
+   942   000621 10f9                 		djnz	f61c		; (-07h)
+   943   000623 3ec7                 		ld	a, 0c7h
+   944   000625 d380                 		out	(80h), a
+   945   000627 3e01                 		ld	a, 01h
+   946   000629 d380                 		out	(80h), a
+   947   00062b 2100f5               		ld	hl, 0f500h
+   948   00062e 2210ff               		ld	(0ff10h), hl
+   949   000631 fb                   		ei
+   950   000632 c9                   		ret
+   951                          
+   952   000633 00                   		nop
+   953   000634 ff                   		rst	38h
+   954   000635 2133f6               		ld	hl, 0f633h
+   955   000638 3a21f5               		ld	a, (0f521h)
+   956   00063b 96                   		sub	(hl)
+   957   00063c c8                   		ret	z
+   958                          
+   959   00063d 3eff                 		ld	a, 0ffh
+   960   00063f c9                   		ret
+   961                          
+   962   000640 cd35f6          f640:		call	0f635h
+   963   000643 28fb                 		jr	z, f640		; (-05h)
+   964   000645 2a33f6               		ld	hl, (0f633h)
+   965   000648 7e                   		ld	a, (hl)
+   966   000649 2c                   		inc	l
+   967   00064a cba5                 		res	4, l
+   968   00064c 2233f6               		ld	(0f633h), hl
+   969   00064f c9                   		ret
+   970                          
+   971   000650 3a12ff          f650:		ld	a, (0ff12h)
+   972   000653 feee                 		cp	0eeh
+   973   000655 38f9                 		jr	c, f650		; (-07h)
+   974   000657 79                   		ld	a, c
+   975   000658 e67f                 		and	7fh
+   976   00065a e25ff6               		jp	po, 0f65fh
+   977   00065d f680                 		or	80h
+   978   00065f 3256f5               		ld	(0f556h), a
+   979   000662 3e47                 		ld	a, 47h
+   980   000664 3212ff               		ld	(0ff12h), a
+   981   000667 3e81                 		ld	a, 81h
+   982   000669 d381                 		out	(81h), a
+   983   00066b c9                   		ret
+   984                          
+   985   00066c e5                   		push	hl
+   986   00066d d5                   		push	de
+   987   00066e 2101c3               		ld	hl, 0c301h
+   988   000671 73                   		ld	(hl), e
+   989   000672 1600                 		ld	d, 00h
+   990   000674 cd84f6               		call	0f684h
+   991   000677 d1                   		pop	de
+   992   000678 e1                   		pop	hl
+   993   000679 1e00                 		ld	e, 00h
+   994   00067b cd84f6               		call	0f684h
+   995   00067e 2101c3               		ld	hl, 0c301h
+   996   000681 73                   		ld	(hl), e
+   997   000682 1600                 		ld	d, 00h
+   998   000684 f3                   		di
+   999   000685 0119f7               		ld	bc, 0f719h
+  1000   000688 ed4312ff             		ld	(0ff12h), bc
+  1001   00068c 0608                 		ld	b, 08h
+  1002   00068e 3e87                 		ld	a, 87h
+  1003   000690 d381                 		out	(81h), a
+  1004   000692 3e0d                 		ld	a, 0dh
+  1005   000694 d381                 		out	(81h), a
+  1006   000696 fb                   		ei
+  1007   000697 18fe            f697:		jr	f697		; (-02h)
+  1008                          
+  1009                          
+  1010                          ;--------------------------------------------------
+  1011                          ; SIO command frame interrupt
+  1012                          ;--------------------------------------------------
+  1013   000699 08              f699:     	ex	af, af'
+  1014   00069a d9                   		exx
+  1015   00069b 3eff                 		ld	a, 0ffh			;read pending
+  1016   00069d 3255ff               		ld	(0ff55h), a
+  1017   0006a0 d357                 		out	(57h), a		;switch to sio
+  1018   0006a2 21fbc2               		ld	hl, 0c2fbh		;read 5 bytes command frame
+  1019   0006a5 cdd906               		call	readSIO
+  1020   0006a8 300a                 		jr	nc, f6b4		; (+0ah)
+  1021   0006aa 2b                   		dec	hl
+  1022   0006ab 7e                   		ld	a, (hl)
+  1023   0006ac b9                   		cp	c			;checksum correct
+  1024   0006ad 2005                 		jr	nz, f6b4
+  1025   0006af 3e01                 		ld	a, 01h			;yes, frame received
+  1026   0006b1 3255ff               		ld	(0ff55h), a
+  1027   0006b4 08              f6b4:		ex	af, af'
+  1028   0006b5 d9                   		exx
+  1029   0006b6 fb                   		ei
+  1030   0006b7 ed4d                 		reti
+  1031                          
+  1032   0006b9 f3                   		di
+  1033   0006ba 2100c1               		ld	hl, 0c100h
+  1034   0006bd cdd906               		call	readSIO
+  1035   0006c0 fb                   		ei
+  1036   0006c1 380d                 		jr	c, f6d0		; (+0dh)
+  1037   0006c3 2b                   		dec	hl
+  1038   0006c4 7e                   		ld	a, (hl)
+  1039   0006c5 b9                   		cp	c
+  1040   0006c6 2008                 		jr	nz, f6d0		; (+08h)
+  1041   0006c8 1100c1               		ld	de, 0c100h
+  1042   0006cb b7                   		or	a
+  1043   0006cc ed52                 		sbc	hl, de
+  1044   0006ce af                   		xor	a
+  1045   0006cf c9                   		ret
+  1046                          
+  1047   0006d0 3e4e            f6d0:		ld	a, 4eh
+  1048   0006d2 cd56fc               		call	0fc56h
+  1049   0006d5 3eff                 		ld	a, 0ffh
+  1050   0006d7 b7                   		or	a
+  1051   0006d8 c9                   		ret
+  1052                          
+  1053   0006d9 11aa0a          readSIO:     	ld	de, 0aaah			;read atari ser 19200 Baud
+  1054   0006dc 010000               		ld	bc, 0000h
+  1055   0006df 1823                 		jr	getstartbit
+  1056                          
+  1057   0006e1 79              readSIO1:	ld	a, c                            ;4	compute checksum in c
+  1058   0006e2 80                   		add	a, b                            ;4
+  1059   0006e3 ce00                 		adc	a, 00h                          ;7
+  1060   0006e5 4f                   		ld	c, a                            ;4
+  1061   0006e6 e3                   		ex	(sp), hl                        ;19
+  1062   0006e7 e3                   		ex	(sp), hl                        ;19
+  1063   0006e8 e3                   		ex	(sp), hl                        ;19
+  1064   0006e9 e3                   		ex	(sp), hl                        ;19
+  1065   0006ea 0608                 		ld	b, 08h                          ;7	102
+  1066                          
+  1067   0006ec 3e0b            readSIO2:	ld	a, 0bh				;7
+  1068   0006ee 3e0b                 		ld	a, 0bh				;7
+  1069   0006f0 00                   		nop					;4
+  1070   0006f1 3d              readSIO3:    	dec	a				;4
+  1071   0006f2 c2f106               		jp	nz, readSIO3			;10
+  1072   0006f5 db70                 		in	a, (70h)			;11
+  1073   0006f7 17                   		rla					;4	bit7 to carry
+  1074   0006f8 cb1a                 		rr	d				;8	carry lsb-wise in d
+  1075   0006fa 10f0                 		djnz	readSIO2			;13	times
+  1076                          
+  1077   0006fc 42                   		ld	b, d				;save d in b
+  1078   0006fd 72                   		ld	(hl), d				;also store in (hl)
+  1079   0006fe 23                   		inc	hl				;increment hl
+  1080   0006ff 7c                   		ld	a, h				;until hl = 0C300h
+  1081   000700 fec3                 		cp	0c3h
+  1082   000702 3f                   		ccf
+  1083   000703 d8                   		ret	c				;carry set = 0C300h reached
+  1084                          
+  1085   000704 3e47            getstartbit:	ld	a, 47h				; CH0 noint+counter+pre16+falling autocnt+timeconst+reset+ctrl
+  1086   000706 d380                 		out	(80h), a                        ;        	 4              	7
+  1087   000708 af                   		xor	a
+  1088   000709 d380                 		out	(80h), a                        ; counter init value 0
+  1089   00070b 11a101               		ld	de, 01a1h
+  1090   00070e db80            getstartbit1:	in	a, (80h)                        ; counter zero?
+  1091   000710 b7                   		or	a
+  1092   000711 20ce                 		jr	nz, readSIO1			; start-bit
+  1093   000713 1b                   		dec	de
+  1094   000714 7a                   		ld	a, d
+  1095   000715 b3                   		or	e                               ; carry clear
+  1096   000716 20f6                 		jr	nz, getstartbit1		; de not zero, try again
+  1097   000718 c9                   		ret                                     ; return carry clear, zero
+  1098                          
+  1099   000719 af                   		xor	a
+  1100   00071a d350                 		out	(50h), a
+  1101   00071c fb                   		ei
+  1102   00071d 7e                   		ld	a, (hl)
+  1103   00071e 23                   		inc	hl
+  1104   00071f aa                   		xor	d
+  1105   000720 4f                   		ld	c, a
+  1106   000721 83                   		add	a, e
+  1107   000722 ce00                 		adc	a, 00h
+  1108   000724 5f                   		ld	e, a
+  1109   000725 3e2c                 		ld	a, 2ch
+  1110   000727 3212ff               		ld	(0ff12h), a
+  1111   00072a ed4d                 		reti
+  1112                          
+  1113   00072c 79                   		ld	a, c
+  1114   00072d d350                 		out	(50h), a
+  1115   00072f fb                   		ei
+  1116   000730 cb19                 		rr	c
+  1117   000732 1005                 		djnz	f739		; (+05h)
+  1118   000734 3e3b                 		ld	a, 3bh
+  1119   000736 3212ff               		ld	(0ff12h), a
+  1120   000739 ed4d            f739:		reti
+  1121                          
+  1122   00073b 3e01                 		ld	a, 01h
+  1123   00073d d350                 		out	(50h), a
+  1124   00073f fb                   		ei
+  1125   000740 7c                   		ld	a, h
+  1126   000741 fec3                 		cp	0c3h
+  1127   000743 3009                 		jr	nc, f74e		; (+09h)
+  1128   000745 0608                 		ld	b, 08h
+  1129   000747 3e19                 		ld	a, 19h
+  1130   000749 3212ff               		ld	(0ff12h), a
+  1131   00074c ed4d                 		reti
+  1132                          
+  1133   00074e 3e55            f74e:		ld	a, 55h
+  1134   000750 3212ff               		ld	(0ff12h), a
+  1135   000753 ed4d                 		reti
+  1136                          
+  1137   000755 3e01                 		ld	a, 01h
+  1138   000757 d381                 		out	(81h), a
+  1139   000759 fb                   		ei
+  1140   00075a 3eff                 		ld	a, 0ffh
+  1141   00075c 3212ff               		ld	(0ff12h), a
+  1142   00075f e1                   		pop	hl
+  1143   000760 ed4d                 		reti
+  1144                          
+  1145                          ;--------------------------------------------------
+  1146                          ; Main entry after startup from ROM
+  1147                          ;--------------------------------------------------
+  1148   000762 3e01            main:     	ld	a, 01h           		;executed after startup
+  1149   000764 d352                 		out	(52h), a         		;turn off ROM
+  1150                          
+  1151   000766 21fec2          read2bytes:	ld	hl, 0c2feh
+  1152   000769 f3                   		di
+  1153   00076a cdd906               		call	readSIO          		;read 2 bytes from SIO (until hl = c300)
+  1154   00076d fb                   		ei
+  1155   00076e 30f6                 		jr	nc, read2bytes			;nothing read within a timeframe,  read again
+  1156   000770 2afec2               		ld	hl, (0c2feh)     		;load hl with bytes read
+  1157   000773 11e680               		ld	de, 80e6h
+  1158   000776 b7                   		or	a               		;clear carry
+  1159   000777 ed52                 		sbc	hl, de
+  1160   000779 cade03               		jp	z, sallymon        		;080e6h read? -> Sally Monitor
+  1161                          
+  1162   00077c 3e03                 		ld	a, 03h           		;no
+  1163   00077e 3233ff               		ld	(0ff33h), a      		;store 03h in ff33h (03h = inc bc)
+  1164   000781 3e38                 		ld	a, 38h           		;store 38h in f188h (038h = jr c,  d)
+  1165   000783 3288f1               		ld	(0f188h), a
+  1166   000786 db50                 		in	a, (50h)         		;test bit 3 of RS232 (jumper,  should be 1)
+  1167   000788 cb5f                 		bit	3, a
+  1168   00078a 2005                 		jr	nz, f791			;
+  1169   00078c 3eff                 		ld	a, 0ffh          		;if zero,  store ffh (= rst 38h)
+  1170   00078e 322308               		ld	(f823), a      			;to f823h (switch printer off?)
+  1171   000791 21e107          f791:		ld	hl, return
+  1172   000794 2219f0               		ld	(0f019h), hl			;hl points to RET
+  1173   000797 ed5b1930             		ld	de, (3019h)
+  1174   00079b b7                   		or	a
+  1175   00079c ed52                 		sbc	hl, de
+  1176   00079e 280c                 		jr	z, sioloop
+  1177   0007a0 210000               		ld	hl, 0000h
+  1178   0007a3 224bff               		ld	(0ff4bh), hl
+  1179   0007a6 21ffbf               		ld	hl, 0bfffh
+  1180   0007a9 224dff               		ld	(0ff4dh), hl
+  1181                          
+  1182                          ;--------------------------------------------------
+  1183                          ; Looks like the main Atari SIO handler loop
+  1184                          ;--------------------------------------------------
+  1185   0007ac cdd1f8          sioloop:	call	0f8d1h				;output to printer? (check buffer)
+  1186   0007af 2a3aff               		ld	hl, (0ff3ah)    		;f7be
+  1187   0007b2 cdbd07               		call	jumphl         			;call (ff3a)
+  1188   0007b5 2a3cff               		ld	hl, (0ff3ch)    		;f7e1 (nomally return)
+  1189   0007b8 cdbd07               		call	jumphl         			;call (ff3c)
+  1190   0007bb 18ef                 		jr	sioloop
+  1191                          
+  1192   0007bd e9              jumphl:     	jp	(hl)
+  1193                          
+  1194   0007be db70            f7be:     	in	a, (70h)        		;in SIO
+  1195   0007c0 e68a                 		and	8ah				;1---1-1-	;Stop-bit, no command (high) = idle
+  1196   0007c2 fe8a                 		cp	8ah
+  1197   0007c4 c0                   		ret	nz				;is not idle? return
+  1198                          
+  1199                          ;--------------------------------------------------
+  1200                          ; program CTC to detect CMD
+  1201                          ;--------------------------------------------------
+  1202   0007c5 f3                   		di
+  1203   0007c6 af                   		xor	a
+  1204   0007c7 3255ff               		ld	(0ff55h), a			;select 0=CMD or 1=SIO
+  1205   0007ca d357                 		out	(57h), a
+  1206   0007cc 3ed7                 		ld	a, 0d7h				;CH0 int+counter+pre16+rising autocnt+timeconst+reset+ctrl
+  1207                          							;		D 				7
+  1208   0007ce d380                 		out	(80h), a                        ;program CTC
+  1209   0007d0 3e01                 		ld	a, 01h
+  1210   0007d2 d380                 		out	(80h), a                        ;counter
+  1211   0007d4 2199f6               		ld	hl, 0f699h
+  1212   0007d7 2210ff               		ld	(0ff10h), hl
+  1213   0007da fb                   		ei
+  1214   0007db 21e207               		ld	hl, cmdframe
+  1215   0007de 223aff               		ld	(0ff3ah), hl
+  1216   0007e1 c9               return:    	ret
+  1217                          
+  1218                          ;--------------------------------------------------
+  1219                          ; handle command frame
+  1220                          ;--------------------------------------------------
+  1221   0007e2 3a55ff          cmdframe:     	ld	a, (0ff55h)
+  1222   0007e5 b7                   		or	a
+  1223   0007e6 c8                   		ret	z               		;no frame received yet
+  1224                          
+  1225   0007e7 fe01                 		cp	01h             		;frame received?
+  1226   0007e9 2808                 		jr	z, cmdframe1			;handle it
+  1227   0007eb f3                   		di
+  1228   0007ec 3e03                 		ld	a, 03h           		;noint timer pre16 falling  reset vector
+  1229   0007ee d380                 		out	(80h), a         		;CTC Channel 0
+  1230   0007f0 fb                   		ei
+  1231   0007f1 1816                 		jr	cmdframe2
+  1232                          
+  1233   0007f3 3afbc2          cmdframe1:	ld	a, (0c2fbh)      		;load device ID
+  1234   0007f6 2a38ff               		ld	hl, (0ff38h)			;load addr device table
+  1235   0007f9 cd1008               		call	gettable
+  1236   0007fc 200b                 		jr	nz, cmdframe2			;not found, return
+  1237   0007fe 3afcc2               		ld	a, (0c2fch)			;load command
+  1238   000801 cd1008               		call	gettable
+  1239   000804 2003                 		jr	nz, cmdframe2			;not found;
+  1240   000806 cdbd07               		call	jumphl				;call (hl)
+  1241                          
+  1242   000809 21bef7          cmdframe2:	ld	hl, 0f7beh
+  1243   00080c 223aff               		ld	(0ff3ah), hl
+  1244   00080f c9                   		ret
+  1245                          
+  1246                          
+  1247   000810 4e              gettable:    	ld	c, (hl)
+  1248   000811 23                   		inc	hl
+  1249   000812 46                   		ld	b, (hl)
+  1250   000813 23                   		inc	hl
+  1251   000814 edb1                 		cpir
+  1252   000816 c0                   		ret	nz
+  1253                          
+  1254   000817 f5                   		push	af
+  1255   000818 09                   		add	hl, bc
+  1256   000819 09                   		add	hl, bc
+  1257   00081a 09                   		add	hl, bc
+  1258   00081b 7e                   		ld	a, (hl)
+  1259   00081c 23                   		inc	hl
+  1260   00081d 66                   		ld	h, (hl)
+  1261   00081e 6f                   		ld	l, a
+  1262   00081f f1                   		pop	af
+  1263   000820 c9                   		ret
+  1264                          
+  1265   000821 0600            devicetab:	dw	06				;number of devices
+  1266   000823 40              f823:		db	40h				;printer
+  1267   000824 31323334        		db	31h, 32h, 33h, 34h		;disk 1-4
+  1268   000828 5a              		db	5ah				;RS232?
+  1269                          
+  1270   000829 54f8            		dw	0f854h				;RS232
+  1271   00082b 3df8            		dw	0f83dh				;Disk 4
+  1272   00082d 3df8            		dw	0f83dh				;Disk 3
+  1273   00082f 3df8            		dw	0f83dh				;Disk 2
+  1274   000831 3df8            		dw	0f83dh				;Disk 1
+  1275   000833 35f8            		dw	0f835h				;printer
+  1276                          
+  1277   000835 0200            		dw	2				;printer commands
+  1278   000837 53              		db	53h				;status
+  1279   000838 57              		db	57h				;write
+  1280   000839 78f8            		dw	0f878h
+  1281   00083b 62f8            		dw	0f862h
+  1282                          
+  1283   00083d 0700            		dw	7				;disk commands
+  1284   00083f 52              		db	52h				;read		'R'
+  1285   000840 53              		db	53h				;status		'S'
+  1286   000841 57              		db	57h				;write		'W'
+  1287   000842 50              		db	50h				;putchar	'P'
+  1288   000843 4e              		db	4eh				;percom read	'N'
+  1289   000844 4f              		db	4fh				;perfom write	'O'
+  1290   000845 21              		db	21h				;format		'!'
+  1291   000846 38fb            		dw	0fb38h
+  1292   000848 05fc            		dw	0fc05h
+  1293   00084a e7fb            		dw	0fbe7h
+  1294   00084c 05f9            		dw	0f905h
+  1295   00084e 08f9            		dw	0f908h
+  1296   000850 dbfa            		dw	0fadbh
+  1297   000852 8cf9            		dw	0f98ch
+  1298                          
+  1299   000854 0400            		dw	4				;printer commands
+  1300   000856 52              		db	52h				;read
+  1301   000857 57              		db      57h				;write
+  1302   000858 53              		db      53h				;status
+  1303   000859 47              		db	47h				;?
+  1304   00085a b4fc            		dw	0fcb4h
+  1305   00085c a6fc            		dw	0fca6h
+  1306   00085e 7bfc            		dw	0fc7bh
+  1307   000860 5ffc            		dw	0fc5fh
+  1308                          
+  1309   000862 cd4afc               		call	0fc4ah
+  1310   000865 2143ff               		ld	hl, 0ff43h
+  1311   000868 11fcc2               		ld	de, 0c2fch
+  1312   00086b d5                   		push	de
+  1313   00086c 010400               		ld	bc, 0004h
+  1314   00086f edb0                 		ldir
+  1315   000871 e1                   		pop	hl
+  1316   000872 114300               		ld	de, 0043h
+  1317   000875 c36cf6               		jp	0f66ch
+  1318   000878 cd4afc               		call	0fc4ah
+  1319   00087b cdb9f6               		call	0f6b9h
+  1320   00087e c0                   		ret	nz
+  1321                          
+  1322   00087f 112800               		ld	de, 0028h
+  1323   000882 b7                   		or	a
+  1324   000883 ed52                 		sbc	hl, de
+  1325   000885 c0                   		ret	nz
+  1326                          
+  1327   000886 cd4afc               		call	0fc4ah
+  1328   000889 2100c1               		ld	hl, 0c100h
+  1329   00088c 0628                 		ld	b, 28h
+  1330   00088e 7e              f88e:		ld	a, (hl)
+  1331   00088f fe9b                 		cp	9bh
+  1332   000891 2005                 		jr	nz, f898		; (+05h)
+  1333   000893 213eff               		ld	hl, 0ff3eh
+  1334   000896 46                   		ld	b, (hl)
+  1335   000897 23                   		inc	hl
+  1336   000898 e5              f898:		push	hl
+  1337   000899 2a4fff               		ld	hl, (0ff4fh)
+  1338   00089c ed5b4dff             		ld	de, (0ff4dh)
+  1339   0008a0 b7                   		or	a
+  1340   0008a1 ed52                 		sbc	hl, de
+  1341   0008a3 e1                   		pop	hl
+  1342   0008a4 380e                 		jr	c, f8b4		; (+0eh)
+  1343   0008a6 e5                   		push	hl
+  1344   0008a7 c5                   		push	bc
+  1345   0008a8 cdd1f8               		call	0f8d1h
+  1346   0008ab c1                   		pop	bc
+  1347   0008ac e1                   		pop	hl
+  1348   0008ad db70                 		in	a, (70h)
+  1349   0008af e602                 		and	02h
+  1350   0008b1 20e5                 		jr	nz, f898		; (-1bh)
+  1351   0008b3 c9                   		ret
+  1352                          
+  1353   0008b4 7e              f8b4:		ld	a, (hl)
+  1354   0008b5 23                   		inc	hl
+  1355   0008b6 e5                   		push	hl
+  1356   0008b7 c5                   		push	bc
+  1357   0008b8 2a51ff               		ld	hl, (0ff51h)
+  1358   0008bb cdf1f8               		call	0f8f1h
+  1359   0008be ed5351ff             		ld	(0ff51h), de
+  1360   0008c2 77                   		ld	(hl), a
+  1361   0008c3 2a4fff               		ld	hl, (0ff4fh)
+  1362   0008c6 23                   		inc	hl
+  1363   0008c7 224fff               		ld	(0ff4fh), hl
+  1364   0008ca c1                   		pop	bc
+  1365   0008cb e1                   		pop	hl
+  1366   0008cc 10c0                 		djnz	f88e		; (-40h)
+  1367   0008ce c354fc               		jp	0fc54h
+  1368                          
+  1369   0008d1 2a4fff          f8d1:     	ld	hl, (0ff4fh)			;is pointer in ff4f zero?
+  1370   0008d4 7c                   		ld	a, h
+  1371   0008d5 b5                   		or	l
+  1372   0008d6 c8                   		ret	z				;normally yes, return
+  1373                          
+  1374   0008d7 cd15f0               		call	0f015h
+  1375   0008da c0                   		ret	nz
+  1376                          
+  1377   0008db 2a53ff               		ld	hl, (0ff53h)
+  1378   0008de cdf1f8               		call	0f8f1h
+  1379   0008e1 ed5353ff             		ld	(0ff53h), de
+  1380   0008e5 4e                   		ld	c, (hl)
+  1381   0008e6 cd12f0               		call	0f012h
+  1382   0008e9 2a4fff               		ld	hl, (0ff4fh)
+  1383   0008ec 2b                   		dec	hl
+  1384   0008ed 224fff               		ld	(0ff4fh), hl
+  1385   0008f0 c9                   		ret
+  1386                          
+  1387   0008f1 eb                   		ex	de, hl
+  1388   0008f2 2a4bff               		ld	hl, (0ff4bh)
+  1389   0008f5 19                   		add	hl, de
+  1390   0008f6 e5                   		push	hl
+  1391   0008f7 13                   		inc	de
+  1392   0008f8 2a4dff               		ld	hl, (0ff4dh)
+  1393   0008fb b7                   		or	a
+  1394   0008fc ed52                 		sbc	hl, de
+  1395   0008fe 3003                 		jr	nc, f903		; (+03h)
+  1396   000900 110000               		ld	de, 0000h
+  1397   000903 e1              f903:		pop	hl
+  1398   000904 c9                   		ret
+  1399                          
+  1400   000905 af                   		xor	a
+  1401   000906 1802                 		jr	f90a		; (+02h)
+  1402   000908 3e01                 		ld	a, 01h
+  1403   00090a 32b5ff          f90a:		ld	(0ffb5h), a
+  1404   00090d cd28fc               		call	0fc28h
+  1405   000910 d8                   		ret	c
+  1406                          
+  1407   000911 cd4afc               		call	0fc4ah
+  1408   000914 cdb9f6               		call	0f6b9h
+  1409   000917 c0                   		ret	nz
+  1410                          
+  1411   000918 22a9ff               		ld	(0ffa9h), hl
+  1412   00091b 118000               		ld	de, 0080h
+  1413   00091e b7                   		or	a
+  1414   00091f ed52                 		sbc	hl, de
+  1415   000921 2804                 		jr	z, f927		; (+04h)
+  1416   000923 b7                   		or	a
+  1417   000924 ed52                 		sbc	hl, de
+  1418   000926 c0                   		ret	nz
+  1419                          
+  1420   000927 cd4afc          f927:		call	0fc4ah
+  1421   00092a cd10fa               		call	0fa10h
+  1422   00092d 204e                 		jr	nz, f97d		; (+4eh)
+  1423   00092f 2100c1               		ld	hl, 0c100h
+  1424   000932 229cff               		ld	(0ff9ch), hl
+  1425   000935 3aa9ff               		ld	a, (0ffa9h)
+  1426   000938 47                   		ld	b, a
+  1427   000939 7e              f939:		ld	a, (hl)
+  1428   00093a 2f                   		cpl
+  1429   00093b 77                   		ld	(hl), a
+  1430   00093c 23                   		inc	hl
+  1431   00093d 10fa                 		djnz	f939		; (-06h)
+  1432   00093f 3e02                 		ld	a, 02h
+  1433   000941 3298ff               		ld	(0ff98h), a
+  1434   000944 dd2198ff             		ld	ix, 0ff98h
+  1435   000948 cd0ff0               		call	0f00fh
+  1436   00094b 3aa0ff               		ld	a, (0ffa0h)
+  1437   00094e b7                   		or	a
+  1438   00094f 202c                 		jr	nz, f97d		; (+2ch)
+  1439   000951 3ab5ff               		ld	a, (0ffb5h)
+  1440   000954 b7                   		or	a
+  1441   000955 2826                 		jr	z, f97d		; (+26h)
+  1442   000957 3e01                 		ld	a, 01h
+  1443   000959 3298ff               		ld	(0ff98h), a
+  1444   00095c 2100c3               		ld	hl, 0c300h
+  1445   00095f 229cff               		ld	(0ff9ch), hl
+  1446   000962 cd0ff0               		call	0f00fh
+  1447   000965 3aa0ff               		ld	a, (0ffa0h)
+  1448   000968 b7                   		or	a
+  1449   000969 2012                 		jr	nz, f97d		; (+12h)
+  1450   00096b 2100c1               		ld	hl, 0c100h
+  1451   00096e 1100c3               		ld	de, 0c300h
+  1452   000971 3a9eff               		ld	a, (0ff9eh)
+  1453   000974 47                   		ld	b, a
+  1454   000975 1a              f975:		ld	a, (de)
+  1455   000976 ae                   		xor	(hl)
+  1456   000977 200b                 		jr	nz, f984		; (+0bh)
+  1457   000979 23                   		inc	hl
+  1458   00097a 13                   		inc	de
+  1459   00097b 10f8                 		djnz	f975		; (-08h)
+  1460   00097d cde3f9          f97d:		call	0f9e3h
+  1461   000980 7b                   		ld	a, e
+  1462   000981 c356fc               		jp	0fc56h
+  1463   000984 af              f984:		xor	a
+  1464   000985 cd06fa               		call	0fa06h
+  1465   000988 7b                   		ld	a, e
+  1466   000989 c356fc               		jp	0fc56h
+  1467   00098c cd28fc               		call	0fc28h
+  1468   00098f d8                   		ret	c
+  1469                          
+  1470   000990 cd4afc               		call	0fc4ah
+  1471   000993 cd10fa               		call	0fa10h
+  1472   000996 f5                   		push	af
+  1473   000997 280f                 		jr	z, f9a8		; (+0fh)
+  1474   000999 fd5606               		ld	d, (iy+06h)
+  1475   00099c fd5e07               		ld	e, (iy+07h)
+  1476   00099f 7a                   		ld	a, d
+  1477   0009a0 b3                   		or	e
+  1478   0009a1 2009                 		jr	nz, f9ac		; (+09h)
+  1479   0009a3 118000               		ld	de, 0080h
+  1480   0009a6 1804                 		jr	f9ac		; (+04h)
+  1481   0009a8 ed5b9eff        f9a8:		ld	de, (0ff9eh)
+  1482   0009ac 2afdc2          f9ac:		ld	hl, (0c2fdh)
+  1483   0009af 010400               		ld	bc, 0004h
+  1484   0009b2 b7                   		or	a
+  1485   0009b3 ed42                 		sbc	hl, bc
+  1486   0009b5 3003                 		jr	nc, f9ba		; (+03h)
+  1487   0009b7 118000               		ld	de, 0080h
+  1488   0009ba ed53a9ff        f9ba:		ld	(0ffa9h), de
+  1489   0009be 2100c3               		ld	hl, 0c300h
+  1490   0009c1 b7                   		or	a
+  1491   0009c2 ed52                 		sbc	hl, de
+  1492   0009c4 f1                   		pop	af
+  1493   0009c5 2014                 		jr	nz, f9db		; (+14h)
+  1494   0009c7 229cff               		ld	(0ff9ch), hl
+  1495   0009ca 3e01                 		ld	a, 01h
+  1496   0009cc 3298ff               		ld	(0ff98h), a
+  1497   0009cf dd2198ff             		ld	ix, 0ff98h
+  1498   0009d3 e5                   		push	hl
+  1499   0009d4 cd0ff0               		call	0f00fh
+  1500   0009d7 e1                   		pop	hl
+  1501   0009d8 3aa0ff               		ld	a, (0ffa0h)
+  1502   0009db cde3f9          f9db:		call	0f9e3h
+  1503   0009de 16ff                 		ld	d, 0ffh
+  1504   0009e0 c36cf6               		jp	0f66ch
+  1505   0009e3 b7                   		or	a
+  1506   0009e4 200a                 		jr	nz, f9f0		; (+0ah)
+  1507   0009e6 fd770d               		ld	(iy+0dh), a
+  1508   0009e9 1e43                 		ld	e, 43h
+  1509   0009eb fdcb0c96             		res	2, (iy+0ch)
+  1510   0009ef c9                   		ret
+  1511                          
+  1512   0009f0 cb77            f9f0:		bit	6, a
+  1513   0009f2 2802                 		jr	z, f9f6		; (+02h)
+  1514   0009f4 e69f                 		and	9fh
+  1515   0009f6 cb6f            f9f6:		bit	5, a
+  1516   0009f8 2802                 		jr	z, f9fc		; (+02h)
+  1517   0009fa f660                 		or	60h
+  1518   0009fc 4f              f9fc:		ld	c, a
+  1519   0009fd e681                 		and	81h
+  1520   0009ff 79                   		ld	a, c
+  1521   000a00 2804                 		jr	z, fa06		; (+04h)
+  1522   000a02 e67e                 		and	7eh
+  1523   000a04 f610                 		or	10h
+  1524   000a06 fd770d          fa06:		ld	(iy+0dh), a
+  1525   000a09 1e45                 		ld	e, 45h
+  1526   000a0b fdcb0cd6             		set	2, (iy+0ch)
+  1527   000a0f c9                   		ret
+  1528                          
+  1529   000a10 3a2eff               		ld	a, (0ff2eh)
+  1530   000a13 b7                   		or	a
+  1531   000a14 2811                 		jr	z, fa27		; (+11h)
+  1532   000a16 af                   		xor	a
+  1533   000a17 322eff               		ld	(0ff2eh), a
+  1534   000a1a 2164ff               		ld	hl, 0ff64h
+  1535   000a1d 111000               		ld	de, 0010h
+  1536   000a20 0604                 		ld	b, 04h
+  1537   000a22 cb86            fa22:		res	0, (hl)
+  1538   000a24 19                   		add	hl, de
+  1539   000a25 10fb                 		djnz	fa22		; (-05h)
+  1540   000a27 fdcb0e46        fa27:		bit	0, (iy+0eh)
+  1541   000a2b 206d                 		jr	nz, fa9a		; (+6dh)
+  1542   000a2d 3e03                 		ld	a, 03h
+  1543   000a2f 3298ff               		ld	(0ff98h), a
+  1544   000a32 3a99ff               		ld	a, (0ff99h)
+  1545   000a35 2120ff               		ld	hl, 0ff20h
+  1546   000a38 85                   		add	a, l
+  1547   000a39 6f                   		ld	l, a
+  1548   000a3a 7e                   		ld	a, (hl)
+  1549   000a3b fe50                 		cp	50h
+  1550   000a3d 3801                 		jr	c, fa40		; (+01h)
+  1551   000a3f af                   		xor	a
+  1552   000a40 329aff          fa40:		ld	(0ff9ah), a
+  1553   000a43 21abff               		ld	hl, 0ffabh
+  1554   000a46 229cff               		ld	(0ff9ch), hl
+  1555   000a49 dd2198ff             		ld	ix, 0ff98h
+  1556   000a4d cd0ff0               		call	0f00fh
+  1557   000a50 3aa0ff               		ld	a, (0ffa0h)
+  1558   000a53 b7                   		or	a
+  1559   000a54 c0                   		ret	nz
+  1560                          
+  1561   000a55 3aaeff               		ld	a, (0ffaeh)
+  1562   000a58 cdcdfa               		call	0facdh
+  1563   000a5b fd7006               		ld	(iy+06h), b
+  1564   000a5e fd7107               		ld	(iy+07h), c
+  1565   000a61 3a9eff               		ld	a, (0ff9eh)
+  1566   000a64 07                   		rlca
+  1567   000a65 07                   		rlca
+  1568   000a66 07                   		rlca
+  1569   000a67 2f                   		cpl
+  1570   000a68 e606                 		and	06h
+  1571   000a6a fd7705               		ld	(iy+05h), a
+  1572   000a6d cb4f                 		bit	1, a
+  1573   000a6f 2807                 		jr	z, fa78		; (+07h)
+  1574   000a71 3e4d                 		ld	a, 4dh
+  1575   000a73 211a00               		ld	hl, 001ah
+  1576   000a76 1805                 		jr	fa7d		; (+05h)
+  1577   000a78 3e28            fa78:		ld	a, 28h
+  1578   000a7a 211200               		ld	hl, 0012h
+  1579   000a7d fdbe00          fa7d:		cp	(iy+00h)
+  1580   000a80 3803                 		jr	c, fa85		; (+03h)
+  1581   000a82 fd7700               		ld	(iy+00h), a
+  1582   000a85 fd7402          fa85:		ld	(iy+02h), h
+  1583   000a88 fd7503               		ld	(iy+03h), l
+  1584   000a8b fdcb0ec6             		set	0, (iy+0eh)
+  1585   000a8f 2a96ff               		ld	hl, (0ff96h)
+  1586   000a92 7c                   		ld	a, h
+  1587   000a93 b5                   		or	l
+  1588   000a94 2004                 		jr	nz, fa9a		; (+04h)
+  1589   000a96 fd2296ff             		ld	(0ff96h), iy
+  1590   000a9a 2afdc2          fa9a:		ld	hl, (0c2fdh)
+  1591   000a9d 2b                   		dec	hl
+  1592   000a9e 1600                 		ld	d, 00h
+  1593   000aa0 fd5e03               		ld	e, (iy+03h)
+  1594   000aa3 3eff                 		ld	a, 0ffh
+  1595   000aa5 3c              faa5:		inc	a
+  1596   000aa6 b7                   		or	a
+  1597   000aa7 ed52                 		sbc	hl, de
+  1598   000aa9 30fa                 		jr	nc, faa5		; (-06h)
+  1599   000aab 19                   		add	hl, de
+  1600   000aac 23                   		inc	hl
+  1601   000aad 4d                   		ld	c, l
+  1602   000aae 219bff               		ld	hl, 0ff9bh
+  1603   000ab1 71                   		ld	(hl), c
+  1604   000ab2 fdbe00               		cp	(iy+00h)
+  1605   000ab5 3808                 		jr	c, fabf		; (+08h)
+  1606   000ab7 fd9600               		sub	(iy+00h)
+  1607   000aba 2199ff               		ld	hl, 0ff99h
+  1608   000abd cbfe                 		set	7, (hl)
+  1609   000abf 329aff          fabf:		ld	(0ff9ah), a
+  1610   000ac2 fd6606               		ld	h, (iy+06h)
+  1611   000ac5 fd6e07               		ld	l, (iy+07h)
+  1612   000ac8 229eff               		ld	(0ff9eh), hl
+  1613   000acb af                   		xor	a
+  1614   000acc c9                   		ret
+  1615                          
+  1616   000acd 018000               		ld	bc, 0080h
+  1617   000ad0 e603                 		and	03h
+  1618   000ad2 c8                   		ret	z
+  1619                          
+  1620   000ad3 cb21            fad3:		sla	c
+  1621   000ad5 cb10                 		rl	b
+  1622   000ad7 3d                   		dec	a
+  1623   000ad8 20f9                 		jr	nz, fad3		; (-07h)
+  1624   000ada c9                   		ret
+  1625                          
+  1626   000adb cd28fc               		call	0fc28h
+  1627   000ade d8                   		ret	c
+  1628                          
+  1629   000adf cd4afc               		call	0fc4ah
+  1630   000ae2 cdd3fb               		call	0fbd3h
+  1631   000ae5 3ac9ff               		ld	a, (0ffc9h)
+  1632   000ae8 f5                   		push	af
+  1633   000ae9 3e00                 		ld	a, 00h
+  1634   000aeb 3298ff               		ld	(0ff98h), a
+  1635   000aee dd2198ff             		ld	ix, 0ff98h
+  1636   000af2 cd0ff0               		call	0f00fh
+  1637   000af5 fd4e0c               		ld	c, (iy+0ch)
+  1638   000af8 fd360c00             		ld	(iy+0ch), 00h
+  1639   000afc f1                   		pop	af
+  1640   000afd b7                   		or	a
+  1641   000afe 2804                 		jr	z, fb04		; (+04h)
+  1642   000b00 cbe1                 		set	4, c
+  1643   000b02 1802                 		jr	fb06		; (+02h)
+  1644   000b04 cba1            fb04:		res	4, c
+  1645   000b06 fdcb0556        fb06:		bit	2, (iy+05h)
+  1646   000b0a 2804                 		jr	z, fb10		; (+04h)
+  1647   000b0c cbe9                 		set	5, c
+  1648   000b0e 1802                 		jr	fb12		; (+02h)
+  1649   000b10 cba9            fb10:		res	5, c
+  1650   000b12 ddcb0876        fb12:		bit	6, (ix+08h)
+  1651   000b16 2804                 		jr	z, fb1c		; (+04h)
+  1652   000b18 cbd9                 		set	3, c
+  1653   000b1a 1802                 		jr	fb1e		; (+02h)
+  1654   000b1c cb99            fb1c:		res	3, c
+  1655   000b1e 21fcc2          fb1e:		ld	hl, 0c2fch
+  1656   000b21 e5                   		push	hl
+  1657   000b22 71                   		ld	(hl), c
+  1658   000b23 23                   		inc	hl
+  1659   000b24 fd7e0d               		ld	a, (iy+0dh)
+  1660   000b27 2f                   		cpl
+  1661   000b28 77                   		ld	(hl), a
+  1662   000b29 23                   		inc	hl
+  1663   000b2a 36e0                 		ld	(hl), 0e0h
+  1664   000b2c 23                   		inc	hl
+  1665   000b2d 3a2dff               		ld	a, (0ff2dh)
+  1666   000b30 77                   		ld	(hl), a
+  1667   000b31 e1                   		pop	hl
+  1668   000b32 114300               		ld	de, 0043h
+  1669   000b35 c36cf6               		jp	0f66ch
+  1670   000b38 cd28fc               		call	0fc28h
+  1671   000b3b d8                   		ret	c
+  1672                          
+  1673   000b3c 2a4fff               		ld	hl, (0ff4fh)
+  1674   000b3f 7c                   		ld	a, h
+  1675   000b40 b5                   		or	l
+  1676   000b41 c0                   		ret	nz
+  1677                          
+  1678   000b42 cdd3fb               		call	0fbd3h
+  1679   000b45 c8                   		ret	z
+  1680                          
+  1681   000b46 cd4afc               		call	0fc4ah
+  1682   000b49 3e00                 		ld	a, 00h
+  1683   000b4b 3298ff               		ld	(0ff98h), a
+  1684   000b4e dd2198ff             		ld	ix, 0ff98h
+  1685   000b52 cd0ff0               		call	0f00fh
+  1686   000b55 cdcbf3               		call	0f3cbh
+  1687   000b58 3a2fff               		ld	a, (0ff2fh)
+  1688   000b5b fdcb0556             		bit	2, (iy+05h)
+  1689   000b5f 2807                 		jr	z, fb68		; (+07h)
+  1690   000b61 cbbf                 		res	7, a
+  1691   000b63 2100c2               		ld	hl, 0c200h
+  1692   000b66 1805                 		jr	fb6d		; (+05h)
+  1693   000b68 cbff            fb68:		set	7, a
+  1694   000b6a 2180c2               		ld	hl, 0c280h
+  1695   000b6d 322fff          fb6d:		ld	(0ff2fh), a
+  1696   000b70 d330                 		out	(30h), a
+  1697   000b72 e5                   		push	hl
+  1698   000b73 22c1ff               		ld	(0ffc1h), hl
+  1699   000b76 210100               		ld	hl, 0001h
+  1700   000b79 22bfff               		ld	(0ffbfh), hl
+  1701   000b7c 2a49ff               		ld	hl, (0ff49h)
+  1702   000b7f 11b6ff               		ld	de, 0ffb6h
+  1703   000b82 010700               		ld	bc, 0007h
+  1704   000b85 07                   		rlca
+  1705   000b86 07                   		rlca
+  1706   000b87 e603                 		and	03h
+  1707   000b89 2804                 		jr	z, fb8f		; (+04h)
+  1708   000b8b 09              fb8b:		add	hl, bc
+  1709   000b8c 3d                   		dec	a
+  1710   000b8d 20fc                 		jr	nz, fb8b		; (-04h)
+  1711   000b8f edb0            fb8f:		ldir
+  1712   000b91 3aa0ff               		ld	a, (0ffa0h)
+  1713   000b94 e6c0                 		and	0c0h
+  1714   000b96 2013                 		jr	nz, fbab		; (+13h)
+  1715   000b98 fd7e04               		ld	a, (iy+04h)
+  1716   000b9b 32bdff               		ld	(0ffbdh), a
+  1717   000b9e fd7e00               		ld	a, (iy+00h)
+  1718   000ba1 32beff               		ld	(0ffbeh), a
+  1719   000ba4 fde5                 		push	iy
+  1720   000ba6 cdbefc               		call	0fcbeh
+  1721   000ba9 fde1                 		pop	iy
+  1722   000bab e1              fbab:		pop	hl
+  1723   000bac cde3f9               		call	0f9e3h
+  1724   000baf 1600                 		ld	d, 00h
+  1725   000bb1 cd6cf6               		call	0f66ch
+  1726   000bb4 c33cf0               		jp	0f03ch
+  1727   000bb7 9f                   		sbc	a, a
+  1728   000bb8 fee2                 		cp	0e2h
+  1729   000bba fe1a                 		cp	1ah
+  1730   000bbc b0                   		or	b
+  1731   000bbd 2835                 		jr	z, fbf4		; (+35h)
+  1732   000bbf fe68                 		cp	68h
+  1733   000bc1 fe12                 		cp	12h
+  1734   000bc3 6a                   		ld	l, d
+  1735   000bc4 187a                 		jr	ASMPC+2+07ah	; (+7ah)
+  1736   000bc6 fec8                 		cp	0c8h
+  1737   000bc8 fe1a                 		cp	1ah
+  1738   000bca 58                   		ld	e, b
+  1739   000bcb 14                   		inc	d
+  1740   000bcc 16fe                 		ld	d, 0feh
+  1741   000bce 56                   		ld	d, (hl)
+  1742   000bcf fe12                 		cp	12h
+  1743   000bd1 35                   		dec	(hl)
+  1744   000bd2 0c                   		inc	c
+  1745   000bd3 fd7e00               		ld	a, (iy+00h)
+  1746   000bd6 b7                   		or	a
+  1747   000bd7 c0                   		ret	nz
+  1748                          
+  1749   000bd8 2a96ff               		ld	hl, (0ff96h)
+  1750   000bdb 7c                   		ld	a, h
+  1751   000bdc b5                   		or	l
+  1752   000bdd c8                   		ret	z
+  1753                          
+  1754   000bde fde5                 		push	iy
+  1755   000be0 d1                   		pop	de
+  1756   000be1 010c00               		ld	bc, 000ch
+  1757   000be4 edb0                 		ldir
+  1758   000be6 c9                   		ret
+  1759                          
+  1760   000be7 cd28fc               		call	0fc28h
+  1761   000bea d8                   		ret	c
+  1762                          
+  1763   000beb cdd3fb               		call	0fbd3h
+  1764   000bee c8                   		ret	z
+  1765                          
+  1766   000bef cd4afc               		call	0fc4ah
+  1767   000bf2 fde5                 		push	iy
+  1768   000bf4 e1              fbf4:		pop	hl
+  1769   000bf5 11f4c2               		ld	de, 0c2f4h
+  1770   000bf8 d5                   		push	de
+  1771   000bf9 010c00               		ld	bc, 000ch
+  1772   000bfc edb0                 		ldir
+  1773   000bfe e1                   		pop	hl
+  1774   000bff 114300               		ld	de, 0043h
+  1775   000c02 c36cf6               		jp	0f66ch
+  1776   000c05 cd28fc               		call	0fc28h
+  1777   000c08 d8                   		ret	c
+  1778                          
+  1779   000c09 cd4afc               		call	0fc4ah
+  1780   000c0c cdb9f6               		call	0f6b9h
+  1781   000c0f c0                   		ret	nz
+  1782                          
+  1783   000c10 110c00               		ld	de, 000ch
+  1784   000c13 b7                   		or	a
+  1785   000c14 ed52                 		sbc	hl, de
+  1786   000c16 c0                   		ret	nz
+  1787                          
+  1788   000c17 cd4afc               		call	0fc4ah
+  1789   000c1a 2100c1               		ld	hl, 0c100h
+  1790   000c1d fde5                 		push	iy
+  1791   000c1f d1                   		pop	de
+  1792   000c20 010c00               		ld	bc, 000ch
+  1793   000c23 edb0                 		ldir
+  1794   000c25 c354fc               		jp	0fc54h
+  1795   000c28 3afbc2               		ld	a, (0c2fbh)
+  1796   000c2b d631                 		sub	31h
+  1797   000c2d fe04                 		cp	04h
+  1798   000c2f 3f                   		ccf
+  1799   000c30 d8                   		ret	c
+  1800                          
+  1801   000c31 2600                 		ld	h, 00h
+  1802   000c33 6f                   		ld	l, a
+  1803   000c34 29                   		add	hl, hl
+  1804   000c35 29                   		add	hl, hl
+  1805   000c36 29                   		add	hl, hl
+  1806   000c37 29                   		add	hl, hl
+  1807   000c38 0156ff               		ld	bc, 0ff56h
+  1808   000c3b 09                   		add	hl, bc
+  1809   000c3c e5                   		push	hl
+  1810   000c3d fde1                 		pop	iy
+  1811   000c3f fdcb0876             		bit	6, (iy+08h)
+  1812   000c43 37                   		scf
+  1813   000c44 c8                   		ret	z
+  1814                          
+  1815   000c45 3299ff               		ld	(0ff99h), a
+  1816   000c48 af                   		xor	a
+  1817   000c49 c9                   		ret
+  1818                          
+  1819   000c4a db70            fc4a:		in	a, (70h)
+  1820   000c4c cb4f                 		bit	1, a
+  1821   000c4e 28fa                 		jr	z, fc4a		; (-06h)
+  1822   000c50 3e41                 		ld	a, 41h
+  1823   000c52 1802                 		jr	fc56		; (+02h)
+  1824   000c54 3e43                 		ld	a, 43h
+  1825   000c56 2101c3          fc56:		ld	hl, 0c301h
+  1826   000c59 77                   		ld	(hl), a
+  1827   000c5a 1600                 		ld	d, 00h
+  1828   000c5c c384f6               		jp	0f684h
+  1829   000c5f cd4afc               		call	0fc4ah
+  1830   000c62 cd9cfc               		call	0fc9ch
+  1831   000c65 2100c3               		ld	hl, 0c300h
+  1832   000c68 b7                   		or	a
+  1833   000c69 ed42                 		sbc	hl, bc
+  1834   000c6b e5                   		push	hl
+  1835   000c6c eb                   		ex	de, hl
+  1836   000c6d 2ab2fc               		ld	hl, (0fcb2h)
+  1837   000c70 f3                   		di
+  1838   000c71 edb0                 		ldir
+  1839   000c73 fb                   		ei
+  1840   000c74 e1                   		pop	hl
+  1841   000c75 114300               		ld	de, 0043h
+  1842   000c78 c36cf6               		jp	0f66ch
+  1843   000c7b cd4afc               		call	0fc4ah
+  1844   000c7e cdb9f6               		call	0f6b9h
+  1845   000c81 c0                   		ret	nz
+  1846                          
+  1847   000c82 cd9cfc               		call	0fc9ch
+  1848   000c85 b7                   		or	a
+  1849   000c86 ed42                 		sbc	hl, bc
+  1850   000c88 c0                   		ret	nz
+  1851                          
+  1852   000c89 c5                   		push	bc
+  1853   000c8a cd4afc               		call	0fc4ah
+  1854   000c8d c1                   		pop	bc
+  1855   000c8e 2100c1               		ld	hl, 0c100h
+  1856   000c91 ed5bb2fc             		ld	de, (0fcb2h)
+  1857   000c95 f3                   		di
+  1858   000c96 edb0                 		ldir
+  1859   000c98 fb                   		ei
+  1860   000c99 c354fc               		jp	0fc54h
+  1861   000c9c 3afdc2               		ld	a, (0c2fdh)
+  1862   000c9f 4f                   		ld	c, a
+  1863   000ca0 0600                 		ld	b, 00h
+  1864   000ca2 b7                   		or	a
+  1865   000ca3 c0                   		ret	nz
+  1866                          
+  1867   000ca4 04                   		inc	b
+  1868   000ca5 c9                   		ret
+  1869                          
+  1870   000ca6 cd4afc               		call	0fc4ah
+  1871   000ca9 2afdc2               		ld	hl, (0c2fdh)
+  1872   000cac 22b2fc               		ld	(0fcb2h), hl
+  1873   000caf c354fc               		jp	0fc54h
+  1874   000cb2 00                   		nop
+  1875   000cb3 00                   		nop
+  1876   000cb4 cd4afc               		call	0fc4ah
+  1877   000cb7 cd54fc               		call	0fc54h
+  1878   000cba 2afdc2               		ld	hl, (0c2fdh)
+  1879   000cbd e9                   		jp	(hl)
+  1880   000cbe af                   		xor	a
+  1881   000cbf d356                 		out	(56h), a
+  1882   000cc1 3c                   		inc	a
+  1883   000cc2 d354                 		out	(54h), a
+  1884   000cc4 3e0b                 		ld	a, 0bh
+  1885   000cc6 cd6bf3               		call	0f36bh
+  1886   000cc9 ee04                 		xor	04h
+  1887   000ccb e684                 		and	84h
+  1888   000ccd c29afd               		jp	nz, 0fd9ah
+  1889   000cd0 2100c3               		ld	hl, 0c300h
+  1890   000cd3 3abcff               		ld	a, (0ffbch)
+  1891   000cd6 3c                   		inc	a
+  1892   000cd7 47                   		ld	b, a
+  1893   000cd8 3676            fcd8:		ld	(hl), 76h
+  1894   000cda 23                   		inc	hl
+  1895   000cdb 36ed                 		ld	(hl), 0edh
+  1896   000cdd 23                   		inc	hl
+  1897   000cde 36a3                 		ld	(hl), 0a3h
+  1898   000ce0 23                   		inc	hl
+  1899   000ce1 3620                 		ld	(hl), 20h
+  1900   000ce3 23                   		inc	hl
+  1901   000ce4 36fb                 		ld	(hl), 0fbh
+  1902   000ce6 23                   		inc	hl
+  1903   000ce7 10ef                 		djnz	fcd8		; (-11h)
+  1904   000ce9 3ec9                 		ld	a, 0c9h
+  1905   000ceb 77                   		ld	(hl), a
+  1906   000cec 326600               		ld	(0066h), a
+  1907   000cef 23                   		inc	hl
+  1908   000cf0 22c3ff               		ld	(0ffc3h), hl
+  1909   000cf3 af                   		xor	a
+  1910   000cf4 322dff               		ld	(0ff2dh), a
+  1911   000cf7 b7                   		or	a
+  1912   000cf8 2805                 		jr	z, fcff		; (+05h)
+  1913   000cfa 3e4b                 		ld	a, 4bh
+  1914   000cfc cd6bf3               		call	0f36bh
+  1915   000cff dd2ab6ff        fcff:		ld	ix, (0ffb6h)
+  1916   000d03 fd2ab8ff             		ld	iy, (0ffb8h)
+  1917   000d07 3abdff               		ld	a, (0ffbdh)
+  1918   000d0a 1f                   		rra
+  1919   000d0b 3a2fff               		ld	a, (0ff2fh)
+  1920   000d0e 3007                 		jr	nc, fd17		; (+07h)
+  1921   000d10 ee20                 		xor	20h
+  1922   000d12 322fff               		ld	(0ff2fh), a
+  1923   000d15 d330                 		out	(30h), a
+  1924   000d17 cda4fd          fd17:		call	0fda4h
+  1925   000d1a 3a2dff               		ld	a, (0ff2dh)
+  1926   000d1d d341                 		out	(41h), a
+  1927   000d1f 2ac3ff               		ld	hl, (0ffc3h)
+  1928   000d22 f3                   		di
+  1929   000d23 3ef4                 		ld	a, 0f4h
+  1930   000d25 cd89f3               		call	0f389h
+  1931   000d28 3abbff               		ld	a, (0ffbbh)
+  1932   000d2b 47                   		ld	b, a
+  1933   000d2c 0e43                 		ld	c, 43h
+  1934   000d2e cd00c3               		call	0c300h
+  1935   000d31 fb                   		ei
+  1936   000d32 db40            fd32:		in	a, (40h)
+  1937   000d34 cb47                 		bit	0, a
+  1938   000d36 20fa                 		jr	nz, fd32		; (-06h)
+  1939   000d38 ed5bbfff             		ld	de, (0ffbfh)
+  1940   000d3c 2ac1ff               		ld	hl, (0ffc1h)
+  1941   000d3f 3abaff               		ld	a, (0ffbah)
+  1942   000d42 47                   		ld	b, a
+  1943   000d43 dd2ab8ff             		ld	ix, (0ffb8h)
+  1944   000d47 dd7e00          fd47:		ld	a, (ix+00h)
+  1945   000d4a dd23                 		inc	ix
+  1946   000d4c d342                 		out	(42h), a
+  1947   000d4e 3a2fff               		ld	a, (0ff2fh)
+  1948   000d51 e620                 		and	20h
+  1949   000d53 3e88                 		ld	a, 88h
+  1950   000d55 2802                 		jr	z, fd59		; (+02h)
+  1951   000d57 cbcf                 		set	1, a
+  1952   000d59 cd62f3          fd59:		call	0f362h
+  1953   000d5c e698                 		and	98h
+  1954   000d5e 2814                 		jr	z, fd74		; (+14h)
+  1955   000d60 e680                 		and	80h
+  1956   000d62 2036                 		jr	nz, fd9a		; (+36h)
+  1957   000d64 e5                   		push	hl
+  1958   000d65 c5                   		push	bc
+  1959   000d66 01fdc2               		ld	bc, 0c2fdh
+  1960   000d69 b7                   		or	a
+  1961   000d6a ed42                 		sbc	hl, bc
+  1962   000d6c c1                   		pop	bc
+  1963   000d6d e1                   		pop	hl
+  1964   000d6e 3004                 		jr	nc, fd74		; (+04h)
+  1965   000d70 73                   		ld	(hl), e
+  1966   000d71 23                   		inc	hl
+  1967   000d72 72                   		ld	(hl), d
+  1968   000d73 23                   		inc	hl
+  1969   000d74 13              fd74:		inc	de
+  1970   000d75 10d0                 		djnz	fd47		; (-30h)
+  1971   000d77 ed53bfff             		ld	(0ffbfh), de
+  1972   000d7b 22c1ff               		ld	(0ffc1h), hl
+  1973   000d7e 3a2fff               		ld	a, (0ff2fh)
+  1974   000d81 e620                 		and	20h
+  1975   000d83 c2fffc               		jp	nz, 0fcffh
+  1976   000d86 3a2dff               		ld	a, (0ff2dh)
+  1977   000d89 3c                   		inc	a
+  1978   000d8a 21beff               		ld	hl, 0ffbeh
+  1979   000d8d be                   		cp	(hl)
+  1980   000d8e daf4fc               		jp	c, 0fcf4h
+  1981   000d91 2ac1ff               		ld	hl, (0ffc1h)
+  1982   000d94 36ff                 		ld	(hl), 0ffh
+  1983   000d96 23                   		inc	hl
+  1984   000d97 36ff                 		ld	(hl), 0ffh
+  1985   000d99 af                   		xor	a
+  1986   000d9a f5              fd9a:		push	af
+  1987   000d9b 3eff                 		ld	a, 0ffh
+  1988   000d9d 322dff               		ld	(0ff2dh), a
+  1989   000da0 d341                 		out	(41h), a
+  1990   000da2 f1                   		pop	af
+  1991   000da3 c9                   		ret
+  1992                          
+  1993   000da4 3abaff               		ld	a, (0ffbah)
+  1994   000da7 4f                   		ld	c, a
+  1995   000da8 dde5                 		push	ix
+  1996   000daa e1                   		pop	hl
+  1997   000dab 46                   		ld	b, (hl)
+  1998   000dac 23                   		inc	hl
+  1999   000dad ed5bc3ff             		ld	de, (0ffc3h)
+  2000   000db1 cd0bfe          fdb1:		call	0fe0bh
+  2001   000db4 10fb                 		djnz	fdb1		; (-05h)
+  2002   000db6 46                   		ld	b, (hl)
+  2003   000db7 23                   		inc	hl
+  2004   000db8 e5                   		push	hl
+  2005   000db9 dde1                 		pop	ix
+  2006   000dbb 3a2dff          fdbb:		ld	a, (0ff2dh)
+  2007   000dbe dd7707               		ld	(ix+07h), a
+  2008   000dc1 3a2fff               		ld	a, (0ff2fh)
+  2009   000dc4 e620                 		and	20h
+  2010   000dc6 3e00                 		ld	a, 00h
+  2011   000dc8 2801                 		jr	z, fdcb		; (+01h)
+  2012   000dca 3c                   		inc	a
+  2013   000dcb dd7709          fdcb:		ld	(ix+09h), a
+  2014   000dce fd7e00               		ld	a, (iy+00h)
+  2015   000dd1 fd23                 		inc	iy
+  2016   000dd3 dd770b               		ld	(ix+0bh), a
+  2017   000dd6 dde5                 		push	ix
+  2018   000dd8 e1                   		pop	hl
+  2019   000dd9 c5                   		push	bc
+  2020   000dda cd0bfe          fdda:		call	0fe0bh
+  2021   000ddd 10fb                 		djnz	fdda		; (-05h)
+  2022   000ddf dd7e0d               		ld	a, (ix+0dh)
+  2023   000de2 cdcdfa               		call	0facdh
+  2024   000de5 3eff            fde5:		ld	a, 0ffh
+  2025   000de7 12                   		ld	(de), a
+  2026   000de8 13                   		inc	de
+  2027   000de9 0b                   		dec	bc
+  2028   000dea 78                   		ld	a, b
+  2029   000deb b1                   		or	c
+  2030   000dec 20f7                 		jr	nz, fde5		; (-09h)
+  2031   000dee 46                   		ld	b, (hl)
+  2032   000def 23                   		inc	hl
+  2033   000df0 cd0bfe          fdf0:		call	0fe0bh
+  2034   000df3 10fb                 		djnz	fdf0		; (-05h)
+  2035   000df5 c1                   		pop	bc
+  2036   000df6 0d                   		dec	c
+  2037   000df7 20c2                 		jr	nz, fdbb		; (-3eh)
+  2038   000df9 2ac3ff               		ld	hl, (0ffc3h)
+  2039   000dfc 01d827               		ld	bc, 27d8h
+  2040   000dff 09                   		add	hl, bc
+  2041   000e00 ed52                 		sbc	hl, de
+  2042   000e02 44                   		ld	b, h
+  2043   000e03 4d                   		ld	c, l
+  2044   000e04 62                   		ld	h, d
+  2045   000e05 6b                   		ld	l, e
+  2046   000e06 13                   		inc	de
+  2047   000e07 77                   		ld	(hl), a
+  2048   000e08 edb0                 		ldir
+  2049   000e0a c9                   		ret
+  2050                          
+  2051   000e0b c5                   		push	bc
+  2052   000e0c 46                   		ld	b, (hl)
+  2053   000e0d 23                   		inc	hl
+  2054   000e0e 7e                   		ld	a, (hl)
+  2055   000e0f 23                   		inc	hl
+  2056   000e10 12              fe10:		ld	(de), a
+  2057   000e11 13                   		inc	de
+  2058   000e12 10fc                 		djnz	fe10		; (-04h)
+  2059   000e14 c1                   		pop	bc
+  2060   000e15 c9                   		ret
+  2061                          
+  2062   000e16 0110ff               		ld	bc, 0ff10h
+  2063   000e19 0b                   		dec	bc
+  2064   000e1a 03                   		inc	bc
+  2065   000e1b 00                   		nop
+  2066   000e1c 03                   		inc	bc
+  2067   000e1d 00                   		nop
+  2068   000e1e 01fe01               		ld	bc, 01feh
+  2069   000e21 00                   		nop
+  2070   000e22 010001               		ld	bc, 0100h
+  2071   000e25 00                   		nop
+  2072   000e26 010001               		ld	bc, 0100h
+  2073   000e29 f7                   		rst	30h
+  2074   000e2a 0b                   		dec	bc
+  2075   000e2b ff                   		rst	38h
+  2076   000e2c 0600                 		ld	b, 00h
+  2077   000e2e 01fb02               		ld	bc, 02fbh
+  2078   000e31 01f709               		ld	bc, 09f7h
+  2079   000e34 ff                   		rst	38h
+  2080   000e35 01204e               		ld	bc, 4e20h
+  2081   000e38 0c                   		inc	c
+  2082   000e39 0c                   		inc	c
+  2083   000e3a 00                   		nop
+  2084   000e3b 03                   		inc	bc
+  2085   000e3c f5                   		push	af
+  2086   000e3d 01fe01               		ld	bc, 01feh
+  2087   000e40 00                   		nop
+  2088   000e41 010001               		ld	bc, 0100h
+  2089   000e44 00                   		nop
+  2090   000e45 010101               		ld	bc, 0101h
+  2091   000e48 f7                   		rst	30h
+  2092   000e49 164e                 		ld	d, 4eh
+  2093   000e4b 0c                   		inc	c
+  2094   000e4c 00                   		nop
+  2095   000e4d 03                   		inc	bc
+  2096   000e4e f5                   		push	af
+  2097   000e4f 01fb02               		ld	bc, 02fbh
+  2098   000e52 01f710               		ld	bc, 10f7h
+  2099   000e55 4e                   		ld	c, (hl)
+  2100   000e56 12                   		ld	(de), a
+  2101   000e57 100e                 		djnz	fe67		; (+0eh)
+  2102   000e59 0c                   		inc	c
+  2103   000e5a 0a                   		ld	a, (bc)
+  2104   000e5b 08                   		ex	af, af'
+  2105   000e5c 0604                 		ld	b, 04h
+  2106   000e5e 02                   		ld	(bc), a
+  2107   000e5f 110f0d               		ld	de, 0d0fh
+  2108   000e62 0b                   		dec	bc
+  2109   000e63 09                   		add	hl, bc
+  2110   000e64 07                   		rlca
+  2111   000e65 05                   		dec	b
+  2112   000e66 03                   		inc	bc
+  2113   000e67 010107          fe67:		ld	bc, 0701h
+  2114   000e6a 0d                   		dec	c
+  2115   000e6b 060c                 		ld	b, 0ch
+  2116   000e6d 12                   		ld	(de), a
+  2117   000e6e 05                   		dec	b
+  2118   000e6f 0b                   		dec	bc
+  2119   000e70 11040a               		ld	de, 0a04h
+  2120   000e73 1003                 		djnz	fe78		; (+03h)
+  2121   000e75 09                   		add	hl, bc
+  2122   000e76 0f                   		rrca
+  2123   000e77 02                   		ld	(bc), a
+  2124   000e78 08              fe78:		ex	af, af'
+  2125   000e79 0e04                 		ld	c, 04h
+  2126   000e7b 28ff                 		jr	z, ASMPC+1		; (-01h)
+  2127   000e7d 0600                 		ld	b, 00h
+  2128   000e7f 01fc1a               		ld	bc, 1afch
+  2129   000e82 ff                   		rst	38h
+  2130   000e83 0b                   		dec	bc
+  2131   000e84 03                   		inc	bc
+  2132   000e85 00                   		nop
+  2133   000e86 03                   		inc	bc
+  2134   000e87 00                   		nop
+  2135   000e88 01fe01               		ld	bc, 01feh
+  2136   000e8b 00                   		nop
+  2137   000e8c 010001               		ld	bc, 0100h
+  2138   000e8f 00                   		nop
+  2139   000e90 010001               		ld	bc, 0100h
+  2140   000e93 f7                   		rst	30h
+  2141   000e94 0b                   		dec	bc
+  2142   000e95 ff                   		rst	38h
+  2143   000e96 0600                 		ld	b, 00h
+  2144   000e98 01fb02               		ld	bc, 02fbh
+  2145   000e9b 01f71b               		ld	bc, 1bf7h
+  2146   000e9e ff                   		rst	38h
+  2147   000e9f 05                   		dec	b
+  2148   000ea0 50                   		ld	d, b
+  2149   000ea1 4e                   		ld	c, (hl)
+  2150   000ea2 0c                   		inc	c
+  2151   000ea3 00                   		nop
+  2152   000ea4 03                   		inc	bc
+  2153   000ea5 f601                 		or	01h
+  2154   000ea7 fc324e               		call	m, 4e32h
+  2155   000eaa 0c                   		inc	c
+  2156   000eab 0c                   		inc	c
+  2157   000eac 00                   		nop
+  2158   000ead 03                   		inc	bc
+  2159   000eae f5                   		push	af
+  2160   000eaf 01fe01               		ld	bc, 01feh
+  2161   000eb2 00                   		nop
+  2162   000eb3 010001               		ld	bc, 0100h
+  2163   000eb6 00                   		nop
+  2164   000eb7 010101               		ld	bc, 0101h
+  2165   000eba f7                   		rst	30h
+  2166   000ebb 164e                 		ld	d, 4eh
+  2167   000ebd 0c                   		inc	c
+  2168   000ebe 00                   		nop
+  2169   000ebf 03                   		inc	bc
+  2170   000ec0 f5                   		push	af
+  2171   000ec1 01fb02               		ld	bc, 02fbh
+  2172   000ec4 01f735               		ld	bc, 35f7h
+  2173   000ec7 4e                   		ld	c, (hl)
+  2174   000ec8 010e03               		ld	bc, 030eh
+  2175   000ecb 1005                 		djnz	ASMPC + 2 + 5	;(+05h)
+  2176   000ecd 12                   		ld	(de), a
+  2177   000ece 07                   		rlca
+  2178   000ecf 14                   		inc	d
+  2179   000ed0 09                   		add	hl, bc
+  2180   000ed1 160b                 		ld	d, 0bh
+  2181   000ed3 180d                 		jr	fee2		; (+0dh)
+  2182   000ed5 1a                   		ld	a, (de)
+  2183   000ed6 02                   		ld	(bc), a
+  2184   000ed7 0f                   		rrca
+  2185   000ed8 04                   		inc	b
+  2186   000ed9 110613               		ld	de, 1306h
+  2187   000edc 08                   		ex	af, af'
+  2188   000edd 15                   		dec	d
+  2189   000ede 0a                   		ld	a, (bc)
+  2190   000edf 17                   		rla
+  2191   000ee0 0c                   		inc	c
+  2192   000ee1 19                   		add	hl, de
+  2193   000ee2 011209          fee2:		ld	bc, 0912h
+  2194   000ee5 1a                   		ld	a, (de)
+  2195   000ee6 110819               		ld	de, 1908h
+  2196   000ee9 1007                 		djnz	ASMPC + 2 + 7	; (+07h)
+  2197   000eeb 180f                 		jr	ASMPC + 2 + 15	; (+0fh)
+  2198   000eed 0617                 		ld	b, 17h
+  2199   000eef 0e05                 		ld	c, 05h
+  2200   000ef1 160d                 		ld	d, 0dh
+  2201   000ef3 04                   		inc	b
+  2202   000ef4 15                   		dec	d
+  2203   000ef5 0c                   		inc	c
+  2204   000ef6 03                   		inc	bc
+  2205   000ef7 14                   		inc	d
+  2206   000ef8 0b                   		dec	bc
+  2207   000ef9 02                   		ld	(bc), a
+  2208   000efa 13                   		inc	de
+  2209   000efb 0a                   		ld	a, (bc)
+  2210                          
+  2211                          ;--------------------------------------------------
+  2212                          ; Workarea (Const + Vars) copied from ROM
+  2213                          ;--------------------------------------------------
+  2214   000efc 0000000000000000		dw	0, 0, 0, 0
+  2215   000f04 0000000000000000		dw	0, 0, 0, 0
+  2216   000f0c 0000000000000000		dw	0, 0, 0, 0
+  2217   000f14 0000000000000000		dw	0, 0, 0, 0
+  2218   000f1c 00000000        		dw	0, 0
+  2219   000f20 ffffffff00000000ff20:		db	0FFh, 0FFh, 0FFh, 0FFh, 000h, 000h, 000h, 000h
+  2220   000f28 1010101000ff0100		db	010h, 010h, 010h, 010h, 000h, 0FFh, 001h, 000h
+  2221   000f30 0000320a00000000		db	000h, 000h, 032h, 00Ah, 000h, 000h, 000h, 000h
+  2222   000f38 2108            ff38:		dw	devicetab
+  2223   000f3a bef7            ff3a:		dw	0f7beh
+  2224   000f3c e1f7            ff3c:		dw	0F7e1h
+  2225   000f3e 020d            ff3e:		db	002h, 00Dh
+  2226   000f40 0a000000003c0080		db	00Ah, 000h, 000h, 000h, 000h, 03Ch, 000h, 080h
+  2227   000f48 00b7fb00c5ff0f  		db	000h, 0B7h, 0FBh, 000h, 0C5h, 0FFh, 00Fh
+  2228                          
+  2229                          ;--------------------------------------------------
+  2230                          ; set to zero in startup code until 0ffffh
+  2231                          ;--------------------------------------------------
+  2232                          ;ff2a:		db	73h
+  2233                          ;     		nop
+  2234                          ;     		nop
+  2235                          ;     		nop
+  2236                          ;     		nop
+  2237                          ;     		nop
+  2238                          ;     		nop
+  2239                          ;     		nop
+  2240                          ;ff33:     	nop
+  2241                          ;     		nop
+  2242                          ;     		nop
+  2243                          ;     		nop
+  2244                          ;		db	"SALLY 1 Rev 1.01"
+  2245                          

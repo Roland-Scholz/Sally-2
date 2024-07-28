@@ -1,0 +1,50 @@
+Name     io;
+PartNo   00 ;
+Date     27.07.2024 ;
+Revision 01 ;
+Designer Roland ;
+Company  Scholz Electronics ;
+Assembly None ;
+Location  ;
+Device   g16v8a;
+
+
+/* *************** INPUT PINS *********************/
+PIN 1	= A4;
+PIN 2	= A5; 
+PIN 3	= A6;
+PIN 4 	= A7; 
+PIN 5	= IORQN; 
+PIN 6	= RDN; 
+PIN 7	= WRN;
+PIN 8	= NC0;
+PIN 9	= NC1;
+PIN 11	= NC2;
+/* *************** OUTPUT PINS *********************/
+PIN 12	= SIORN;
+PIN 13	= RS232RN;
+PIN 14	= BITWN;
+PIN 15	= DSWN;
+PIN 16	= CTCEN; 
+PIN 17	= FDCEN; 
+PIN 18	= PRTWN; 
+PIN 19	= PRTRN;
+
+/* Read Only */
+!SIORN	= !A7 &  A6 &  A5 &  A4 & !IORQN & !RDN;		/*$7x SIO*/
+!RS232RN	= !A7 &  A6 & !A5 &  A4 & !IORQN & !RDN;		/*$5x RS232*/
+!PRTRN	= !A7 & !A6 &  A5 & !A4 & !IORQN & !RDN;		/*$2x Printer*/
+
+/* W/R */
+!FDCEN	= !A7 &  A6 & !A5 & !A4 & !IORQN;				/*$4x FDC*/
+!CTCEN	=  A7 & !A6 & !A5 & !A4 & !IORQN;				/*$8x CTC*/
+
+/* Write Only */
+!BITWN	= !A7 &  A6 & !A5 &  A4 & !IORQN & !WRN;		/*$5x config-bits*/
+!DSWN	= !A7 & !A6 &  A5 &  A4 & !IORQN & !WRN;		/*$3x Floppy control*/
+!PRTWN	= !A7 & !A6 &  A5 & !A4 & !IORQN & !WRN;		/*$2x Printer*/
+
+
+
+
+

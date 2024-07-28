@@ -1,0 +1,40 @@
+Name     addess;
+PartNo   00 ;
+Date     27.07.2024 ;
+Revision 01 ;
+Designer Roland ;
+Company  Scholz Electronics ;
+Assembly None ;
+Location  ;
+Device   g16v8a;
+
+
+/* *************** INPUT PINS *********************/
+PIN 1	= CLK16;
+PIN 2	= MEMREQ; 
+PIN 3	= ROMENA;
+PIN 4 	= A15; 
+PIN 5	= FDCRES; 
+PIN 6	= RES; 
+PIN 7	= BS;
+PIN 8	= STROBE;
+PIN 9	= CLK16A;
+PIN 11	= NC1;
+/* *************** OUTPUT PINS *********************/
+PIN 12	= RESCN;
+PIN 13	= STROBEN;
+PIN 14	= FDCCLK;
+PIN 15	= WDRESN;
+PIN 16	= ROMCEN; 
+PIN 17	= RAMCEN; 
+PIN 18	= CLK4; 
+PIN 19	= CLK8;
+
+RESCN.D	= RES;
+CLK8.D	= !CLK8;
+CLK4.D	= CLK8 $ CLK4;
+FDCCLK	= CLK16A & BS # CLK8 & !BS;
+STROBEN	= !STROBE;
+WDRESN	= RESCN & FDCRES;
+ROMCEN	= A15 # ROMENA # MEMREQ;
+!RAMCEN	= (A15 # ROMENA) & !MEMREQ;

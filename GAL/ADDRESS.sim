@@ -1,0 +1,70 @@
+%SIGNAL
+PIN   4 =  A15 
+PIN   7 =  BS 
+PIN   9 =  CLK16A 
+PIN  18 =  CLK4 
+PIN  19 =  CLK8 
+PIN   1 =  CLK16 
+PIN  14 =  FDCCLK 
+PIN   5 =  FDCRES 
+PIN   2 =  MEMREQ 
+PIN  11 =  NC1 
+PIN  17 =  RAMCEN 
+PIN   6 =  RES 
+PIN  12 =  RESCN 
+PIN  16 =  ROMCEN 
+PIN   3 =  ROMENA 
+PIN   8 =  STROBE 
+PIN  13 =  STROBEN 
+PIN  15 =  WDRESN 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+CLK4.d  =>
+    !CLK4 & CLK8
+  # CLK4 & !CLK8
+
+CLK8.d  =>
+    !CLK8
+
+FDCCLK =>
+    BS & CLK16A
+  # !BS & CLK8
+
+!RAMCEN =>
+    A15 & !MEMREQ
+  # !MEMREQ & ROMENA
+
+RESCN.d  =>
+    RES
+
+ROMCEN =>
+    A15
+  # ROMENA
+  # MEMREQ
+
+STROBEN =>
+    !STROBE
+
+WDRESN =>
+    FDCRES & RESCN
+
+FDCCLK.oe  =>
+    1 
+
+RAMCEN.oe  =>
+    1 
+
+ROMCEN.oe  =>
+    1 
+
+STROBEN.oe  =>
+    1 
+
+WDRESN.oe  =>
+    1 
+
+%END

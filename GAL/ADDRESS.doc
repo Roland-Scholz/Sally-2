@@ -1,0 +1,107 @@
+
+*******************************************************************************
+                                    addess
+*******************************************************************************
+
+CUPL(WM)        5.0a Serial# 60008009
+Device          g16v8ms  Library DLIB-h-40-11
+Created         Sat Jul 27 16:39:02 2024
+Name            addess
+Partno          00 
+Revision        01 
+Date            27.07.2024 
+Designer        Roland 
+Company         Scholz Electronics 
+Assembly        None 
+Location        
+
+===============================================================================
+                            Expanded Product Terms
+===============================================================================
+
+CLK4.d  =>
+    !CLK4 & CLK8
+  # CLK4 & !CLK8
+
+CLK8.d  =>
+    !CLK8
+
+FDCCLK =>
+    BS & CLK16A
+  # !BS & CLK8
+
+!RAMCEN =>
+    A15 & !MEMREQ
+  # !MEMREQ & ROMENA
+
+RESCN.d  =>
+    RES
+
+ROMCEN =>
+    A15
+  # ROMENA
+  # MEMREQ
+
+STROBEN =>
+    !STROBE
+
+WDRESN =>
+    FDCRES & RESCN
+
+FDCCLK.oe  =>
+    1 
+
+RAMCEN.oe  =>
+    1 
+
+ROMCEN.oe  =>
+    1 
+
+STROBEN.oe  =>
+    1 
+
+WDRESN.oe  =>
+    1 
+
+
+===============================================================================
+                                 Symbol Table
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+    A15                         4        V        -       -       -     
+    BS                          7        V        -       -       -     
+    CLK16A                      9        V        -       -       -     
+    CLK4                        18       V        -       -       -     
+    CLK4                d       18       X        2       8       1     
+    CLK8                        19       V        -       -       -     
+    CLK8                d       19       X        1       8       1     
+    CLK16                       1        V        -       -       -     
+    FDCCLK                      14       V        2       7       1     
+    FDCRES                      5        V        -       -       -     
+    MEMREQ                      2        V        -       -       -     
+    NC1                         11       V        -       -       -     
+    RAMCEN                      17       V        2       7       1     
+    RES                         6        V        -       -       -     
+    RESCN                       12       V        -       -       -     
+    RESCN               d       12       X        1       8       1     
+    ROMCEN                      16       V        3       7       1     
+    ROMENA                      3        V        -       -       -     
+    STROBE                      8        V        -       -       -     
+    STROBEN                     13       V        1       7       1     
+    WDRESN                      15       V        1       7       1     
+    FDCCLK              oe      14       D        1       1       0     
+    RAMCEN              oe      17       D        1       1       0     
+    ROMCEN              oe      16       D        1       1       0     
+    STROBEN             oe      13       D        1       1       0     
+    WDRESN              oe      15       D        1       1       0     
+
+
+LEGEND    D : default variable         F : field      G : group
+          I : intermediate variable    N : node       M : extended node
+          U : undefined                V : variable   X : extended variable
+          T : function
+

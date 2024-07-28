@@ -1,0 +1,36 @@
+test.asm:
+     1                          ;--------------------------------------------------
+     2                          ; out\ ports
+     3                          ;--------------------------------------------------
+     4                          ; $2x 	Printer DATA
+     5                          ; $3x	Port Floppy Control
+     6                          ; $4x	FDC 1797
+     7                          ; $5x	U52 74LS259
+     8                          ; 	$50	ATARI Out data
+     9                          ; 	$51	RS232 TX
+    10                          ; 	$52	ROM switch
+    11                          ; 	$53	printer strobe
+    12                          ; 	$54	reset index-pulse
+    13                          ; 	$55	RS232 DTR
+    14                          ; 	$56	set index pulse
+    15                          ; 	$57	0=CMD,  1=SIO
+    16                          ; $8x	CTC
+    17                          ;--------------------------------------------------
+    18                          ; in\ ports
+    19                          ;--------------------------------------------------
+    20                          ; $2x	Printer Control
+    21                          ; $4x	FDC 1797
+    22                          ; $5x	RS232	D7=RX,  D3=1,  D2=?,  D1=FlowControl
+    23                          ; $70	SIO	D7=RX,  D3=RDY/+5V, D1=CMD
+    24                          ;--------------------------------------------------
+    25                          
+    26                          
+    27                          		org	0
+    28                          
+    29                          start:
+    30   000000 af              		xor	a
+    31                          loop:
+    32   000001 eeff            		xor	0ffh
+    33   000003 d350            		out	(050h), a
+    34   000005 c30100          		jp	loop
+    35                          
