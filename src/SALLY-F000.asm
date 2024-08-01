@@ -36,12 +36,15 @@
 ; $5x	RS232	D7=RX,  D3=1,  D2=?,  D1=FlowControl
 ; $70	SIO	D7=RX,  D3=RDY/+5V, D1=CMD
 ;--------------------------------------------------
+; FF10: Interrupt Table
+;--------------------------------------------------
+
      		ORG	0f000h
 
  jmpboot:    	jp	0f01bh				;wboot?			f000
  jmpSallyMon:   jp	sallymon        		;Sally Monitor		f003
-     		jp	0f635h          		;const			f006
- jmpCONIN:    	jp	0f640h          		;conin			f009
+     		jp	const	          		;const			f006
+ jmpCONIN:    	jp	conin	          		;conin 0f640h		f009
  jmpCONOUT:    	jp	0f650h          		;conout			f00c
      		jp	0f022h          		;list			f00f
      		jp	0f4dch          		;punch			f012
@@ -581,23 +584,23 @@ f39f:		dec	a
 ;--------------------------------------------------		
 ;f3de
 sallymon:     	ld	a, 01h				
-     		out	(52h), a			; turn off ROM
-     		call	0f5fch
+     		out	(52h), a			;turn off ROM
+     		call	0f5fch				;init receive at 9600 baud (T/C 0 interrupt)
      		call	printstr
 		db	"\r\n",  "SALLY1",  0
 
-monloop:	ld	hl,  monloop			; loop here
+monloop:	ld	hl,  monloop			;loop here
      		push	hl
      		call	printstr
 		db	"\r\n# ",  0 
 		
-f3fd:		call	getchar
-     		cp	20h
-     		ret	c				; 
+f3fd:		call	getchar				;read from conin
+     		cp	20h				;< 20h = control-character?
+     		ret	c				;yes, return 
 
-     		ld	c, a
-     		xor	a
-     		ld	h, a
+     		ld	c, a				;save a
+     		xor	a				;a = 0
+     		ld	h, a				;hl = 0
      		ld	l, a
 f407:		add	hl, hl
      		add	hl, hl
@@ -606,11 +609,11 @@ f407:		add	hl, hl
      		or	l
      		ld	l, a
      		call	getchar
-     		cp	0dh
-     		jr	z, f420		; (+0ch)
-     		call	0f483h
-     		jr	nc, f407		; (-12h)
-f419:		call	0f4c9h
+     		cp	0dh				;CR?
+     		jr	z, f420				;yes
+     		call	checkchar
+     		jr	nc, f407
+f419:		call	printstr
 		db	" ?",  0
      		ret
 
@@ -658,46 +661,49 @@ f45f:		ld	ix, 0f47ah
      		or	a
      		call	z, 0080h
      		push	af
-     		call	0f4c9h
+     		call	printstr
      		jr	nz, f4b8		; (+45h)
      		ld	d, d
      		ld	d, d
      		jr	nz, f477		; (+00h)
 f477:		pop	af
-     		jr	f49f		; (+25h)
+     		jr	puthex		; (+25h)
      		ld	bc, 0000h
      		ld	bc, 0080h
      		add	a, b
      		nop
      		nop
-     		sub	30h
-     		ret	c
+	
+checkchar:	
+     		sub	30h			;<0 ?
+     		ret	c			;yes, return
 
-     		cp	0ah
+     		cp	0ah			;<10?
      		ccf
      		ret	nc
 
-     		sub	07h
+     		sub	07h			;sub 8, carry set
      		cp	0ah
      		ret	c
 
-     		cp	10h
+     		cp	10h			;<16
      		ccf
-     		ret
+     		ret				;carry set if >= 16
 
      		ld	a, h
-     		call	0f49fh
+     		call	puthex
      		ld	a, l
-     		call	0f49fh
+     		call	puthex
      		ld	a, 20h
      		jr	putchar		; (+1fh)
-f49f:		push	af
+		
+puthex:		push	af
      		rra
      		rra
      		rra
      		rra
-     		call	0f4a8h
-     		pop	af
+     		call	putnibble
+putnibble:     	pop	af
      		and	0fh
      		add	a, 90h
      		daa
@@ -707,10 +713,10 @@ f49f:		push	af
 		
 getchar:     	push	hl
      		push	bc
-     		call	0f009h				;CONIN in jumptable
+     		call	jmpCONIN			;CONIN in jumptable
      		pop	bc
 f4b8:		pop	hl
-     		res	7, a
+     		res	7, a				;reset parity bit
      		cp	20h				;char < 20h = control char?
      		ret	c				;yes, return
 
@@ -768,12 +774,16 @@ f4eb:     	ld	hl, (0ff47h)
      		nop
      		nop
      		nop
-     		push	af
+		
+;--------------------------------------------------
+; T/C 0 (here counter) interrupt for start-bit
+;--------------------------------------------------		
+f500:		push	af
      		ld	a, 87h
-     		out	(80h), a
+     		out	(80h), a			;set T/C 0 to 9600 Baud timer 
      		ld	a, 1ah
      		out	(80h), a
-     		ld	a, 17h
+     		ld	a, 17h				;set T/C 0 interrupt to next routine
      		ld	(0ff10h), a
      		ld	a, 7fh
 f510:		ld	(0f51ch), a
@@ -781,29 +791,29 @@ f510:		ld	(0f51ch), a
      		ei
      		reti
 
-     		push	af
+f517:    	push	af
      		in	a, (70h)
      		rla
-     		ld	a, 00h
+f51b:    	ld	a, 00h				;<- set by previous routine to 7fh
      		rra
-     		jr	c, f510		; (-10h)
-     		ld	(0ff00h), a
-     		ld	a, 2ch
-     		ld	(0ff10h), a
+     		jr	c, f510				;loop 7 times
+f520:     	ld	(0ff00h), a			;store result in ff00
+     		ld	a, 2ch				;timer 0 interrupt vector = 0ff2c
+		ld	(0ff10h), a
      		pop	af
      		ei
      		reti
 
-     		push	af
-     		ld	a, 0c7h
+f52c:     	push	af
+     		ld	a, 0c7h				;timer 0 counter
      		out	(80h), a
      		ld	a, 01h
      		out	(80h), a
      		ld	a, (0f521h)
      		inc	a
      		and	0fh
-     		ld	(0f521h), a
-     		ld	a, 00h
+     		ld	(0f521h), a			;increment buffer (16 bytes)
+     		ld	a, 00h				;reset T/C 0 interrupt to start-bit routine
      		ld	(0ff10h), a
      		pop	af
      		ei
@@ -913,7 +923,7 @@ f510:		ld	(0f51ch), a
      		ei
      		reti
 
-     		push	af
+f5ee: 		push	af			;disable timer 1 interrupt
      		ld	a, 01h
      		out	(81h), a
      		ld	a, 0ffh
@@ -921,37 +931,45 @@ f510:		ld	(0f51ch), a
      		pop	af
      		ei
      		reti
-
-     		di
-     		ld	hl, 0f5eeh
-     		ld	(0ff12h), hl
-     		ld	a, 07h
-     		out	(81h), a
-     		ld	a, (0f506h)
+;--------------------------------------------------
+; SALLY Monitor
+;--------------------------------------------------		
+f5fc:
+init9600:	di
+     		ld	hl, 0f5eeh		;point Timer 1 interrupt
+     		ld	(0ff12h), hl		;to 0f5eeh
+     		ld	a, 07h			;Timer 1 reset, no int
+     		out	(81h), a		;load time constant
+     		ld	a, (0f506h)		;01ah = 9600 Baud
      		out	(81h), a
      		ld	hl, 0ff00h
      		ld	(0f521h), hl
      		ld	(0f633h), hl
      		di
      		ld	a, 01h
-     		out	(57h), a
+     		out	(57h), a		;enable SIO-Trig
 f61a:		ld	b, 7eh
-f61c:		in	a, (70h)
-     		rla
-     		jr	nc, f61a		; (-07h)
-     		djnz	f61c		; (-07h)
-     		ld	a, 0c7h
+f61c:		in	a, (70h)		;read SIO
+     		rla				;D7 (RX) to carry
+     		jr	nc, f61a		;0? repeat
+     		djnz	f61c			;high for 126 loops?
+     		ld	a, 0c7h			;T/C 0 interrupt on, counter mode, falling edge (start bit)
      		out	(80h), a
-     		ld	a, 01h
+     		ld	a, 01h			;T/C 0, count just 1 
      		out	(80h), a
-     		ld	hl, 0f500h
+     		ld	hl, 0f500h		;set T/C 0 int to 0f500h
      		ld	(0ff10h), hl
      		ei
      		ret
 
-     		nop
-     		rst	38h
-     		ld	hl, 0f633h
+     		nop				;00
+     		rst	38h			;ff
+		
+;--------------------------------------------------
+; const, is input from SIO ready?
+;--------------------------------------------------		
+f635:
+const:     	ld	hl, 0f633h
      		ld	a, (0f521h)
      		sub	(hl)
      		ret	z
@@ -959,12 +977,16 @@ f61c:		in	a, (70h)
      		ld	a, 0ffh
      		ret
 
-f640:		call	0f635h
-     		jr	z, f640		; (-05h)
-     		ld	hl, (0f633h)
-     		ld	a, (hl)
+
+;--------------------------------------------------
+; conin
+;--------------------------------------------------		
+conin:		call	const				;0f635h
+     		jr	z, f640				;input available
+     		ld	hl, (0f633h)			;read from buffer
+     		ld	a, (hl)				;increment buffer pointer
      		inc	l
-     		res	4, l
+     		res	4, l				;wrap at 16 bytes
      		ld	(0f633h), hl
      		ret
 
@@ -2208,14 +2230,15 @@ fee2:		ld	bc, 0912h
      		inc	de
      		ld	a, (bc)
 		
+		dw	0, 0
 ;--------------------------------------------------
 ; Workarea (Const + Vars) copied from ROM
 ;--------------------------------------------------
+ff00:		dw	0, 0, 0, 0			;16-byte receive buffer
 		dw	0, 0, 0, 0
+ff10:		dw	0, 0, 0, 0
 		dw	0, 0, 0, 0
-		dw	0, 0, 0, 0
-		dw	0, 0, 0, 0
-		dw	0, 0
+
 ff20:		db	0FFh, 0FFh, 0FFh, 0FFh, 000h, 000h, 000h, 000h
 		db	010h, 010h, 010h, 010h, 000h, 0FFh, 001h, 000h
 		db	000h, 000h, 032h, 00Ah, 000h, 000h, 000h, 000h
