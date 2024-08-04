@@ -1,4 +1,4 @@
-Name     addess;
+Name     address;
 PartNo   00 ;
 Date     27.07.2024 ;
 Revision 01 ;
@@ -33,8 +33,8 @@ PIN 19	= CLK8;
 RESCN.D	= RES;
 CLK8.D	= !CLK8;
 CLK4.D	= CLK8 $ CLK4;
-FDCCLK	= CLK16A & BS # CLK8 & !BS;
+FDCCLK	= CLK16A & !BS # CLK8 & BS;
 STROBEN	= !STROBE;
-WDRESN	= RESCN & FDCRES;
+WDRESN	= RESCN & !FDCRES;
 ROMCEN	= A15 # ROMENA # MEMREQ;
 !RAMCEN	= (A15 # ROMENA) & !MEMREQ;

@@ -10,8 +10,10 @@ rem ****************************************************
 call :compile SALLY-F000 F000
 if not %ERRORLEVEL%==0 goto error
 
-call :compile test 0000
+call :compile rollitest F000
 if not %ERRORLEVEL%==0 goto error
+
+del /Q	..\release\*.*
 
 move ..\src\*.o ..\release
 move ..\src\*.hex ..\release

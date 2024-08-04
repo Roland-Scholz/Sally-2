@@ -1,0 +1,37 @@
+Name     glue;
+PartNo   00 ;
+Date     02.08.2024 ;
+Revision 01 ;
+Designer Roland ;
+Company  Scholz Electronics ;
+Assembly None ;
+Location  ;
+Device   g16v8a;
+
+
+/* *************** INPUT PINS *********************/
+PIN 1	= TO1;
+PIN 2	= ADAT; 
+PIN 3	= DRQ;
+PIN 4 	= INTRQ; 
+PIN 5	= HALTN; 
+PIN 6	= SIOOUT; 
+PIN 7	= SIOCMD;
+PIN 8	= CMDSIO;
+PIN 9	= NC0;
+PIN 11	= GND;
+/* *************** OUTPUT PINS *********************/
+/*
+PIN 12	= ;
+PIN 13	= ;
+PIN 14	= ;
+IN 15	= ;
+PIN 16	= ; 
+*/
+PIN 17	= TRG0; 
+PIN 18	= NMIN; 
+PIN 19	= ADATOUT;
+
+ADATOUT.D	= ADAT;
+TRG0		= (!CMDSIO & !SIOCMD) # (CMDSIO & SIOOUT);
+NMIN		= !(INTRQ # DRQ) # HALTN;

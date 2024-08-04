@@ -1,0 +1,38 @@
+%SIGNAL
+PIN   2 =  ADAT 
+PIN  19 =  ADATOUT 
+PIN   8 =  CMDSIO 
+PIN   3 =  DRQ 
+PIN  11 =  GND 
+PIN   5 =  HALTN 
+PIN   4 =  INTRQ 
+PIN   9 =  NC0 
+PIN  18 =  NMIN 
+PIN   7 =  SIOCMD 
+PIN   6 =  SIOOUT 
+PIN   1 =  TO1 
+PIN  17 =  TRG0 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+ADATOUT.d  =>
+    ADAT
+
+NMIN =>
+    !DRQ & !INTRQ
+  # HALTN
+
+TRG0 =>
+    !CMDSIO & !SIOCMD
+  # CMDSIO & SIOOUT
+
+NMIN.oe  =>
+    1 
+
+TRG0.oe  =>
+    1 
+
+%END

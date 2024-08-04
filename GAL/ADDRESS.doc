@@ -1,12 +1,12 @@
 
 *******************************************************************************
-                                    addess
+                                    address
 *******************************************************************************
 
 CUPL(WM)        5.0a Serial# 60008009
 Device          g16v8ms  Library DLIB-h-40-11
-Created         Sat Jul 27 16:39:02 2024
-Name            addess
+Created         Sun Aug 04 16:58:27 2024
+Name            address
 Partno          00 
 Revision        01 
 Date            27.07.2024 
@@ -27,8 +27,8 @@ CLK8.d  =>
     !CLK8
 
 FDCCLK =>
-    BS & CLK16A
-  # !BS & CLK8
+    !BS & CLK16A
+  # BS & CLK8
 
 !RAMCEN =>
     A15 & !MEMREQ
@@ -46,7 +46,7 @@ STROBEN =>
     !STROBE
 
 WDRESN =>
-    FDCRES & RESCN
+    !FDCRES & RESCN
 
 FDCCLK.oe  =>
     1 

@@ -1,0 +1,351 @@
+rollitest.asm:
+     1                          ;--------------------------------------------------
+     2                          ; out\ ports
+     3                          ;--------------------------------------------------
+     4                          ; $2x 	Printer DATA
+     5                          ; $3x	Floppy Control	D7 = S/D\, D6 = HD\/S, D5 = Side, D4 = FDCRES, D3 = DSEL4, D2 = DSEL3, D1 = DSEL1, D0 = DSEL0
+     6                          ; $4x	FDC 1797
+     7                          ; $5x	U52 74LS259
+     8                          ; 	$50	ATARI Out data
+     9                          ; 	$51	RS232 TX
+    10                          ; 	$52	ROM switch
+    11                          ; 	$53	printer strobe
+    12                          ; 	$54	reset index-pulse
+    13                          ; 	$55	RS232 DTR
+    14                          ; 	$56	set index pulse
+    15                          ; 	$57	0=CMD,  1=SIO
+    16                          ; $8x	CTC
+    17                          ;--------------------------------------------------
+    18                          ; in\ ports
+    19                          ;--------------------------------------------------
+    20                          ; $2x	Printer Control
+    21                          ; $4x	FDC 1797
+    22                          ; $5x	RS232	D7=RX,  D3=1,  D2=?,  D1=FlowControl
+    23                          ; $70	SIO	D7=RX,  D3=RDY/+5V, D1=CMD
+    24                          ;--------------------------------------------------
+    25                          chrout		equ	001a2h
+    26                          printhex	equ	00229h
+    27                          
+    28                          		org	0f000h
+    29                          
+    30   000000 c3ff00          		jmp	start
+    31                          
+    32                          ;--------------------------------------------------
+    33                          ; conin T/C 0 (here counter) interrupt for start-bit
+    34                          ;--------------------------------------------------
+    35   000003 f5              coninInt:	push	af
+    36   000004 3e87                 		ld	a, 87h
+    37   000006 d380                 		out	(80h), a			;set T/C 0 to 9600 Baud timer
+    38   000008 3e1a            baud9600:     	ld	a, 1ah
+    39   00000a d380                 		out	(80h), a
+    40   00000c 3e1a                 		ld	a, coninIntB & 255		;set T/C 0 interrupt to next routine
+    41   00000e 3210ff               		ld	(0ff10h), a
+    42   000011 3e7f                 		ld	a, 7fh
+    43   000013 321f00          coninInt1:	ld	(inbyte + 1), a
+    44   000016 f1                   		pop	af
+    45   000017 fb                   		ei
+    46   000018 ed4d                 		reti
+    47                          
+    48   00001a f5              coninIntB:    	push	af
+    49   00001b db70                 		in	a, (70h)
+    50   00001d 17                   		rla
+    51   00001e 3e00            inbyte:    	ld	a, 00h				;<- set by previous routine to 7fh
+    52   000020 1f                   		rra
+    53   000021 38f0                 		jr	c, coninInt1			;loop 7 times
+    54   000023 3200ff          coninIntPtr:    ld	(0ff00h), a			;store result in ff00
+    55   000026 3e2f                 		ld	a, coninIntC & 255		;timer 0 interrupt vector = 0ff2c
+    56   000028 3210ff          		ld	(0ff10h), a
+    57   00002b f1                   		pop	af
+    58   00002c fb                   		ei
+    59   00002d ed4d                 		reti
+    60                          
+    61   00002f f5              coninIntC:     	push	af
+    62   000030 3ec7                 		ld	a, 0c7h				;timer 0 counter
+    63   000032 d380                 		out	(80h), a
+    64   000034 3e01                 		ld	a, 01h
+    65   000036 d380                 		out	(80h), a
+    66   000038 3a2400               		ld	a, (coninIntPtr + 1)
+    67   00003b 3c                   		inc	a
+    68   00003c e60f                 		and	0fh
+    69   00003e 322400               		ld	(coninIntPtr + 1), a		;increment buffer (16 bytes)
+    70   000041 3e03                 		ld	a, coninInt & 255		;reset T/C 0 interrupt to start-bit routine
+    71   000043 3210ff               		ld	(0ff10h), a
+    72   000046 f1                   		pop	af
+    73   000047 fb                   		ei
+    74   000048 ed4d                 		reti
+    75                          
+    76                          
+    77                          ;--------------------------------------------------
+    78                          ; conout T/C 1 interrupt for start-bit
+    79                          ;--------------------------------------------------
+    80   00004a f5              conoutIntA:     push	af
+    81   00004b af                   		xor	a
+    82   00004c d350                 		out	(50h), a
+    83   00004e 3e57                 		ld	a, conoutIntB & 255
+    84   000050 3212ff               		ld	(0ff12h), a
+    85   000053 f1                   		pop	af
+    86   000054 fb                   		ei
+    87   000055 ed4d                 		reti
+    88                          
+    89   000057 f5              conoutIntB:	push	af
+    90   000058 3e00            		ld	a, 00h
+    91   00005a d350                 		out	(50h), a
+    92   00005c 1f                   		rra
+    93   00005d 326b00               		ld	(conoutIntC + 2), a
+    94   000060 3e69                 		ld	a, conoutIntC & 255
+    95   000062 3212ff               		ld	(0ff12h), a
+    96   000065 f1                   		pop	af
+    97   000066 fb                   		ei
+    98   000067 ed4d                 		reti
+    99                          
+   100   000069 f5              conoutIntC:	push	af
+   101   00006a 3e00                 		ld	a, 00h
+   102   00006c d350                 		out	(50h), a
+   103   00006e 1f                   		rra
+   104   00006f 327d00               		ld	(conoutIntD + 2), a
+   105   000072 3e7b                 		ld	a, conoutIntD & 255
+   106   000074 3212ff               		ld	(0ff12h), a
+   107   000077 f1                   		pop	af
+   108   000078 fb                   		ei
+   109   000079 ed4d                 		reti
+   110                          
+   111   00007b f5              conoutIntD:	push	af
+   112   00007c 3e00                 		ld	a, 00h
+   113   00007e d350                 		out	(50h), a
+   114   000080 1f                   		rra
+   115   000081 328f00               		ld	(conoutIntE + 2), a
+   116   000084 3e8d                 		ld	a, conoutIntE & 255
+   117   000086 3212ff               		ld	(0ff12h), a
+   118   000089 f1                   		pop	af
+   119   00008a fb                   		ei
+   120   00008b ed4d                 		reti
+   121                          
+   122   00008d f5              conoutIntE:	push	af
+   123   00008e 3e00                 		ld	a, 00h
+   124   000090 d350                 		out	(50h), a
+   125   000092 1f                   		rra
+   126   000093 32a100               		ld	(conoutIntF + 2), a
+   127   000096 3e9f                 		ld	a, conoutIntF & 255
+   128   000098 3212ff               		ld	(0ff12h), a
+   129   00009b f1                   		pop	af
+   130   00009c fb                   		ei
+   131   00009d ed4d                 		reti
+   132                          
+   133   00009f f5              conoutIntF:	push	af
+   134   0000a0 3e00                 		ld	a, 00h
+   135   0000a2 d350                 		out	(50h), a
+   136   0000a4 1f                   		rra
+   137   0000a5 32b300               		ld	(conoutIntG + 2), a
+   138   0000a8 3eb1                 		ld	a, conoutIntG & 255
+   139   0000aa 3212ff               		ld	(0ff12h), a
+   140   0000ad f1                   		pop	af
+   141   0000ae fb                   		ei
+   142   0000af ed4d                 		reti
+   143                          
+   144   0000b1 f5              conoutIntG:	push	af
+   145   0000b2 3e00                 		ld	a, 00h
+   146   0000b4 d350                 		out	(50h), a
+   147   0000b6 1f                   		rra
+   148   0000b7 32c500               		ld	(conoutIntH + 2), a
+   149   0000ba 3ec3                 		ld	a, conoutIntH & 255
+   150   0000bc 3212ff               		ld	(0ff12h), a
+   151   0000bf f1                   		pop	af
+   152   0000c0 fb                   		ei
+   153   0000c1 ed4d                 		reti
+   154                          
+   155   0000c3 f5              conoutIntH:	push	af
+   156   0000c4 3e00                 		ld	a, 00h
+   157   0000c6 d350                 		out	(50h), a
+   158   0000c8 1f                   		rra
+   159   0000c9 32d700               		ld	(conoutIntI + 2), a
+   160   0000cc 3ed5                 		ld	a, conoutIntI & 255
+   161   0000ce 3212ff               		ld	(0ff12h), a
+   162   0000d1 f1                   		pop	af
+   163   0000d2 fb                   		ei
+   164   0000d3 ed4d                 		reti
+   165                          
+   166   0000d5 f5              conoutIntI:	push	af
+   167   0000d6 3e00                 		ld	a, 00h
+   168   0000d8 d350                 		out	(50h), a
+   169   0000da 3ee3                 		ld	a, conoutIntJ & 255
+   170   0000dc 3212ff               		ld	(0ff12h), a
+   171   0000df f1                   		pop	af
+   172   0000e0 fb                   		ei
+   173   0000e1 ed4d                 		reti
+   174                          
+   175   0000e3 f5              conoutIntJ:	push	af
+   176   0000e4 3e01                 		ld	a, 01h				;stop bit
+   177   0000e6 d350                 		out	(50h), a
+   178   0000e8 3ef1                 		ld	a, resetConin & 255
+   179   0000ea 3212ff               		ld	(0ff12h), a
+   180   0000ed f1                   		pop	af
+   181   0000ee fb                   		ei
+   182   0000ef ed4d                 		reti
+   183                          
+   184   0000f1 f5              resetConin: 	push	af				;disable timer 1 interrupt
+   185   0000f2 3e01                 		ld	a, 01h
+   186   0000f4 d381                 		out	(81h), a
+   187   0000f6 3eff                 		ld	a, 0ffh
+   188   0000f8 3212ff               		ld	(0ff12h), a
+   189   0000fb f1                   		pop	af
+   190   0000fc fb                   		ei
+   191   0000fd ed4d                 		reti
+   192                          
+   193                          ;--------------------------------------------------
+   194                          ; Code executed after Reset
+   195                          ;--------------------------------------------------
+   196   0000ff f3              start:		di      				; disable interrupt
+   197   000100 af              		xor     a				; set a to zero
+   198   000101 3d              restime:	dec     a				; do 256 times nothing
+   199   000102 20fd            		jr      nz, restime			; loop
+   200                          
+   201   000104 21cc01          		ld      hl, portval			; init 11 ports with values at 0a3h
+   202   000107 060b            		ld      b, 0bh
+   203   000109 4e              portinit:	ld      c, (hl)
+   204   00010a 23              		inc     hl
+   205   00010b eda3            		outi
+   206   00010d 20fa            		jr      nz, portinit			; loop
+   207                          
+   208   00010f 3100ff          		ld      sp, 0ff00h			; stack-pointer to 0ff10h
+   209                          
+   210   000112 3eff            		ld      a, 0ffh				; load interrupt-vector register
+   211   000114 cd2902          		call	printhex
+   212   000117 ed47            		ld      i, a				; with 0ffh
+   213   000119 ed5e            		im      2				; enable interrupt mode 2 (vectored)
+   214                          
+   215   00011b cd5c01               		call	init9600			;init 9600 baud send/receive
+   216                          
+   217   00011e cd4501          		call	printstr
+   218   000121 526f6c6c692d310a		db	"Rolli-1\n", 0
+                00              
+   219   00012a cda001          		call	conin
+   220                          
+   221   00012d af              		xor	a
+   222   00012e d330            loop:		out	(30h), a
+   223   000130 3c              		inc	a
+   224   000131 cd3801          		call	time
+   225   000134 c32e01          		jp	loop
+   226                          
+   227   000137 00              save:		db	0
+   228                          
+   229   000138 010020          time:		ld	bc, 02000h
+   230   00013b f5              		push	af
+   231   00013c c5              		push	bc
+   232   00013d 0b              time1:		dec	bc
+   233   00013e 78              		ld	a, b
+   234   00013f b1              		or	c
+   235   000140 20fb            		jr	nz, time1
+   236   000142 c1              		pop	bc
+   237   000143 f1              		pop	af
+   238   000144 c9              		ret
+   239                          
+   240                          
+   241   000145 e3              printstr:    	ex	(sp), hl			;exchange (load) hl with stackpointer
+   242   000146 7e              printstr1:	ld	a, (hl)				;load char
+   243   000147 cd5101               		call	putchar				;print it
+   244   00014a 7e                   		ld	a, (hl)				;load it again
+   245   00014b 23                   		inc	hl				;increment hl
+   246   00014c b7                   		or	a				;char <> 0?
+   247   00014d 20f7                 		jr	nz, printstr1			;loop
+   248   00014f e3                   		ex	(sp), hl			;write hl back to stack
+   249   000150 c9                   		ret
+   250                          
+   251   000151 e5              putchar:	push	hl				;echo CONOUT
+   252   000152 c5                   		push	bc
+   253   000153 f5                   		push	af
+   254   000154 4f                   		ld	c, a
+   255   000155 cdb001               		call	conout
+   256   000158 f1                   		pop	af
+   257   000159 c1                   		pop	bc
+   258   00015a e1                   		pop	hl
+   259   00015b c9                   		ret
+   260                          
+   261                          
+   262                          
+   263                          ;--------------------------------------------------
+   264                          ; SALLY Monitor
+   265                          ;--------------------------------------------------
+   266   00015c f3              init9600:	di
+   267   00015d 21f100               		ld	hl, resetConin			;point Timer 1 interrupt (send)
+   268   000160 2212ff               		ld	(0ff12h), hl			;to 0f5eeh
+   269   000163 3e07                 		ld	a, 07h				;Timer 1 reset, no int
+   270   000165 d381                 		out	(81h), a			;load time constant
+   271   000167 3a0900               		ld	a, (baud9600 + 1)		;01ah = 9600 Baud constant from conin
+   272   00016a d381                 		out	(81h), a
+   273   00016c 2100ff               		ld	hl, 0ff00h
+   274   00016f 222400               		ld	(coninIntPtr+1), hl
+   275   000172 229301               		ld	(coninPtr), hl
+   276   000175 f3                   		di
+   277   000176 3e01                 		ld	a, 01h
+   278   000178 d357                 		out	(57h), a			;enable SIO-Trig
+   279   00017a 067e            init9600a:	ld	b, 7eh
+   280   00017c db70            init9600c:	in	a, (70h)			;read SIO
+   281   00017e 17                   		rla					;D7 (RX) to carry
+   282   00017f 30f9                 		jr	nc, init9600a			;0? repeat
+   283   000181 10f9                 		djnz	init9600c			;high for 126 loops?
+   284   000183 3ec7                 		ld	a, 0c7h				;T/C 0 interrupt on, counter mode, falling edge (start bit)
+   285   000185 d380                 		out	(80h), a
+   286   000187 3e01                 		ld	a, 01h				;T/C 0, count just 1
+   287   000189 d380                 		out	(80h), a
+   288   00018b 210300               		ld	hl, coninInt			;set T/C 0 int to 0f500h
+   289   00018e 2210ff               		ld	(0ff10h), hl
+   290   000191 fb                   		ei
+   291   000192 c9                   		ret
+   292                          
+   293   000193 00ff            coninPtr:	dw	0ff00h
+   294                          
+   295                          ;--------------------------------------------------
+   296                          ; const, is input from SIO ready?
+   297                          ;--------------------------------------------------
+   298                          f635:
+   299   000195 219301          const:     	ld	hl, coninPtr
+   300   000198 3a2400               		ld	a, (coninIntPtr + 1)
+   301   00019b 96                   		sub	(hl)
+   302   00019c c8                   		ret	z
+   303                          
+   304   00019d 3eff                 		ld	a, 0ffh
+   305   00019f c9                   		ret
+   306                          
+   307                          ;--------------------------------------------------
+   308                          ; conin
+   309                          ;--------------------------------------------------
+   310   0001a0 cd9501          conin:		call	const				;0f635h
+   311   0001a3 28fb                 		jr	z, conin			;input available?
+   312   0001a5 2a9301               		ld	hl, (coninPtr)			;read from buffer
+   313   0001a8 7e                   		ld	a, (hl)				;increment buffer pointer
+   314   0001a9 2c                   		inc	l
+   315   0001aa cba5                 		res	4, l				;wrap at 16 bytes
+   316   0001ac 229301               		ld	(coninPtr), hl
+   317   0001af c9                   		ret
+   318                          
+   319                          ;f650:
+   320   0001b0 3a12ff          conout:		ld	a, (0ff12h)
+   321   0001b3 fef1                 		cp	resetConin & 255
+   322   0001b5 38f9                 		jr	c, conout			; (-07h)
+   323   0001b7 79                   		ld	a, c
+   324   0001b8 e67f                 		and	7fh
+   325   0001ba e2bf01               		jp	po, conout1			;set parity
+   326   0001bd f680                 		or	80h
+   327   0001bf 325900          conout1:     	ld	(conoutIntB + 2), a		;set byte to output
+   328   0001c2 3e4a                 		ld	a, conoutIntA & 255		;set conout interrupt
+   329   0001c4 3212ff               		ld	(0ff12h), a
+   330   0001c7 3e81                 		ld	a, 81h				;enable timer 1 int
+   331   0001c9 d381                 		out	(81h), a
+   332   0001cb c9                   		ret
+   333                          
+   334                          
+   335                          ;--------------------------------------------------
+   336                          ; 11 times port:value
+   337                          ;--------------------------------------------------
+   338   0001cc 5001            portval:	db	050h, 001h			;Bit0	set ATARI DATA
+   339   0001ce 5001            		db	050h, 001h			;Bit1	set RS232 TX		051h fake!
+   340   0001d0 8003            		db	080h, 003h			;CTC	Channel 0 reset
+   341   0001d2 8010            		db 	080h, 010h			;CTC	Channel 0 interrupt vector
+   342   0001d4 8107            		db	081h, 007h			;CTC	Channel 1 reset + set time constant
+   343   0001d6 8101            		db	081h, 001h			;CTC	Channel 1 time contant
+   344   0001d8 8203            		db	082h, 003h			;CTC	Channel 2 reset
+   345   0001da 8303            		db	083h, 003h			;CTC	Channel 3 reset
+   346   0001dc 5701            		db	057h, 001h			;Bit7	ATARI RXD
+   347   0001de 3040            		db	030h, 040h			;DSE	Floppy Control (74LS273)
+   348   0001e0 40d0            		db	040h, 0d0h			;DWR/DRW	FDC read-write	d0 = force int (with no interrupt)
+   349                          

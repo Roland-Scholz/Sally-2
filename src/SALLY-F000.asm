@@ -9,14 +9,14 @@
 ; 81	01	CTC	Channel 1 time contant 1
 ; 82	03 	CTC	Channel 2 reset
 ; 83	03     	CTC	Channel 3 reset
-; 57	01	Bit7	ATARI 0=CMD / *** 1=RXD ***
+; 57	01	Bit7	ATARI 0=!CMD / *** 1=RXD ***
 ; 30	00 	DSE	Floppy Control (74LS273) 0=Drive1,  1=Drive2,  2=Drive3,  3=Drive4,  4=Reset FDC,  5=Side,  6=B\S,  7=S/D\
 ; 40	d0      DWR/DRW	FDC read-write	d0 = force int (with no interrupt)
 ;--------------------------------------------------
 ; out\ ports
 ;--------------------------------------------------
 ; $2x 	Printer DATA
-; $3x	Port Floppy Control
+; $3x	Floppy Control	D7 = S/D\, D6 = HD\/S, D5 = Side, D4 = FDCRES, D3 = DSEL4, D2 = DSEL3, D1 = DSEL1, D0 = DSEL0
 ; $4x	FDC 1797
 ; $5x	U52 74LS259
 ; 	$50	ATARI Out data
@@ -38,6 +38,10 @@
 ;--------------------------------------------------
 ; FF10: Interrupt Table
 ;--------------------------------------------------
+TC0INTVEC	equ	0ff10h
+TC1INTVEC	equ	0ff12h
+TC2INTVEC	equ	0ff14h
+TC3INTVEC	equ	0ff16h
 
      		ORG	0f000h
 
@@ -45,7 +49,7 @@
  jmpSallyMon:   jp	sallymon        		;Sally Monitor		f003
      		jp	const	          		;const			f006
  jmpCONIN:    	jp	conin	          		;conin 0f640h		f009
- jmpCONOUT:    	jp	0f650h          		;conout			f00c
+ jmpCONOUT:    	jp	conout          		;conout 0f650h			f00c
      		jp	0f022h          		;list			f00f
      		jp	0f4dch          		;punch			f012
      		jp	0f4ebh          		;reader			f015
@@ -138,7 +142,7 @@ f0b3:		ld	a, b
      		jr	z, f0cf		; (+05h)
 f0ca:		call	0f1f8h
      		jr	nz, f110		; (+41h)
-f0cf:		ld	a, (0ff12h)
+f0cf:		ld	a, (TC1INTVEC)
      		inc	a
      		jr	nz, f0cf		; (-06h)
      		di
@@ -585,7 +589,7 @@ f39f:		dec	a
 ;f3de
 sallymon:     	ld	a, 01h				
      		out	(52h), a			;turn off ROM
-     		call	0f5fch				;init receive at 9600 baud (T/C 0 interrupt)
+     		call	init9600			;init receive at 9600 baud (T/C 0 interrupt)
      		call	printstr
 		db	"\r\n",  "SALLY1",  0
 
@@ -703,8 +707,8 @@ puthex:		push	af
      		rra
      		rra
      		call	putnibble
-putnibble:     	pop	af
-     		and	0fh
+		pop	af
+putnibble:	and	0fh
      		add	a, 90h
      		daa
      		adc	a, 40h
@@ -776,201 +780,207 @@ f4eb:     	ld	hl, (0ff47h)
      		nop
 		
 ;--------------------------------------------------
-; T/C 0 (here counter) interrupt for start-bit
+; conin T/C 0 (here counter) interrupt for start-bit
 ;--------------------------------------------------		
-f500:		push	af
+coninInt:	push	af
      		ld	a, 87h
      		out	(80h), a			;set T/C 0 to 9600 Baud timer 
-     		ld	a, 1ah
+baud9600:     	ld	a, 1ah
      		out	(80h), a
-     		ld	a, 17h				;set T/C 0 interrupt to next routine
-     		ld	(0ff10h), a
+     		ld	a, coninIntB & 255		;set T/C 0 interrupt to next routine
+     		ld	(TC0INTVEC), a
      		ld	a, 7fh
-f510:		ld	(0f51ch), a
+coninInt1:	ld	(inbyte + 1), a
      		pop	af
      		ei
      		reti
 
-f517:    	push	af
+coninIntB:    	push	af
      		in	a, (70h)
      		rla
-f51b:    	ld	a, 00h				;<- set by previous routine to 7fh
+inbyte:    	ld	a, 00h				;<- set by previous routine to 7fh
      		rra
-     		jr	c, f510				;loop 7 times
-f520:     	ld	(0ff00h), a			;store result in ff00
-     		ld	a, 2ch				;timer 0 interrupt vector = 0ff2c
-		ld	(0ff10h), a
+     		jr	c, coninInt1			;loop 7 times
+coninIntPtr:    ld	(0ff00h), a			;store result in ff00
+     		ld	a, coninIntC & 255		;timer 0 interrupt vector = 0ff2c
+		ld	(TC0INTVEC), a
      		pop	af
      		ei
      		reti
 
-f52c:     	push	af
+coninIntC:     	push	af
      		ld	a, 0c7h				;timer 0 counter
      		out	(80h), a
      		ld	a, 01h
      		out	(80h), a
-     		ld	a, (0f521h)
+     		ld	a, (coninIntPtr + 1)
      		inc	a
      		and	0fh
-     		ld	(0f521h), a			;increment buffer (16 bytes)
-     		ld	a, 00h				;reset T/C 0 interrupt to start-bit routine
-     		ld	(0ff10h), a
+     		ld	(coninIntPtr + 1), a		;increment buffer (16 bytes)
+     		ld	a, coninInt & 255		;reset T/C 0 interrupt to start-bit routine
+     		ld	(TC0INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+
+;--------------------------------------------------
+; conout T/C 1 interrupt for start-bit
+;--------------------------------------------------		
+conoutIntA:     push	af
      		xor	a
      		out	(50h), a
-     		ld	a, 54h
-     		ld	(0ff12h), a
+     		ld	a, conoutIntB & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntB:	push	af
+		ld	a, 00h
+     		out	(50h), a
+     		rra
+     		ld	(conoutIntC + 2), a
+     		ld	a, conoutIntC & 255
+     		ld	(TC1INTVEC), a
+     		pop	af
+     		ei
+     		reti
+
+conoutIntC:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f568h), a
-     		ld	a, 66h
-     		ld	(0ff12h), a
+     		ld	(conoutIntD + 2), a
+     		ld	a, conoutIntD & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntD:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f57ah), a
-     		ld	a, 78h
-     		ld	(0ff12h), a
+     		ld	(conoutIntE + 2), a
+     		ld	a, conoutIntE & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntE:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f58ch), a
-     		ld	a, 8ah
-     		ld	(0ff12h), a
+     		ld	(conoutIntF + 2), a
+     		ld	a, conoutIntF & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntF:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f59eh), a
-     		ld	a, 9ch
-     		ld	(0ff12h), a
+     		ld	(conoutIntG + 2), a
+     		ld	a, conoutIntG & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntG:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f5b0h), a
-     		ld	a, 0aeh
-     		ld	(0ff12h), a
+     		ld	(conoutIntH + 2), a
+     		ld	a, conoutIntH & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntH:	push	af
      		ld	a, 00h
      		out	(50h), a
      		rra
-     		ld	(0f5c2h), a
-     		ld	a, 0c0h
-     		ld	(0ff12h), a
+     		ld	(conoutIntI + 2), a
+     		ld	a, conoutIntI & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
+conoutIntI:	push	af
      		ld	a, 00h
      		out	(50h), a
-     		rra
-     		ld	(0f5d4h), a
-     		ld	a, 0d2h
-     		ld	(0ff12h), a
+     		ld	a, conoutIntJ & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
-     		ld	a, 00h
+conoutIntJ:	push	af
+     		ld	a, 01h				;stop bit
      		out	(50h), a
-     		ld	a, 0e0h
-     		ld	(0ff12h), a
+     		ld	a, resetConin & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-     		push	af
-     		ld	a, 01h
-     		out	(50h), a
-     		ld	a, 0eeh
-     		ld	(0ff12h), a
-     		pop	af
-     		ei
-     		reti
-
-f5ee: 		push	af			;disable timer 1 interrupt
+resetConin: 	push	af				;disable timer 1 interrupt
      		ld	a, 01h
      		out	(81h), a
      		ld	a, 0ffh
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 ;--------------------------------------------------
 ; SALLY Monitor
 ;--------------------------------------------------		
-f5fc:
+;f5fc:
 init9600:	di
-     		ld	hl, 0f5eeh		;point Timer 1 interrupt
-     		ld	(0ff12h), hl		;to 0f5eeh
+     		ld	hl, resetConin		;point Timer 1 interrupt
+     		ld	(TC1INTVEC), hl		;to 0f5eeh
      		ld	a, 07h			;Timer 1 reset, no int
      		out	(81h), a		;load time constant
-     		ld	a, (0f506h)		;01ah = 9600 Baud
+     		ld	a, (baud9600 + 1)	;01ah = 9600 Baud
      		out	(81h), a
      		ld	hl, 0ff00h
-     		ld	(0f521h), hl
-     		ld	(0f633h), hl
+     		ld	(coninIntPtr+1), hl
+     		ld	(coninPtr), hl
      		di
      		ld	a, 01h
      		out	(57h), a		;enable SIO-Trig
-f61a:		ld	b, 7eh
-f61c:		in	a, (70h)		;read SIO
+init9600a:	ld	b, 7eh
+init9600c:	in	a, (70h)		;read SIO
      		rla				;D7 (RX) to carry
-     		jr	nc, f61a		;0? repeat
-     		djnz	f61c			;high for 126 loops?
+     		jr	nc, init9600a		;0? repeat
+     		djnz	init9600c		;high for 126 loops?
      		ld	a, 0c7h			;T/C 0 interrupt on, counter mode, falling edge (start bit)
      		out	(80h), a
      		ld	a, 01h			;T/C 0, count just 1 
      		out	(80h), a
-     		ld	hl, 0f500h		;set T/C 0 int to 0f500h
-     		ld	(0ff10h), hl
+     		ld	hl, coninInt		;set T/C 0 int to 0f500h
+     		ld	(TC0INTVEC), hl
      		ei
      		ret
 
-     		nop				;00
-     		rst	38h			;ff
+coninPtr:	dw	0ff00h
+
+;     		nop				;00
+;     		rst	38h			;ff
 		
 ;--------------------------------------------------
 ; const, is input from SIO ready?
 ;--------------------------------------------------		
 f635:
-const:     	ld	hl, 0f633h
-     		ld	a, (0f521h)
+const:     	ld	hl, coninPtr
+     		ld	a, (coninIntPtr + 1)
      		sub	(hl)
      		ret	z
 
@@ -982,24 +992,25 @@ const:     	ld	hl, 0f633h
 ; conin
 ;--------------------------------------------------		
 conin:		call	const				;0f635h
-     		jr	z, f640				;input available
-     		ld	hl, (0f633h)			;read from buffer
+     		jr	z, conin			;input available?
+     		ld	hl, (coninPtr)			;read from buffer
      		ld	a, (hl)				;increment buffer pointer
      		inc	l
      		res	4, l				;wrap at 16 bytes
-     		ld	(0f633h), hl
+     		ld	(coninPtr), hl
      		ret
 
-f650:		ld	a, (0ff12h)
-     		cp	0eeh
-     		jr	c, f650		; (-07h)
+;f650:
+conout:		ld	a, (TC1INTVEC)
+     		cp	resetConin & 255
+     		jr	c, conout			; (-07h)
      		ld	a, c
      		and	7fh
-     		jp	po, 0f65fh
+     		jp	po, conout1			;set parity
      		or	80h
-     		ld	(0f556h), a
-     		ld	a, 47h
-     		ld	(0ff12h), a
+conout1:     	ld	(conoutIntB + 2), a		;set byte to output
+     		ld	a, conoutIntA & 255		;set conout interrupt
+     		ld	(TC1INTVEC), a
      		ld	a, 81h
      		out	(81h), a
      		ret
@@ -1019,7 +1030,7 @@ f650:		ld	a, (0ff12h)
      		ld	d, 00h
      		di
      		ld	bc, 0f719h
-     		ld	(0ff12h), bc
+     		ld	(TC1INTVEC), bc
      		ld	b, 08h
      		ld	a, 87h
      		out	(81h), a
@@ -1129,7 +1140,7 @@ getstartbit1:	in	a, (80h)                        ; counter zero?
      		adc	a, 00h
      		ld	e, a
      		ld	a, 2ch
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		reti
 
      		ld	a, c
@@ -1138,7 +1149,7 @@ getstartbit1:	in	a, (80h)                        ; counter zero?
      		rr	c
      		djnz	f739		; (+05h)
      		ld	a, 3bh
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
 f739:		reti
 
      		ld	a, 01h
@@ -1149,18 +1160,18 @@ f739:		reti
      		jr	nc, f74e		; (+09h)
      		ld	b, 08h
      		ld	a, 19h
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		reti
 
 f74e:		ld	a, 55h
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		reti
 
      		ld	a, 01h
      		out	(81h), a
      		ei
      		ld	a, 0ffh
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	hl
      		reti
 		
@@ -1231,7 +1242,7 @@ f7be:     	in	a, (70h)        		;in SIO
      		ld	a, 01h                           
      		out	(80h), a                        ;counter
      		ld	hl, 0f699h
-     		ld	(0ff10h), hl
+     		ld	(TC0INTVEC), hl
      		ei
      		ld	hl, cmdframe
      		ld	(0ff3ah), hl
@@ -2081,7 +2092,7 @@ fe10:		ld	(de), a
      		pop	bc
      		ret
 
-     		ld	bc, 0ff10h
+     		ld	bc, TC0INTVEC
      		dec	bc
      		inc	bc
      		nop

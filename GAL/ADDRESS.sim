@@ -31,8 +31,8 @@ CLK8.d  =>
     !CLK8
 
 FDCCLK =>
-    BS & CLK16A
-  # !BS & CLK8
+    !BS & CLK16A
+  # BS & CLK8
 
 !RAMCEN =>
     A15 & !MEMREQ
@@ -50,7 +50,7 @@ STROBEN =>
     !STROBE
 
 WDRESN =>
-    FDCRES & RESCN
+    !FDCRES & RESCN
 
 FDCCLK.oe  =>
     1 

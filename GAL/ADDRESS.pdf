@@ -1,11 +1,11 @@
-{COMPONENT C:\GITHUB\SALLY-1\SRC\ADDRESS.SYM
+{COMPONENT C:\GITHUB\ROLLI-1\GAL\ADDRESS.SYM
 
  {ENVIRONMENT
   {PDIFvrev 3.00}
   {Program "CUPL(WM) Version 5.0a"}
   {DBtype "Schematic"}
   {DBvrev 1.01}
-  {DBtime "Sat Jul 27 16:39:02 2024 "}
+  {DBtime "Sun Aug 04 16:58:27 2024 "}
   {DBunit "MIL"}
   {DBgrid 10}
   {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
@@ -141,7 +141,7 @@
    {EX
     [Ly "ATTR2"]
     [Ts 12][Tj "CT"][Tr 0][Tm "N"]
-    {At PLD C:\GITHUB\SALLY-1\SRC\ADDRESS 215 300}
+    {At PLD C:\GITHUB\ROLLI-1\GAL\ADDRESS 215 300}
    }
   }
  }

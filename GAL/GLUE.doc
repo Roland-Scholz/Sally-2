@@ -1,0 +1,70 @@
+
+*******************************************************************************
+                                     glue
+*******************************************************************************
+
+CUPL(WM)        5.0a Serial# 60008009
+Device          g16v8ms  Library DLIB-h-40-11
+Created         Sat Aug 03 00:08:25 2024
+Name            glue
+Partno          00 
+Revision        01 
+Date            02.08.2024 
+Designer        Roland 
+Company         Scholz Electronics 
+Assembly        None 
+Location        
+
+===============================================================================
+                            Expanded Product Terms
+===============================================================================
+
+ADATOUT.d  =>
+    ADAT
+
+NMIN =>
+    !DRQ & !INTRQ
+  # HALTN
+
+TRG0 =>
+    !CMDSIO & !SIOCMD
+  # CMDSIO & SIOOUT
+
+NMIN.oe  =>
+    1 
+
+TRG0.oe  =>
+    1 
+
+
+===============================================================================
+                                 Symbol Table
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+    ADAT                        2        V        -       -       -     
+    ADATOUT                     19       V        -       -       -     
+    ADATOUT             d       19       X        1       8       1     
+    CMDSIO                      8        V        -       -       -     
+    DRQ                         3        V        -       -       -     
+    GND                         11       V        -       -       -     
+    HALTN                       5        V        -       -       -     
+    INTRQ                       4        V        -       -       -     
+    NC0                         9        V        -       -       -     
+    NMIN                        18       V        2       7       1     
+    SIOCMD                      7        V        -       -       -     
+    SIOOUT                      6        V        -       -       -     
+    TO1                         1        V        -       -       -     
+    TRG0                        17       V        2       7       1     
+    NMIN                oe      18       D        1       1       0     
+    TRG0                oe      17       D        1       1       0     
+
+
+LEGEND    D : default variable         F : field      G : group
+          I : intermediate variable    N : node       M : extended node
+          U : undefined                V : variable   X : extended variable
+          T : function
+

@@ -1,0 +1,165 @@
+{COMPONENT C:\GITHUB\ROLLI-1\GAL\GLUE.SYM
+
+ {ENVIRONMENT
+  {PDIFvrev 3.00}
+  {Program "CUPL(WM) Version 5.0a"}
+  {DBtype "Schematic"}
+  {DBvrev 1.01}
+  {DBtime "Sat Aug 03 00:08:25 2024 "}
+  {DBunit "MIL"}
+  {DBgrid 10}
+  {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
+          "PINNAM" 6 "PINCON" 4 "REFDES" 2 "ATTR" 6 "SDOT" 1 
+          "DEVICE" 5 "OUTLIN" 5 "ATTR2" 6 "NOTES" 6 "NETNAM" 4 
+          "CMPNAM" 5 "BORDER" 5}
+ }
+
+ {USER
+  {VIEW
+   {Mode SYMB}
+   {Nlst OPEN}
+   {Vw 0 0 2}
+   {Lv 12 2 2 2 0 0 2 2 2 2 0 0 2 1 2 0 0 0 0}
+   {Gs 10 10}
+  }
+ }
+
+ {DISPLAY
+  [Ly "PINNUM"]
+  [Ls "SOLID"][Wd 0]
+  [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+ }
+
+ {SYMBOL
+  {PIN_DEF
+   [Ly "PINCON"]
+   {P GND {Pt "INPUT"}{Lq 0}{Ploc 100 240}}
+   {P TO1 {Pt "INPUT"}{Lq 0}{Ploc 100 220}}
+   {P ADAT {Pt "INPUT"}{Lq 0}{Ploc 100 180}}
+   {P DRQ {Pt "INPUT"}{Lq 0}{Ploc 100 160}}
+   {P INTRQ {Pt "INPUT"}{Lq 0}{Ploc 100 140}}
+   {P HALTN {Pt "INPUT"}{Lq 0}{Ploc 100 120}}
+   {P SIOOUT {Pt "INPUT"}{Lq 0}{Ploc 100 100}}
+   {P SIOCMD {Pt "INPUT"}{Lq 0}{Ploc 100 80}}
+   {P CMDSIO {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
+   {P NC0 {Pt "INPUT"}{Lq 0}{Ploc 100 40}}
+   {P ADATOUT {Pt "INPUT"}{Lq 0}{Ploc 100 20}}
+   {P TRG0 {Pt "I/O"}{Lq 0}{Ploc 310 20}}
+   {P NMIN {Pt "I/O"}{Lq 0}{Ploc 310 40}}
+  }
+
+  {PKG
+   [Ly "REFDES"]
+   [Ts 25][Tj "CB"][Tr 0][Tm "N"]
+   {Rdl 205 270}
+
+   [Ly "PINNUM"]
+   [Ts 15][Tj "RC"]
+   {Pnl 120 250}
+   {Pnl 120 230}
+   [Ts 15][Tj "RC"]
+   {Pnl 120 190}
+   {Pnl 120 170}
+   {Pnl 120 150}
+   {Pnl 120 130}
+   {Pnl 120 110}
+   {Pnl 120 90}
+   {Pnl 120 70}
+   {Pnl 120 50}
+   {Pnl 120 30}
+   [Ts 15][Tj "LC"]
+   {Pnl 290 30}
+   {Pnl 290 50}
+
+   {Sd A 11 1 2 3 4 5 6 7 8 9 19 17 18}
+  }
+
+  {PIC
+   [Ly "GATE"]
+   [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+   {R 130 260 280 0}
+   {L 130 240 100 240}
+   {L 130 220 100 220}
+   {L 130 230 140 220 130 210}
+   {L 130 180 100 180}
+   {L 130 160 100 160}
+   {L 130 140 100 140}
+   {L 130 120 100 120}
+   {L 130 100 100 100}
+   {L 130 80 100 80}
+   {L 130 60 100 60}
+   {L 130 40 100 40}
+   {L 130 20 100 20}
+   {L 280 20 310 20}
+   {L 280 40 310 40}
+   [Ly "PINNAM"]
+   [Tj "LC"]
+   {T "GND" 140 240}
+   {T "TO1" 140 220}
+   {T "ADAT" 140 180}
+   {T "DRQ" 140 160}
+   {T "INTRQ" 140 140}
+   {T "HALTN" 140 120}
+   {T "SIOOUT" 140 100}
+   {T "SIOCMD" 140 80}
+   {T "CMDSIO" 140 60}
+   {T "NC0" 140 40}
+   {T "ADATOUT" 140 20}
+   [Tj "RC"]
+   {T "TRG0" 270 20}
+   {T "NMIN" 270 40}
+   [Ly "DEVICE"]
+   [Tj "CT"]
+   {T "G16V8MS" 205 -10}
+  }
+
+  {ATR
+   {IN
+    {Org 100 20}
+    {Ty 255}
+   }
+   {EX
+    [Ly "ATTR2"]
+    [Ts 12][Tj "CT"][Tr 0][Tm "N"]
+    {At PLD C:\GITHUB\ROLLI-1\GAL\GLUE 205 260}
+   }
+  }
+ }
+
+ {DETAIL
+  {ANNOTATE
+  }
+
+  {NET_DEF
+   {N GND
+   }
+   {N TO1
+   }
+   {N ADAT
+   }
+   {N DRQ
+   }
+   {N INTRQ
+   }
+   {N HALTN
+   }
+   {N SIOOUT
+   }
+   {N SIOCMD
+   }
+   {N CMDSIO
+   }
+   {N NC0
+   }
+   {N ADATOUT
+   }
+   {N TRG0
+   }
+   {N NMIN
+   }
+  }
+
+  {SUBCOMP
+  }
+ }
+}
