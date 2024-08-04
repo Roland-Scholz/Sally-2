@@ -21,7 +21,7 @@
 ; $5x	U52 74LS259
 ; 	$50	ATARI Out data
 ; 	$51	RS232 TX
-; 	$52	ROM switch
+; 	$52	ROM switch	(0 = ROM, 1 = RAM)
 ; 	$53	printer strobe
 ; 	$54	reset index-pulse
 ; 	$55	RS232 DTR
@@ -43,13 +43,47 @@ TC1INTVEC	equ	0ff12h
 TC2INTVEC	equ	0ff14h
 TC3INTVEC	equ	0ff16h
 
+;--------------------------------------------------
+; Out - ports equations, Disk-Control
+;--------------------------------------------------
+DISKCTRL	equ	030h
+
+;--------------------------------------------------
+; In/Out - ports equations, WD177x FDC
+;--------------------------------------------------
+FDCSTAT		equ	040h
+FDCCMD		equ	040h
+FDCTRK		equ	041h
+FDCSEC		equ	042h
+FDCDAT		equ	043h
+
+;--------------------------------------------------
+; Out - ports equations, RS232, SIO, ROM, INDEX
+;--------------------------------------------------
+SIOOUT		equ	050h
+RS232TX		equ	051h
+ROMSWITCH	equ	052h
+STROBE		equ	053h
+RESIDX		equ	054h
+RS232DTR	equ	055h
+SETIDX		equ	056h
+CMDSIO		equ	057h
+
+
+
+;--------------------------------------------------
+; Sally code starts here
+;--------------------------------------------------
      		ORG	0f000h
 
- jmpboot:    	jp	0f01bh				;wboot?			f000
- jmpSallyMon:   jp	sallymon        		;Sally Monitor		f003
+;--------------------------------------------------
+; Firmware jumptable
+;--------------------------------------------------
+jmpboot:	jp	0f01bh				;wboot?			f000
+jmpSallyMon:	jp	sallymon        		;Sally Monitor		f003
      		jp	const	          		;const			f006
- jmpCONIN:    	jp	conin	          		;conin 0f640h		f009
- jmpCONOUT:    	jp	conout          		;conout 0f650h			f00c
+jmpCONIN:	jp	conin	          		;conin 0f640h		f009
+jmpCONOUT:	jp	conout          		;conout 0f650h			f00c
      		jp	0f022h          		;list			f00f
      		jp	0f4dch          		;punch			f012
      		jp	0f4ebh          		;reader			f015
@@ -57,7 +91,7 @@ TC3INTVEC	equ	0ff16h
 		
 f01b:     	di
      		xor	a
-     		out	(52h), a
+     		out	(ROMSWITCH), a
      		jp	0000h
      		call	0f3cbh
      		ld	a, (ix+00h)
@@ -97,13 +131,13 @@ f064:		pop	af
      		ei
      		reti
 
-     		in	a, (41h)
-     		out	(43h), a
+     		in	a, (FDCTRK)
+     		out	(FDCDAT), a
      		ld	a, 10h
-     		out	(40h), a
+     		out	(FDCCMD), a
      		ld	a, (0ff2fh)
      		and	0f0h
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		ret
 
 f078:		call	0f11ah
@@ -157,11 +191,11 @@ f0cf:		ld	a, (TC1INTVEC)
      		ld	a, (0ff33h)
      		ld	(0ffc6h), a
 f0ee:		ld	a, (ix+03h)
-     		out	(42h), a
+     		out	(FDCSEC), a
      		ld	a, (ix+02h)
-     		out	(41h), a
+     		out	(FDCTRK), a
      		ld	a, (0ffc5h)
-     		out	(40h), a
+     		out	(FDCCMD), a
      		call	0f2b5h
      		jr	z, f110		; (+0eh)
      		push	af
@@ -209,7 +243,7 @@ f110:		ld	(ix+08h), a
      		ld	hl, 0f198h
      		add	hl, bc
      		ld	a, (hl)
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		push	af
      		call	0f19ch
      		pop	bc
@@ -227,7 +261,7 @@ f16a:		res	5, a
      		bit	7, (ix+01h)
      		jr	z, f174		; (+02h)
      		set	5, a
-f174:		out	(30h), a
+f174:		out	(DISKCTRL), a
      		ld	(0ff2fh), a
      		inc	d
      		dec	d
@@ -243,7 +277,7 @@ f188:     	jr	z, f18e				;jr	c, xxh
      		ret
 
 f18e:		xor	a
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		ld	(0ff2fh), a
      		ld	a, 80h
      		or	a
@@ -252,13 +286,13 @@ f18e:		xor	a
      		ld	bc, 0402h
      		ex	af, af'
      		xor	a
-     		out	(56h), a
+     		out	(SETIDX), a
      		inc	a
-     		out	(54h), a
-     		in	a, (41h)
-     		out	(43h), a
+     		out	(RESIDX), a
+     		in	a, (FDCTRK)
+     		out	(FDCDAT), a
      		ld	a, 18h
-     		out	(40h), a
+     		out	(FDCCMD), a
      		call	0f3bah
      		call	0f391h
      		ld	c, a
@@ -276,9 +310,9 @@ f1b9:		ld	de, (0ffc7h)
      		sbc	hl, de
 f1cf:		call	0f3cbh
      		xor	a
-     		out	(54h), a
+     		out	(RESIDX), a
      		inc	a
-     		out	(56h), a
+     		out	(SETIDX), a
      		ld	a, l
      		inc	h
      		dec	h
@@ -338,11 +372,11 @@ f22e:		ld	a, 0ffh
 
      		ld	a, (0ff2fh)
      		set	4, a
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		ld	b, 0fh
 f240:		djnz	f240		; (-02h)
      		res	4, a
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		ld	b, 00h
 f248:		djnz	f248		; (-02h)
      		call	0f391h
@@ -362,7 +396,7 @@ f257:		push	bc
      		scf
      		ret	nz
 
-     		in	a, (42h)
+     		in	a, (FDCSEC)
      		ld	(0ff2dh), a
      		sub	(ix+02h)
      		ret	z
@@ -372,9 +406,9 @@ f257:		push	bc
      		ret
 
      		ld	a, b
-     		out	(41h), a
+     		out	(FDCTRK), a
      		ld	a, c
-     		out	(43h), a
+     		out	(FDCDAT), a
      		ld	hl, 0ff28h
      		ld	a, (0ff2ch)
      		add	a, l
@@ -398,7 +432,7 @@ f257:		push	bc
      		ld	a, (0ff2fh)
      		xor	80h
      		ld	(0ff2fh), a
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		ld	hl, 0032h
      		call	0f39eh
      		ld	a, 0c0h
@@ -440,7 +474,7 @@ f2f2:		halt
      		jr	nz, f2f2		; (-03h)
 f2f5:		halt
      		jr	nz, f2f5		; (-03h)
-f2f8:		in	a, (40h)
+f2f8:		in	a, (FDCSTAT)
      		bit	0, a
      		jr	nz, f2f8		; (-06h)
      		ld	b, a
@@ -488,7 +522,7 @@ f334:		push	bc
 
 f342:		call	0f295h
      		jr	nz, f359		; (+12h)
-     		in	a, (42h)
+     		in	a, (FDCSEC)
      		cp	(ix+02h)
      		jr	nz, f35b		; (+0dh)
      		ld	a, (0ff33h)
@@ -511,7 +545,7 @@ f35b:		ld	(0ff2dh), a
      		call	0f389h
      		push	bc
      		ld	bc, 927ch
-f372:		in	a, (40h)
+f372:		in	a, (FDCSTAT)
      		bit	0, a
      		jr	z, f382		; (+0ah)
      		call	0f38bh
@@ -526,7 +560,7 @@ f382:		ld	b, a
      		pop	bc
      		ret
 
-     		out	(40h), a
+     		out	(FDCCMD), a
      		ld	a, 0eh
 f38d:		dec	a
      		jr	nz, f38d		; (-03h)
@@ -534,7 +568,7 @@ f38d:		dec	a
 
      		ld	a, 0d0h
      		call	0f389h
-     		in	a, (40h)
+     		in	a, (FDCSTAT)
      		ret
 
      		ld	hl, (0ff32h)
@@ -549,7 +583,7 @@ f39f:		dec	a
      		ret
 
      		ld	a, 0d0h
-     		out	(40h), a
+     		out	(FDCCMD), a
      		ld	a, 01h
      		out	(83h), a
      		ld	hl, 0f303h
@@ -588,7 +622,7 @@ f39f:		dec	a
 ;--------------------------------------------------		
 ;f3de
 sallymon:     	ld	a, 01h				
-     		out	(52h), a			;turn off ROM
+     		out	(ROMSWITCH), a			;turn off ROM
      		call	init9600			;init receive at 9600 baud (T/C 0 interrupt)
      		call	printstr
 		db	"\r\n",  "SALLY1",  0
@@ -753,10 +787,10 @@ newline:     	call	printstr
      		ex	(sp), hl
      		ex	(sp), hl
      		ld	a, 19h
-     		out	(53h), a
+     		out	(STROBE), a
 f4e5:		dec	a
      		jr	nz, f4e5		; (-03h)
-     		out	(53h), a
+     		out	(STROBE), a
      		ret
 
 f4eb:     	ld	hl, (0ff47h)
@@ -829,7 +863,7 @@ coninIntC:     	push	af
 ;--------------------------------------------------		
 conoutIntA:     push	af
      		xor	a
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ld	a, conoutIntB & 255
      		ld	(TC1INTVEC), a
      		pop	af
@@ -838,7 +872,7 @@ conoutIntA:     push	af
 
 conoutIntB:	push	af
 		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntC + 2), a
      		ld	a, conoutIntC & 255
@@ -849,7 +883,7 @@ conoutIntB:	push	af
 
 conoutIntC:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntD + 2), a
      		ld	a, conoutIntD & 255
@@ -860,7 +894,7 @@ conoutIntC:	push	af
 
 conoutIntD:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntE + 2), a
      		ld	a, conoutIntE & 255
@@ -871,7 +905,7 @@ conoutIntD:	push	af
 
 conoutIntE:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntF + 2), a
      		ld	a, conoutIntF & 255
@@ -882,7 +916,7 @@ conoutIntE:	push	af
 
 conoutIntF:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntG + 2), a
      		ld	a, conoutIntG & 255
@@ -893,7 +927,7 @@ conoutIntF:	push	af
 
 conoutIntG:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntH + 2), a
      		ld	a, conoutIntH & 255
@@ -904,7 +938,7 @@ conoutIntG:	push	af
 
 conoutIntH:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		rra
      		ld	(conoutIntI + 2), a
      		ld	a, conoutIntI & 255
@@ -915,7 +949,7 @@ conoutIntH:	push	af
 
 conoutIntI:	push	af
      		ld	a, 00h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ld	a, conoutIntJ & 255
      		ld	(TC1INTVEC), a
      		pop	af
@@ -924,7 +958,7 @@ conoutIntI:	push	af
 
 conoutIntJ:	push	af
      		ld	a, 01h				;stop bit
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ld	a, resetConin & 255
      		ld	(TC1INTVEC), a
      		pop	af
@@ -955,7 +989,7 @@ init9600:	di
      		ld	(coninPtr), hl
      		di
      		ld	a, 01h
-     		out	(57h), a		;enable SIO-Trig
+     		out	(CMDSIO), a		;enable SIO-Trig
 init9600a:	ld	b, 7eh
 init9600c:	in	a, (70h)		;read SIO
      		rla				;D7 (RX) to carry
@@ -1047,7 +1081,7 @@ f699:     	ex	af, af'
      		exx
      		ld	a, 0ffh			;read pending
      		ld	(0ff55h), a
-     		out	(57h), a		;switch to sio
+     		out	(CMDSIO), a		;switch to sio
      		ld	hl, 0c2fbh		;read 5 bytes command frame
      		call	readSIO
      		jr	nc, f6b4		; (+0ah)
@@ -1130,7 +1164,7 @@ getstartbit1:	in	a, (80h)                        ; counter zero?
      		ret                                     ; return carry clear, zero
 
      		xor	a
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ei
      		ld	a, (hl)
      		inc	hl
@@ -1144,7 +1178,7 @@ getstartbit1:	in	a, (80h)                        ; counter zero?
      		reti
 
      		ld	a, c
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ei
      		rr	c
      		djnz	f739		; (+05h)
@@ -1153,7 +1187,7 @@ getstartbit1:	in	a, (80h)                        ; counter zero?
 f739:		reti
 
      		ld	a, 01h
-     		out	(50h), a
+     		out	(SIOOUT), a
      		ei
      		ld	a, h
      		cp	0c3h
@@ -1179,7 +1213,7 @@ f74e:		ld	a, 55h
 ; Main entry after startup from ROM
 ;--------------------------------------------------
 main:     	ld	a, 01h           		;executed after startup
-     		out	(52h), a         		;turn off ROM
+     		out	(ROMSWITCH), a         		;turn off ROM
 							 
 read2bytes:	ld	hl, 0c2feh			      		  
      		di                      		 
@@ -1196,7 +1230,7 @@ read2bytes:	ld	hl, 0c2feh
      		ld	(0ff33h), a      		;store 03h in ff33h (03h = inc bc)
      		ld	a, 38h           		;store 38h in f188h (038h = jr c,  d) 
      		ld	(0f188h), a      		 
-     		in	a, (50h)         		;test bit 3 of RS232 (jumper,  should be 1) 
+     		in	a, (SIOOUT)         		;test bit 3 of RS232 (jumper,  should be 1) 
      		bit	3, a             		 
      		jr	nz, f791			; 
      		ld	a, 0ffh          		;if zero,  store ffh (= rst 38h)
@@ -1216,7 +1250,7 @@ f791:		ld	hl, return
 ; Looks like the main Atari SIO handler loop
 ;--------------------------------------------------		
 sioloop:	call	0f8d1h				;output to printer? (check buffer)
-     		ld	hl, (0ff3ah)    		;f7be	
+     		ld	hl, (0ff3ah)    		;sioidle	(ff3ah points to sioidle or cmdframe)
      		call	jumphl         			;call (ff3a)
      		ld	hl, (0ff3ch)    		;f7e1 (nomally return)
      		call	jumphl         			;call (ff3c)
@@ -1224,7 +1258,7 @@ sioloop:	call	0f8d1h				;output to printer? (check buffer)
 						
 jumphl:     	jp	(hl)           		
 						
-f7be:     	in	a, (70h)        		;in SIO
+sioidle:     	in	a, (70h)        		;in SIO
      		and	8ah				;1---1-1-	;Stop-bit, no command (high) = idle
      		cp	8ah
      		ret	nz				;is not idle? return
@@ -1235,7 +1269,7 @@ f7be:     	in	a, (70h)        		;in SIO
      		di
      		xor	a
      		ld	(0ff55h), a			;select 0=CMD or 1=SIO
-     		out	(57h), a                         
+     		out	(CMDSIO), a                         
      		ld	a, 0d7h				;CH0 int+counter+pre16+rising autocnt+timeconst+reset+ctrl
 							;		D 				7 
      		out	(80h), a                        ;program CTC
@@ -1244,9 +1278,9 @@ f7be:     	in	a, (70h)        		;in SIO
      		ld	hl, 0f699h
      		ld	(TC0INTVEC), hl
      		ei
-     		ld	hl, cmdframe
+     		ld	hl, cmdframe			;
      		ld	(0ff3ah), hl
- return:    	ret
+return:    	ret
 
 ;--------------------------------------------------
 ; handle command frame
@@ -1272,7 +1306,7 @@ cmdframe1:	ld	a, (0c2fbh)      		;load device ID
      		jr	nz, cmdframe2			;not found;		
      		call	jumphl				;call (hl)
 		
-cmdframe2:	ld	hl, 0f7beh
+cmdframe2:	ld	hl, sioidle
      		ld	(0ff3ah), hl
      		ret
 
@@ -1726,7 +1760,7 @@ fb1e:		ld	hl, 0c2fch
 fb68:		set	7, a
      		ld	hl, 0c280h
 fb6d:		ld	(0ff2fh), a
-     		out	(30h), a
+     		out	(DISKCTRL), a
      		push	hl
      		ld	(0ffc1h), hl
      		ld	hl, 0001h
@@ -1911,9 +1945,9 @@ fc56:		ld	hl, 0c301h
      		ld	hl, (0c2fdh)
      		jp	(hl)
      		xor	a
-     		out	(56h), a
+     		out	(SETIDX), a
      		inc	a
-     		out	(54h), a
+     		out	(RESIDX), a
      		ld	a, 0bh
      		call	0f36bh
      		xor	04h
@@ -1953,10 +1987,10 @@ fcff:		ld	ix, (0ffb6h)
      		jr	nc, fd17		; (+07h)
      		xor	20h
      		ld	(0ff2fh), a
-     		out	(30h), a
+     		out	(DISKCTRL), a
 fd17:		call	0fda4h
      		ld	a, (0ff2dh)
-     		out	(41h), a
+     		out	(FDCTRK), a
      		ld	hl, (0ffc3h)
      		di
      		ld	a, 0f4h
@@ -1966,7 +2000,7 @@ fd17:		call	0fda4h
      		ld	c, 43h
      		call	0c300h
      		ei
-fd32:		in	a, (40h)
+fd32:		in	a, (FDCSTAT)
      		bit	0, a
      		jr	nz, fd32		; (-06h)
      		ld	de, (0ffbfh)
@@ -1976,7 +2010,7 @@ fd32:		in	a, (40h)
      		ld	ix, (0ffb8h)
 fd47:		ld	a, (ix+00h)
      		inc	ix
-     		out	(42h), a
+     		out	(FDCSEC), a
      		ld	a, (0ff2fh)
      		and	20h
      		ld	a, 88h
@@ -2019,7 +2053,7 @@ fd74:		inc	de
 fd9a:		push	af
      		ld	a, 0ffh
      		ld	(0ff2dh), a
-     		out	(41h), a
+     		out	(FDCTRK), a
      		pop	af
      		ret
 
@@ -2254,7 +2288,7 @@ ff20:		db	0FFh, 0FFh, 0FFh, 0FFh, 000h, 000h, 000h, 000h
 		db	010h, 010h, 010h, 010h, 000h, 0FFh, 001h, 000h
 		db	000h, 000h, 032h, 00Ah, 000h, 000h, 000h, 000h
 ff38:		dw	devicetab
-ff3a:		dw	0f7beh
+ff3a:		dw	sioidle
 ff3c:		dw	0F7e1h
 ff3e:		db	002h, 00Dh
 		db	00Ah, 000h, 000h, 000h, 000h, 03Ch, 000h, 080h
