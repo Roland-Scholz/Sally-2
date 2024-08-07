@@ -70,6 +70,20 @@ SETIDX		equ	056h
 CMDSIO		equ	057h
 
 
+SIOIN		equ	070h
+
+TC0		equ	080h
+TC1		equ	081h
+TC2		equ	082h
+TC3		equ	083h
+
+DDEVIC		equ	0c2fbh
+DCOMND		equ	0c2fch
+DAUX1		equ	0c2fdh
+DAUX2		equ	0c2feh
+DCHECK		equ	0c2ffh
+
+PERCOMBLOCKS	equ	0ff56h
 
 ;--------------------------------------------------
 ; Sally code starts here
@@ -181,7 +195,7 @@ f0cf:		ld	a, (TC1INTVEC)
      		jr	nz, f0cf		; (-06h)
      		di
      		ld	a, 03h
-     		out	(80h), a
+     		out	(TC0), a
      		ld	a, 27h
      		out	(82h), a
      		ld	a, 3dh
@@ -818,9 +832,9 @@ f4eb:     	ld	hl, (0ff47h)
 ;--------------------------------------------------		
 coninInt:	push	af
      		ld	a, 87h
-     		out	(80h), a			;set T/C 0 to 9600 Baud timer 
+     		out	(TC0), a			;set T/C 0 to 9600 Baud timer 
 baud9600:     	ld	a, 1ah
-     		out	(80h), a
+     		out	(TC0), a
      		ld	a, coninIntB & 255		;set T/C 0 interrupt to next routine
      		ld	(TC0INTVEC), a
      		ld	a, 7fh
@@ -830,7 +844,7 @@ coninInt1:	ld	(inbyte + 1), a
      		reti
 
 coninIntB:    	push	af
-     		in	a, (70h)
+     		in	a, (SIOIN)
      		rla
 inbyte:    	ld	a, 00h				;<- set by previous routine to 7fh
      		rra
@@ -844,9 +858,9 @@ coninIntPtr:    ld	(0ff00h), a			;store result in ff00
 
 coninIntC:     	push	af
      		ld	a, 0c7h				;timer 0 counter
-     		out	(80h), a
+     		out	(TC0), a
      		ld	a, 01h
-     		out	(80h), a
+     		out	(TC0), a
      		ld	a, (coninIntPtr + 1)
      		inc	a
      		and	0fh
@@ -967,7 +981,7 @@ conoutIntJ:	push	af
 
 resetConin: 	push	af				;disable timer 1 interrupt
      		ld	a, 01h
-     		out	(81h), a
+     		out	(TC1), a
      		ld	a, 0ffh
      		ld	(TC1INTVEC), a
      		pop	af
@@ -981,9 +995,9 @@ init9600:	di
      		ld	hl, resetConin		;point Timer 1 interrupt
      		ld	(TC1INTVEC), hl		;to 0f5eeh
      		ld	a, 07h			;Timer 1 reset, no int
-     		out	(81h), a		;load time constant
+     		out	(TC1), a		;load time constant
      		ld	a, (baud9600 + 1)	;01ah = 9600 Baud
-     		out	(81h), a
+     		out	(TC1), a
      		ld	hl, 0ff00h
      		ld	(coninIntPtr+1), hl
      		ld	(coninPtr), hl
@@ -991,14 +1005,14 @@ init9600:	di
      		ld	a, 01h
      		out	(CMDSIO), a		;enable SIO-Trig
 init9600a:	ld	b, 7eh
-init9600c:	in	a, (70h)		;read SIO
+init9600c:	in	a, (SIOIN)		;read SIO
      		rla				;D7 (RX) to carry
      		jr	nc, init9600a		;0? repeat
      		djnz	init9600c		;high for 126 loops?
      		ld	a, 0c7h			;T/C 0 interrupt on, counter mode, falling edge (start bit)
-     		out	(80h), a
+     		out	(TC0), a
      		ld	a, 01h			;T/C 0, count just 1 
-     		out	(80h), a
+     		out	(TC0), a
      		ld	hl, coninInt		;set T/C 0 int to 0f500h
      		ld	(TC0INTVEC), hl
      		ei
@@ -1046,57 +1060,65 @@ conout1:     	ld	(conoutIntB + 2), a		;set byte to output
      		ld	a, conoutIntA & 255		;set conout interrupt
      		ld	(TC1INTVEC), a
      		ld	a, 81h
-     		out	(81h), a
+     		out	(TC1), a
      		ret
 
-     		push	hl
+
+siowrite:     	push	hl				;save de, hl
      		push	de
-     		ld	hl, 0c301h
+     		ld	hl, 0c301h			;store e (complete) in 0c301
      		ld	(hl), e
      		ld	d, 00h
-     		call	0f684h
+     		call	sioout
      		pop	de
      		pop	hl
-     		ld	e, 00h
-     		call	0f684h
+     		ld	e, 00h				;reset checksum
+     		call	sioout
      		ld	hl, 0c301h
-     		ld	(hl), e
+     		ld	(hl), e				;send checksum
      		ld	d, 00h
-     		di
-     		ld	bc, 0f719h
+		
+;--------------------------------------------------
+; write to sio until hl = 0c300h, checksum in e
+;--------------------------------------------------
+sioout:     	di
+     		ld	bc, siooutintA
      		ld	(TC1INTVEC), bc
      		ld	b, 08h
-     		ld	a, 87h
-     		out	(81h), a
-     		ld	a, 0dh
-     		out	(81h), a
+     		ld	a, 87h				;timer interrupt
+     		out	(TC1), a
+     		ld	a, 0dh				;0dh = 13 ^= 19200 Baud
+     		out	(TC1), a
      		ei
-f697:		jr	f697		; (-02h)
+sioout1:	jr	sioout1
 
 
 ;--------------------------------------------------
 ; SIO command frame interrupt
 ;--------------------------------------------------
-f699:     	ex	af, af'
+siocmdint:     	ex	af, af'
      		exx
      		ld	a, 0ffh			;read pending
      		ld	(0ff55h), a
      		out	(CMDSIO), a		;switch to sio
-     		ld	hl, 0c2fbh		;read 5 bytes command frame
+     		ld	hl, DDEVIC		;read 5 bytes command frame
      		call	readSIO
-     		jr	nc, f6b4		; (+0ah)
-     		dec	hl
+     		jr	nc, siocmdint1		;read error, do nothing
+     		dec	hl		
      		ld	a, (hl)
-     		cp	c			;checksum correct
-     		jr	nz, f6b4
-     		ld	a, 01h			;yes, frame received
+     		cp	c			;checksum correct?
+     		jr	nz, siocmdint1		;no, do nothing
+     		ld	a, 01h			;yes, frame received, set ff55 to 1
      		ld	(0ff55h), a
-f6b4:		ex	af, af'
+siocmdint1:	ex	af, af'
      		exx
      		ei
      		reti
 
-     		di
+;--------------------------------------------------
+; reads up to 256 bytes from SIO
+;--------------------------------------------------
+sioread:	di
      		ld	hl, 0c100h
      		call	readSIO
      		ei
@@ -1117,6 +1139,11 @@ f6d0:		ld	a, 4eh
      		or	a
      		ret
 
+;--------------------------------------------------
+; read from SIO to (hl) until hl = 0c300h
+; carry clear: no start bit detected
+; carry set: all right
+;--------------------------------------------------
 readSIO:     	ld	de, 0aaah			;read atari ser 19200 Baud
      		ld	bc, 0000h                       
      		jr	getstartbit				
@@ -1136,7 +1163,7 @@ readSIO2:	ld	a, 0bh				;7
      		nop					;4
 readSIO3:    	dec	a				;4
      		jp	nz, readSIO3			;10
-     		in	a, (70h)			;11
+     		in	a, (SIOIN)			;11
      		rla					;4	bit7 to carry
      		rr	d				;8	carry lsb-wise in d
      		djnz	readSIO2			;13	times
@@ -1150,63 +1177,66 @@ readSIO3:    	dec	a				;4
      		ret	c				;carry set = 0C300h reached 
 
 getstartbit:	ld	a, 47h				; CH0 noint+counter+pre16+falling autocnt+timeconst+reset+ctrl
-     		out	(80h), a                        ;        	 4              	7
+     		out	(TC0), a                        ;        	 4              	7
      		xor	a                                 
-     		out	(80h), a                        ; counter init value 0
+     		out	(TC0), a                        ; counter init value 0
      		ld	de, 01a1h                         
-getstartbit1:	in	a, (80h)                        ; counter zero?
+getstartbit1:	in	a, (TC0)                        ; counter zero?
      		or	a                                 
      		jr	nz, readSIO1			; start-bit
      		dec	de                                
      		ld	a, d                              
      		or	e                               ; carry clear  
      		jr	nz, getstartbit1		; de not zero, try again
-     		ret                                     ; return carry clear, zero
+     		ret                                     ; no startbit detected, return carry clear
 
-     		xor	a
+;--------------------------------------------------
+; SIO OUT Interrupt chain
+;--------------------------------------------------
+siooutintA:     xor	a				;start bit
      		out	(SIOOUT), a
      		ei
      		ld	a, (hl)
      		inc	hl
-     		xor	d
-     		ld	c, a
-     		add	a, e
+     		xor	d				;d = 0?
+     		ld	c, a				;save a
+     		add	a, e				;compute checksum in e 
      		adc	a, 00h
      		ld	e, a
-     		ld	a, 2ch
+     		ld	a, siooutintB & 255
      		ld	(TC1INTVEC), a
      		reti
 
-     		ld	a, c
+siooutintB:     ld	a, c
      		out	(SIOOUT), a
      		ei
      		rr	c
-     		djnz	f739		; (+05h)
-     		ld	a, 3bh
+     		djnz	siooutintB1			;8 bits transferred?
+     		ld	a, siooutintC & 255		;yes send stop bit
      		ld	(TC1INTVEC), a
-f739:		reti
+siooutintB1:	reti
 
-     		ld	a, 01h
+siooutintC:  	ld	a, 01h				;stop bit
      		out	(SIOOUT), a
      		ei
      		ld	a, h
      		cp	0c3h
-     		jr	nc, f74e		; (+09h)
-     		ld	b, 08h
-     		ld	a, 19h
+     		jr	nc, siooutintD			;all data sent?
+     		ld	b, 08h				;no, continue
+     		ld	a, siooutintA & 255
      		ld	(TC1INTVEC), a
      		reti
 
-f74e:		ld	a, 55h
+siooutintD:	ld	a, siooutintE & 255
      		ld	(TC1INTVEC), a
      		reti
 
-     		ld	a, 01h
-     		out	(81h), a
+siooutintE:    	ld	a, 01h				;reset timer
+     		out	(TC1), a
      		ei
      		ld	a, 0ffh
      		ld	(TC1INTVEC), a
-     		pop	hl
+     		pop	hl				;pop interrupt return, so return to caller
      		reti
 		
 ;--------------------------------------------------
@@ -1258,7 +1288,7 @@ sioloop:	call	0f8d1h				;output to printer? (check buffer)
 						
 jumphl:     	jp	(hl)           		
 						
-sioidle:     	in	a, (70h)        		;in SIO
+sioidle:     	in	a, (SIOIN)        		;in SIO
      		and	8ah				;1---1-1-	;Stop-bit, no command (high) = idle
      		cp	8ah
      		ret	nz				;is not idle? return
@@ -1268,14 +1298,14 @@ sioidle:     	in	a, (70h)        		;in SIO
 ;--------------------------------------------------
      		di
      		xor	a
-     		ld	(0ff55h), a			;select 0=CMD or 1=SIO
+     		ld	(0ff55h), a			;select 0=CMD
      		out	(CMDSIO), a                         
      		ld	a, 0d7h				;CH0 int+counter+pre16+rising autocnt+timeconst+reset+ctrl
 							;		D 				7 
-     		out	(80h), a                        ;program CTC
+     		out	(TC0), a                        ;program CTC, CMD is inverted, so detect rising edge
      		ld	a, 01h                           
-     		out	(80h), a                        ;counter
-     		ld	hl, 0f699h
+     		out	(TC0), a                        ;counter
+     		ld	hl, siocmdint			;load address of sio-cmd-interrupt
      		ld	(TC0INTVEC), hl
      		ei
      		ld	hl, cmdframe			;
@@ -1293,15 +1323,15 @@ cmdframe:     	ld	a, (0ff55h)
      		jr	z, cmdframe1			;handle it 
      		di                      		
      		ld	a, 03h           		;noint timer pre16 falling  reset vector	
-     		out	(80h), a         		;CTC Channel 0		
+     		out	(TC0), a         		;CTC Channel 0		
      		ei
      		jr	cmdframe2				
 							
-cmdframe1:	ld	a, (0c2fbh)      		;load device ID
+cmdframe1:	ld	a, (DDEVIC)      		;load device ID
      		ld	hl, (0ff38h)			;load addr device table
      		call	gettable				
      		jr	nz, cmdframe2			;not found, return
-     		ld	a, (0c2fch)			;load command
+     		ld	a, (DCOMND)			;load command
      		call	gettable
      		jr	nz, cmdframe2			;not found;		
      		call	jumphl				;call (hl)
@@ -1355,14 +1385,14 @@ f823:		db	40h				;printer
 		db	4eh				;percom read	'N'
 		db	4fh				;perfom write	'O'
 		db	21h				;format		'!'
-		dw	0fb38h
-		dw	0fc05h
-		dw	0fbe7h
-		dw	0f905h
-		dw	0f908h
-		dw	0fadbh
-		dw	0f98ch			
-		
+		dw	0fb38h				;format vector
+		dw	0fc05h				;percom write vector
+		dw	percomread			;percom read vector
+		dw	0f905h				;disk putchar vector
+		dw	0f908h				;disk write vector
+		dw	0fadbh				;disk status vector
+		dw	0f98ch				;disk read vector
+
 		dw	4				;printer commands
 		db	52h				;read
 		db      57h				;write
@@ -1373,7 +1403,7 @@ f823:		db	40h				;printer
 		dw	0fc7bh
 		dw	0fc5fh		
 		
-     		call	0fc4ah
+     		call	sendack
      		ld	hl, 0ff43h
      		ld	de, 0c2fch
      		push	de
@@ -1382,16 +1412,16 @@ f823:		db	40h				;printer
      		pop	hl
      		ld	de, 0043h
      		jp	0f66ch
-     		call	0fc4ah
-     		call	0f6b9h
-     		ret	nz
+     		call	sendack
+     		call	sioread
+     		ret	nz				;not zero, error
 
      		ld	de, 0028h
      		or	a
      		sbc	hl, de
      		ret	nz
 
-     		call	0fc4ah
+     		call	sendack
      		ld	hl, 0c100h
      		ld	b, 28h
 f88e:		ld	a, (hl)
@@ -1412,7 +1442,7 @@ f898:		push	hl
      		call	0f8d1h
      		pop	bc
      		pop	hl
-     		in	a, (70h)
+     		in	a, (SIOIN)
      		and	02h
      		jr	nz, f898		; (-1bh)
      		ret
@@ -1468,11 +1498,11 @@ f903:		pop	hl
      		jr	f90a		; (+02h)
      		ld	a, 01h
 f90a:		ld	(0ffb5h), a
-     		call	0fc28h
+     		call	checkdiskno
      		ret	c
 
-     		call	0fc4ah
-     		call	0f6b9h
+     		call	sendack
+     		call	sioread
      		ret	nz
 
      		ld	(0ffa9h), hl
@@ -1484,7 +1514,7 @@ f90a:		ld	(0ffb5h), a
      		sbc	hl, de
      		ret	nz
 
-f927:		call	0fc4ah
+f927:		call	sendack
      		call	0fa10h
      		jr	nz, f97d		; (+4eh)
      		ld	hl, 0c100h
@@ -1531,10 +1561,10 @@ f984:		xor	a
      		call	0fa06h
      		ld	a, e
      		jp	0fc56h
-     		call	0fc28h
+     		call	checkdiskno
      		ret	c
 
-     		call	0fc4ah
+     		call	sendack
      		call	0fa10h
      		push	af
      		jr	z, f9a8		; (+0fh)
@@ -1690,10 +1720,10 @@ fad3:		sla	c
      		jr	nz, fad3		; (-07h)
      		ret
 
-     		call	0fc28h
+     		call	checkdiskno
      		ret	c
 
-     		call	0fc4ah
+     		call	sendack
      		call	0fbd3h
      		ld	a, (0ffc9h)
      		push	af
@@ -1732,9 +1762,9 @@ fb1e:		ld	hl, 0c2fch
      		ld	a, (0ff2dh)
      		ld	(hl), a
      		pop	hl
-     		ld	de, 0043h
+     		ld	de, 0043h			;e = 43h = complete
      		jp	0f66ch
-     		call	0fc28h
+     		call	checkdiskno
      		ret	c
 
      		ld	hl, (0ff4fh)
@@ -1745,7 +1775,7 @@ fb1e:		ld	hl, 0c2fch
      		call	0fbd3h
      		ret	z
 
-     		call	0fc4ah
+     		call	sendack
      		ld	a, 00h
      		ld	(0ff98h), a
      		ld	ix, 0ff98h
@@ -1809,42 +1839,61 @@ fbab:		pop	hl
      		cp	12h
      		dec	(hl)
      		inc	c
-     		ld	a, (iy+00h)
+fbd3:     	ld	a, (iy+00h)			;get DCB byte 0
      		or	a
-     		ret	nz
+     		ret	nz				;return if nz
 
-     		ld	hl, (0ff96h)
+     		ld	hl, (0ff96h)			;pointer zero
      		ld	a, h
      		or	l
-     		ret	z
+     		ret	z				;yes, leave
 
      		push	iy
      		pop	de
      		ld	bc, 000ch
      		ldir
      		ret
+		
+		
+;Byte #  # of   Description
+;           Bytes  
+;     0       1    Number of Tracks
+;     1       1    Step Rate (values have no universal meaning)
+;    2-3      2    Sectors per Track (byte 2 is high byte; byte 3 is low byte)
+;     4       1    Number of Sides or Heads (0=one head, 1=two heads)
+;     5       1    Density (0=FM/Single, 4=MFM/Double)
+;    6-7      2    Bytes per Sector (byte 6 is high byte; byte 7 is low byte)
+;     8       1    Drive Selected/Online?
+;     9       1    Serial Rate Control (values have no universal meaning)
+;   10-11     2    Miscellaneous (reserved)
+;--------------------------------------------------
+; send percom block to sio
+;--------------------------------------------------
+percomread:     call	checkdiskno
+     		ret	c				;do nothing if carry set
 
-     		call	0fc28h
-     		ret	c
-
-     		call	0fbd3h
+     		call	fbd3
      		ret	z
 
-     		call	0fc4ah
+     		call	sendack				;acknowledge command frame
      		push	iy
 fbf4:		pop	hl
-     		ld	de, 0c2f4h
-     		push	de
+     		ld	de, 0c2f4h			;copy 12 bytes percom block
+     		push	de				;to c2f4 (SIOBUFFER)
      		ld	bc, 000ch
      		ldir
      		pop	hl
-     		ld	de, 0043h
-     		jp	0f66ch
-     		call	0fc28h
+     		ld	de, 0043h			;e = C = complete
+     		jp	siowrite
+				
+;--------------------------------------------------
+; read percom block from sio and store it
+;--------------------------------------------------
+percomwrite:    call	checkdiskno
      		ret	c
 
-     		call	0fc4ah
-     		call	0f6b9h
+     		call	sendack
+     		call	sioread
      		ret	nz
 
      		ld	de, 000ch
@@ -1852,48 +1901,57 @@ fbf4:		pop	hl
      		sbc	hl, de
      		ret	nz
 
-     		call	0fc4ah
+     		call	sendack
      		ld	hl, 0c100h
      		push	iy
      		pop	de
      		ld	bc, 000ch
      		ldir
      		jp	0fc54h
-     		ld	a, (0c2fbh)
+		
+		
+checkdiskno:	ld	a, (DDEVIC)			;check if D1-D4
      		sub	31h
      		cp	04h
      		ccf
-     		ret	c
+     		ret	c				;return carry set if > 4
 
-     		ld	h, 00h
+getpercomadr:	ld	h, 00h				;hl = a * 16
      		ld	l, a
+     		add	hl, hl				;mul 16
      		add	hl, hl
      		add	hl, hl
      		add	hl, hl
-     		add	hl, hl
-     		ld	bc, 0ff56h
-     		add	hl, bc
-     		push	hl
+     		ld	bc, PERCOMBLOCKS
+     		add	hl, bc				;PERCOMBLOCKS + diskno * 16
+     		push	hl				;iy = hl
      		pop	iy
-     		bit	6, (iy+08h)
-     		scf
-     		ret	z
+     		bit	6, (iy+08h)			;test iy+8h bit6 drive online?
+     		scf					;set carry
+     		ret	z				;return if bit clear
 
-     		ld	(0ff99h), a
-     		xor	a
+     		ld	(0ff99h), a			;otherwise write diskno to 0ff99h
+     		xor	a				;clear acc and carry
      		ret
 
-fc4a:		in	a, (70h)
+
+
+sendack:	in	a, (SIOIN)
      		bit	1, a
-     		jr	z, fc4a		; (-06h)
-     		ld	a, 41h
-     		jr	fc56		; (+02h)
+     		jr	z, sendack			;wait until CMD high
+     		ld	a, 41h				;load 'A' (acknowledge)
+     		jr	sendresp
+		
      		ld	a, 43h
-fc56:		ld	hl, 0c301h
+		
+sendresp:	ld	hl, 0c301h			;save to 0c301h
      		ld	(hl), a
-     		ld	d, 00h
-     		jp	0f684h
-     		call	0fc4ah
+     		ld	d, 00h				;d = 0
+     		jp	sioout
+		
+		
+		
+     		call	sendack
      		call	0fc9ch
      		ld	hl, 0c300h
      		or	a
@@ -1907,8 +1965,8 @@ fc56:		ld	hl, 0c301h
      		pop	hl
      		ld	de, 0043h
      		jp	0f66ch
-     		call	0fc4ah
-     		call	0f6b9h
+     		call	sendack
+     		call	sioread
      		ret	nz
 
      		call	0fc9ch
@@ -1917,7 +1975,7 @@ fc56:		ld	hl, 0c301h
      		ret	nz
 
      		push	bc
-     		call	0fc4ah
+     		call	sendack
      		pop	bc
      		ld	hl, 0c100h
      		ld	de, (0fcb2h)
@@ -1934,13 +1992,13 @@ fc56:		ld	hl, 0c301h
      		inc	b
      		ret
 
-     		call	0fc4ah
+     		call	sendack
      		ld	hl, (0c2fdh)
      		ld	(0fcb2h), hl
      		jp	0fc54h
      		nop
      		nop
-     		call	0fc4ah
+     		call	sendack
      		call	0fc54h
      		ld	hl, (0c2fdh)
      		jp	(hl)
@@ -2289,7 +2347,7 @@ ff20:		db	0FFh, 0FFh, 0FFh, 0FFh, 000h, 000h, 000h, 000h
 		db	000h, 000h, 032h, 00Ah, 000h, 000h, 000h, 000h
 ff38:		dw	devicetab
 ff3a:		dw	sioidle
-ff3c:		dw	0F7e1h
+ff3c:		dw	return
 ff3e:		db	002h, 00Dh
 		db	00Ah, 000h, 000h, 000h, 000h, 03Ch, 000h, 080h
 		db	000h, 0B7h, 0FBh, 000h, 0C5h, 0FFh, 00Fh
