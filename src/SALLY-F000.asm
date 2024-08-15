@@ -35,55 +35,8 @@
 ; $4x	FDC 1797
 ; $5x	RS232	D7=RX,  D3=1,  D2=?,  D1=FlowControl
 ; $70	SIO	D7=RX,  D3=RDY/+5V, D1=CMD
-;--------------------------------------------------
-; FF10: Interrupt Table
-;--------------------------------------------------
-TC0INTVEC	equ	0ff10h
-TC1INTVEC	equ	0ff12h
-TC2INTVEC	equ	0ff14h
-TC3INTVEC	equ	0ff16h
 
-;--------------------------------------------------
-; Out - ports equations, Disk-Control
-;--------------------------------------------------
-DISKCTRL	equ	030h
-
-;--------------------------------------------------
-; In/Out - ports equations, WD177x FDC
-;--------------------------------------------------
-FDCSTAT		equ	040h
-FDCCMD		equ	040h
-FDCTRK		equ	041h
-FDCSEC		equ	042h
-FDCDAT		equ	043h
-
-;--------------------------------------------------
-; Out - ports equations, RS232, SIO, ROM, INDEX
-;--------------------------------------------------
-SIOOUT		equ	050h
-RS232TX		equ	051h
-ROMSWITCH	equ	052h
-STROBE		equ	053h
-RESIDX		equ	054h
-RS232DTR	equ	055h
-SETIDX		equ	056h
-CMDSIO		equ	057h
-
-
-SIOIN		equ	070h
-
-TC0		equ	080h
-TC1		equ	081h
-TC2		equ	082h
-TC3		equ	083h
-
-DDEVIC		equ	0c2fbh
-DCOMND		equ	0c2fch
-DAUX1		equ	0c2fdh
-DAUX2		equ	0c2feh
-DCHECK		equ	0c2ffh
-
-PERCOMBLOCKS	equ	0ff56h
+		include "SALLY-CONST.asm"
 
 ;--------------------------------------------------
 ; Sally code starts here
@@ -93,20 +46,27 @@ PERCOMBLOCKS	equ	0ff56h
 ;--------------------------------------------------
 ; Firmware jumptable
 ;--------------------------------------------------
-jmpboot:	jp	0f01bh				;wboot?			f000
+jmpboot:	jp	boot				;wboot?			f000
 jmpSallyMon:	jp	sallymon        		;Sally Monitor		f003
-     		jp	const	          		;const			f006
+jmpCONST:	jp	const	          		;const			f006
 jmpCONIN:	jp	conin	          		;conin 0f640h		f009
 jmpCONOUT:	jp	conout          		;conout 0f650h			f00c
      		jp	0f022h          		;list			f00f
      		jp	0f4dch          		;punch			f012
      		jp	0f4ebh          		;reader			f015
      		jp	0f615h          		;home?		ATARI mode = f7e1 = return
+
+;--------------------------------------------------
+; boot
+;--------------------------------------------------
+boot:     	di					;int off
+    		xor	a				;ROM enable
+    		out	(ROMSWITCH), a
+     		jp	0000h				;jump to ROM
 		
-f01b:     	di
-     		xor	a
-     		out	(ROMSWITCH), a
-     		jp	0000h
+;--------------------------------------------------
+; 
+;--------------------------------------------------
      		call	0f3cbh
      		ld	a, (ix+00h)
      		or	a
@@ -637,7 +597,7 @@ f39f:		dec	a
 ;f3de
 sallymon:     	ld	a, 01h				
      		out	(ROMSWITCH), a			;turn off ROM
-     		call	init9600			;init receive at 9600 baud (T/C 0 interrupt)
+     		call	init9600			;init send/receive at 9600 baud (T/C 0 interrupt)
      		call	printstr
 		db	"\r\n",  "SALLY1",  0
 
@@ -648,7 +608,7 @@ monloop:	ld	hl,  monloop			;loop here
 		
 f3fd:		call	getchar				;read from conin
      		cp	20h				;< 20h = control-character?
-     		ret	c				;yes, return 
+     		ret	c				;yes, return monloop
 
      		ld	c, a				;save a
      		xor	a				;a = 0
@@ -992,28 +952,28 @@ resetConin: 	push	af				;disable timer 1 interrupt
 ;--------------------------------------------------		
 ;f5fc:
 init9600:	di
-     		ld	hl, resetConin		;point Timer 1 interrupt
-     		ld	(TC1INTVEC), hl		;to 0f5eeh
-     		ld	a, 07h			;Timer 1 reset, no int
-     		out	(TC1), a		;load time constant
-     		ld	a, (baud9600 + 1)	;01ah = 9600 Baud
-     		out	(TC1), a
-     		ld	hl, 0ff00h
-     		ld	(coninIntPtr+1), hl
-     		ld	(coninPtr), hl
-     		di
-     		ld	a, 01h
-     		out	(CMDSIO), a		;enable SIO-Trig
-init9600a:	ld	b, 7eh
-init9600c:	in	a, (SIOIN)		;read SIO
-     		rla				;D7 (RX) to carry
-     		jr	nc, init9600a		;0? repeat
-     		djnz	init9600c		;high for 126 loops?
-     		ld	a, 0c7h			;T/C 0 interrupt on, counter mode, falling edge (start bit)
-     		out	(TC0), a
-     		ld	a, 01h			;T/C 0, count just 1 
-     		out	(TC0), a
-     		ld	hl, coninInt		;set T/C 0 int to 0f500h
+     		ld	hl, resetConin			;point Timer 1 interrupt
+     		ld	(TC1INTVEC), hl			;to 0f5eeh
+     		ld	a, 07h				;Timer 1 reset, no int
+     		out	(TC1), a			;load time constant
+     		ld	a, (baud9600 + 1)		;01ah = 9600 Baud
+     		out	(TC1), a	
+     		ld	hl, 0ff00h	
+     		ld	(coninIntPtr+1), hl	
+     		ld	(coninPtr), hl	
+     		di	
+     		ld	a, 01h	
+     		out	(CMDSIO), a			;enable SIO-Trig
+init9600a:	ld	b, 7eh	
+init9600c:	in	a, (SIOIN)			;read SIO
+     		rla					;D7 (RX) to carry
+     		jr	nc, init9600a			;0? repeat
+     		djnz	init9600c			;high for 126 loops?
+     		ld	a, 0c7h				;T/C 0 interrupt on, counter mode, falling edge (start bit)
+     		out	(TC0), a	
+     		ld	a, 01h				;T/C 0, count just 1 
+     		out	(TC0), a	
+     		ld	hl, coninInt			;set T/C 0 int to 0f500h
      		ld	(TC0INTVEC), hl
      		ei
      		ret
@@ -1098,17 +1058,17 @@ sioout1:	jr	sioout1
 ;--------------------------------------------------
 siocmdint:     	ex	af, af'
      		exx
-     		ld	a, 0ffh			;read pending
-     		ld	(0ff55h), a
-     		out	(CMDSIO), a		;switch to sio
-     		ld	hl, DDEVIC		;read 5 bytes command frame
-     		call	readSIO
-     		jr	nc, siocmdint1		;read error, do nothing
-     		dec	hl		
-     		ld	a, (hl)
-     		cp	c			;checksum correct?
-     		jr	nz, siocmdint1		;no, do nothing
-     		ld	a, 01h			;yes, frame received, set ff55 to 1
+     		ld	a, 0ffh				;read pending
+     		ld	(0ff55h), a	
+     		out	(CMDSIO), a			;switch to sio
+     		ld	hl, DDEVIC			;read 5 bytes command frame
+     		call	readSIO	
+     		jr	nc, siocmdint1			;read error, do nothing
+     		dec	hl			
+     		ld	a, (hl)	
+     		cp	c				;checksum correct?
+     		jr	nz, siocmdint1			;no, do nothing
+     		ld	a, 01h				;yes, frame received, set ff55 to 1
      		ld	(0ff55h), a
 siocmdint1:	ex	af, af'
      		exx
@@ -2333,14 +2293,14 @@ fee2:		ld	bc, 0912h
      		inc	de
      		ld	a, (bc)
 		
-		dw	0, 0
+;		dw	0, 0
 ;--------------------------------------------------
 ; Workarea (Const + Vars) copied from ROM
 ;--------------------------------------------------
-ff00:		dw	0, 0, 0, 0			;16-byte receive buffer
-		dw	0, 0, 0, 0
-ff10:		dw	0, 0, 0, 0
-		dw	0, 0, 0, 0
+;ff00:		dw	0, 0, 0, 0			;16-byte receive buffer
+;		dw	0, 0, 0, 0
+;ff10:		dw	0, 0, 0, 0			;CTC interrup vectors
+;		dw	0, 0, 0, 0
 
 ff20:		db	0FFh, 0FFh, 0FFh, 0FFh, 000h, 000h, 000h, 000h
 		db	010h, 010h, 010h, 010h, 000h, 0FFh, 001h, 000h
@@ -2355,16 +2315,16 @@ ff3e:		db	002h, 00Dh
 ;--------------------------------------------------
 ; set to zero in startup code until 0ffffh
 ;--------------------------------------------------
-;ff2a:		db	73h			
-;     		nop
-;     		nop
-;     		nop
-;     		nop
-;     		nop
-;     		nop
-;     		nop
-;ff33:     	nop
-;     		nop
-;     		nop
-;     		nop
-;		db	"SALLY 1 Rev 1.01"
+ff2a:		db	73h			
+     		nop
+     		nop
+     		nop
+     		nop
+     		nop
+     		nop
+     		nop
+ff33:     	nop
+     		nop
+     		nop
+     		nop
+		db	"SALLY 1 Rev 1.01"

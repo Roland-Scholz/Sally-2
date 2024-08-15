@@ -10,7 +10,10 @@ rem ****************************************************
 call :compile SALLY-F000 F000
 if not %ERRORLEVEL%==0 goto error
 
-call :compile rollitest F000
+call :compile SALLY-0000 0000
+if not %ERRORLEVEL%==0 goto error
+
+call :compile rollitest 0000
 if not %ERRORLEVEL%==0 goto error
 
 del /Q	..\release\*.*
@@ -19,6 +22,11 @@ move ..\src\*.o ..\release
 move ..\src\*.hex ..\release
 move ..\src\*.lis ..\release
 move ..\src\*.com ..\release
+
+pushd	..\release
+copy	sally-0000.com /B + sally-f000.com /B sally.com /B
+bin2hex sally.com sally.hex -o 0000
+popd
 
 pause
 goto ende
