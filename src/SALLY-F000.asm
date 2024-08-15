@@ -50,8 +50,8 @@ jmpboot:	jp	boot				;wboot?			f000
 jmpSallyMon:	jp	sallymon        		;Sally Monitor		f003
 jmpCONST:	jp	const	          		;const			f006
 jmpCONIN:	jp	conin	          		;conin 0f640h		f009
-jmpCONOUT:	jp	conout          		;conout 0f650h			f00c
-     		jp	0f022h          		;list			f00f
+jmpCONOUT:	jp	conout          		;conout 0f650h		f00c
+     		jp	readsector          		;readsector		f00f
      		jp	0f4dch          		;punch			f012
      		jp	0f4ebh          		;reader			f015
      		jp	0f615h          		;home?		ATARI mode = f7e1 = return
@@ -65,30 +65,31 @@ boot:     	di					;int off
      		jp	0000h				;jump to ROM
 		
 ;--------------------------------------------------
-; 
+; readsector
 ;--------------------------------------------------
-     		call	0f3cbh
-     		ld	a, (ix+00h)
-     		or	a
-     		jr	z, f078		; (+4dh)
+readsector:	call	resettc3			;reset TC3
+     		ld	a, (ix+00h)			;ix = control block
+     		or	a				;is zero? percom?
+     		jr	z, f078				;yes, jump
      		ld	b, 88h
-     		dec	a
-     		jr	z, f0ab		; (+7bh)
+     		dec	a				;is 1?
+     		jr	z, f0ab				;yes
      		ld	b, 0a8h
-     		dec	a
+     		dec	a				;is 2
      		jr	z, f0ab		; (+76h)
      		dec	a
-     		jr	z, f097		; (+5fh)
+     		jr	z, f097		; (+5fh)	;is 3
      		ld	(ix+08h), 0ffh
-     		di
+
+readsector1:	di
      		ld	a, 0a7h
-     		out	(83h), a
+     		out	(TC3), a
      		xor	a
-     		out	(83h), a
+     		out	(TC3), a
      		dec	a
      		ld	(0ffc9h), a
-     		ld	hl, 0f050h
-     		ld	(0ff16h), hl
+     		ld	hl, coninInt
+     		ld	(0ff16h), hl			;TC3 Int
      		ei
      		ret
 
@@ -98,8 +99,8 @@ boot:     	di					;int off
      		ld	(0ffc9h), a
      		jr	nz, f064		; (+0ah)
      		call	0f068h
-     		ld	a, 21h
-     		out	(83h), a
+     		ld	a, 21h	
+     		out	(TC3), a
      		ld	(0ff2eh), a
 f064:		pop	af
      		ei
@@ -124,7 +125,7 @@ f084:		ld	(ix+08h), a
      		ld	(ix+06h), a
      		ld	a, (0ff30h)
      		ld	(ix+07h), a
-     		call	0f03ch
+     		call	readsector1
      		ret
 
 f097:		ld	(ix+06h), 06h
@@ -182,7 +183,7 @@ f0ee:		ld	a, (ix+03h)
 f10f:		ld	a, b
 f110:		ld	(ix+08h), a
      		call	0f018h
-     		call	0f03ch
+     		call	readsector1
      		ret
 
      		ld	a, (ix+01h)
@@ -427,9 +428,9 @@ f2c5:		ld	(0066h), hl
      		ld	(hl), 0c9h
      		di
      		ld	a, 0c7h
-     		out	(83h), a
+     		out	(TC3), a
      		xor	a
-     		out	(83h), a
+     		out	(TC3), a
      		ei
      		ld	l, (ix+04h)
      		ld	h, (ix+05h)
@@ -559,7 +560,7 @@ f39f:		dec	a
      		ld	a, 0d0h
      		out	(FDCCMD), a
      		ld	a, 01h
-     		out	(83h), a
+     		out	(TC3), a
      		ld	hl, 0f303h
      		ex	(sp), hl
      		ld	a, 10h
@@ -569,17 +570,17 @@ f39f:		dec	a
 
      		di
      		ld	a, 87h
-     		out	(83h), a
+     		out	(TC3), a
      		ld	a, 0fah
-     		out	(83h), a
+     		out	(TC3), a
      		ld	hl, 0f3d2h
      		ld	(0ff16h), hl
      		ei
      		ret
 
-     		di
+resettc3:     	di
      		ld	a, 01h
-     		out	(83h), a
+     		out	(TC3), a
      		ei
      		ret
 
@@ -668,7 +669,7 @@ f458:		dec	hl
      		jr	f430		; (-2eh)
 f45e:		jp	(hl)
 f45f:		ld	ix, 0f47ah
-     		call	0f022h
+     		call	readsector
      		ld	a, (ix+08h)
      		or	a
      		call	z, 0080h
@@ -1076,33 +1077,34 @@ siocmdint1:	ex	af, af'
      		reti
 
 ;--------------------------------------------------
-; reads up to 256 bytes from SIO
+; reads up to 256 bytes from SIO, if more bytes read
+; sends NACK
 ;--------------------------------------------------
 sioread:	di
      		ld	hl, 0c100h
      		call	readSIO
      		ei
-     		jr	c, f6d0		; (+0dh)
+     		jr	c, sendnack				;read until carry set
      		dec	hl
-     		ld	a, (hl)
+     		ld	a, (hl)					;check checksum
      		cp	c
-     		jr	nz, f6d0		; (+08h)
+     		jr	nz, sendnack				;not equal quit
      		ld	de, 0c100h
-     		or	a
-     		sbc	hl, de
-     		xor	a
+     		or	a					;clear carry
+     		sbc	hl, de					;hl = number of bytes read
+     		xor	a					;clear a
      		ret
 
-f6d0:		ld	a, 4eh
-     		call	0fc56h
+sendnack:	ld	a, 4eh					;04eh = 'N' = "NOT ACK"
+     		call	sendresp
      		ld	a, 0ffh
      		or	a
      		ret
 
 ;--------------------------------------------------
 ; read from SIO to (hl) until hl = 0c300h
-; carry clear: no start bit detected
-; carry set: all right
+; carry clear, zero: no more input
+; carry set: 0c300h reached
 ;--------------------------------------------------
 readSIO:     	ld	de, 0aaah			;read atari ser 19200 Baud
      		ld	bc, 0000h                       
@@ -1346,12 +1348,12 @@ f823:		db	40h				;printer
 		db	4fh				;perfom write	'O'
 		db	21h				;format		'!'
 		dw	0fb38h				;format vector
-		dw	0fc05h				;percom write vector
+		dw	percomwrite			;percom write vector
 		dw	percomread			;percom read vector
 		dw	0f905h				;disk putchar vector
 		dw	0f908h				;disk write vector
 		dw	0fadbh				;disk status vector
-		dw	0f98ch				;disk read vector
+		dw	diskread			;disk read vector
 
 		dw	4				;printer commands
 		db	52h				;read
@@ -1371,7 +1373,7 @@ f823:		db	40h				;printer
      		ldir
      		pop	hl
      		ld	de, 0043h
-     		jp	0f66ch
+     		jp	siowrite
      		call	sendack
      		call	sioread
      		ret	nz				;not zero, error
@@ -1521,49 +1523,59 @@ f984:		xor	a
      		call	0fa06h
      		ld	a, e
      		jp	0fc56h
-     		call	checkdiskno
+		
+;--------------------------------------------------
+; reads a sector from disk and sends it to SIO
+;DDEVIC		equ	0c2fbh
+;DCOMND		equ	0c2fch
+;DAUX1		equ	0c2fdh
+;DAUX2		equ	0c2feh
+;DCHECK		equ	0c2ffh
+;;--------------------------------------------------		
+diskread:	call	checkdiskno
      		ret	c
 
      		call	sendack
-     		call	0fa10h
+     		call	fa10				;percom present???
      		push	af
-     		jr	z, f9a8		; (+0fh)
-     		ld	d, (iy+06h)
-     		ld	e, (iy+07h)
-     		ld	a, d
+     		jr	z, f9a8				;if zero, don't take sec-size from percom-block
+     		ld	d, (iy+06h)			;bytes per sector high
+     		ld	e, (iy+07h)			;bytes per sector low
+     		ld	a, d				;check if zero
      		or	e
-     		jr	nz, f9ac		; (+09h)
-     		ld	de, 0080h
-     		jr	f9ac		; (+04h)
-f9a8:		ld	de, (0ff9eh)
-f9ac:		ld	hl, (0c2fdh)
+     		jr	nz, f9ac			;non-zero
+     		ld	de, 0080h			;otherwise assume 128 bytes
+     		jr	f9ac
+f9a8:		ld	de, (0ff9eh)			;current (or default?) sector size			
+f9ac:		ld	hl, (DAUX1)			;sector number in cmd-frame
      		ld	bc, 0004h
      		or	a
-     		sbc	hl, bc
-     		jr	nc, f9ba		; (+03h)
-     		ld	de, 0080h
-f9ba:		ld	(0ffa9h), de
-     		ld	hl, 0c300h
-     		or	a
-     		sbc	hl, de
+     		sbc	hl, bc				;<4?
+     		jr	nc, f9ba			;no
+     		ld	de, 0080h			;otherwise, assume 128 bytes
+f9ba:		ld	(0ffa9h), de			;save sector-size
+     		ld	hl, 0c300h			
+     		or	a				;clear carry
+     		sbc	hl, de				;compute buffer start
      		pop	af
-     		jr	nz, f9db		; (+14h)
-     		ld	(0ff9ch), hl
+     		jr	nz, f9db			;jump if percom present
+     		ld	(0ff9ch), hl			;save buffer start in 0ff9ch
      		ld	a, 01h
-     		ld	(0ff98h), a
-     		ld	ix, 0ff98h
-     		push	hl
-     		call	0f00fh
-     		pop	hl
-     		ld	a, (0ffa0h)
-f9db:		call	0f9e3h
+     		ld	(0ff98h), a			;1 to 0ff98h
+     		ld	ix, 0ff98h			;load control-block to ix?
+     		push	hl				;save hl
+     		call	0f00fh				;call sector-read?
+     		pop	hl				;retrieve hl
+     		ld	a, (0ffa0h)			
+f9db:		call	f9e3
      		ld	d, 0ffh
-     		jp	0f66ch
-     		or	a
-     		jr	nz, f9f0		; (+0ah)
+     		jp	siowrite
+		
+f9e3:     	or	a				;accu zero?			
+     		jr	nz, f9f0			;no percom block
      		ld	(iy+0dh), a
-     		ld	e, 43h
-     		res	2, (iy+0ch)
+     		ld	e, 43h				;load 'C' = "complete"
+     		res	2, (iy+0ch)			;reset bit 2 in percom+12
      		ret
 
 f9f0:		bit	6, a
@@ -1583,20 +1595,25 @@ fa06:		ld	(iy+0dh), a
      		set	2, (iy+0ch)
      		ret
 
-     		ld	a, (0ff2eh)
+
+;--------------------------------------------------
+;
+;--------------------------------------------------		
+fa10:     	ld	a, (0ff2eh)			;check if 0ff2eh zero
      		or	a
-     		jr	z, fa27		; (+11h)
+     		jr	z, fa27				;yes
      		xor	a
-     		ld	(0ff2eh), a
-     		ld	hl, 0ff64h
+     		ld	(0ff2eh), a			;set to zero
+     		ld	hl, PERCOMBLOCKS + 0eh		;reset bit 0 of all 4 PERCOMBLOCK+14
      		ld	de, 0010h
      		ld	b, 04h
 fa22:		res	0, (hl)
      		add	hl, de
-     		djnz	fa22		; (-05h)
-fa27:		bit	0, (iy+0eh)
-     		jr	nz, fa9a		; (+6dh)
-     		ld	a, 03h
+     		djnz	fa22				;loop 4 times
+		
+fa27:		bit	0, (iy + 0eh)			;bit 0 of PERCOMBLOCK+14 set?
+     		jr	nz, fa9a			;no
+     		ld	a, 03h				;store 3 to 0ff98h
      		ld	(0ff98h), a
      		ld	a, (0ff99h)
      		ld	hl, 0ff20h
@@ -1723,7 +1740,7 @@ fb1e:		ld	hl, 0c2fch
      		ld	(hl), a
      		pop	hl
      		ld	de, 0043h			;e = 43h = complete
-     		jp	0f66ch
+     		jp	siowrite
      		call	checkdiskno
      		ret	c
 
@@ -1779,8 +1796,8 @@ fb8f:		ldir
 fbab:		pop	hl
      		call	0f9e3h
      		ld	d, 00h
-     		call	0f66ch
-     		jp	0f03ch
+     		call	siowrite
+     		jp	readsector1
      		sbc	a, a
      		cp	0e2h
      		cp	1ah
@@ -1849,25 +1866,25 @@ fbf4:		pop	hl
 ;--------------------------------------------------
 ; read percom block from sio and store it
 ;--------------------------------------------------
-percomwrite:    call	checkdiskno
+percomwrite:    call	checkdiskno			;check diskno and get percomblock in iy
      		ret	c
 
      		call	sendack
      		call	sioread
      		ret	nz
 
-     		ld	de, 000ch
+     		ld	de, 000ch			;12 bytes read?
      		or	a
      		sbc	hl, de
-     		ret	nz
+     		ret	nz				;if not, return
 
-     		call	sendack
-     		ld	hl, 0c100h
-     		push	iy
+     		call	sendack				;send acknowledge
+     		ld	hl, 0c100h			;copy 12 bytes
+     		push	iy				;into PERCOM-block in iy
      		pop	de
      		ld	bc, 000ch
      		ldir
-     		jp	0fc54h
+     		jp	sendcomp			;send complete
 		
 		
 checkdiskno:	ld	a, (DDEVIC)			;check if D1-D4
@@ -1902,7 +1919,7 @@ sendack:	in	a, (SIOIN)
      		ld	a, 41h				;load 'A' (acknowledge)
      		jr	sendresp
 		
-     		ld	a, 43h
+sendcomp:     	ld	a, 43h				;'C' = "complete"
 		
 sendresp:	ld	hl, 0c301h			;save to 0c301h
      		ld	(hl), a
@@ -1924,7 +1941,7 @@ sendresp:	ld	hl, 0c301h			;save to 0c301h
      		ei
      		pop	hl
      		ld	de, 0043h
-     		jp	0f66ch
+     		jp	siowrite
      		call	sendack
      		call	sioread
      		ret	nz
