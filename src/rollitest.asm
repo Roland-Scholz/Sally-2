@@ -28,10 +28,9 @@
 
 		include "SALLY-CONST.asm"
 
-
 		org	00000h
 		
-		jmp	start
+		jp	start
 		
 ;--------------------------------------------------
 ; conin T/C 0 (here counter) interrupt for start-bit
@@ -39,7 +38,7 @@
 coninInt:	push	af
      		ld	a, 87h
      		out	(TC0), a			;set T/C 0 to 9600 Baud timer 
-baud9600:     	ld	a, 1ah
+baud9600:     	ld	a, CONBAUD;01ah			;26 * 16 = 416; 4Mhz/416 = 9600 baud
      		out	(TC0), a
      		ld	a, coninIntB & 255		;set T/C 0 interrupt to next routine
      		ld	(TC0INTVEC), a
@@ -55,7 +54,8 @@ coninIntB:    	push	af
 inbyte:    	ld	a, 00h				;<- set by previous routine to 7fh
      		rra
      		jr	c, coninInt1			;loop 7 times
-coninIntPtr:    ld	(0ff00h), a			;store result in ff00
+		
+coninIntPtr:    ld	(KEYBUF), a			;store result in ff00
      		ld	a, coninIntC & 255		;timer 0 interrupt vector = 0ff2c
 		ld	(TC0INTVEC), a
      		pop	af
@@ -85,7 +85,7 @@ conoutIntA:     push	af
      		xor	a
      		out	(SIOOUT), a
      		ld	a, conoutIntB & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -96,7 +96,7 @@ conoutIntB:	push	af
      		rra
      		ld	(conoutIntC + 2), a
      		ld	a, conoutIntC & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -107,7 +107,7 @@ conoutIntC:	push	af
      		rra
      		ld	(conoutIntD + 2), a
      		ld	a, conoutIntD & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -118,7 +118,7 @@ conoutIntD:	push	af
      		rra
      		ld	(conoutIntE + 2), a
      		ld	a, conoutIntE & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -129,7 +129,7 @@ conoutIntE:	push	af
      		rra
      		ld	(conoutIntF + 2), a
      		ld	a, conoutIntF & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -140,7 +140,7 @@ conoutIntF:	push	af
      		rra
      		ld	(conoutIntG + 2), a
      		ld	a, conoutIntG & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -151,7 +151,7 @@ conoutIntG:	push	af
      		rra
      		ld	(conoutIntH + 2), a
      		ld	a, conoutIntH & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -162,7 +162,7 @@ conoutIntH:	push	af
      		rra
      		ld	(conoutIntI + 2), a
      		ld	a, conoutIntI & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -171,7 +171,7 @@ conoutIntI:	push	af
      		ld	a, 00h
      		out	(SIOOUT), a
      		ld	a, conoutIntJ & 255
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -179,17 +179,17 @@ conoutIntI:	push	af
 conoutIntJ:	push	af
      		ld	a, 01h				;stop bit
      		out	(SIOOUT), a
-     		ld	a, resetConin & 255
-     		ld	(0ff12h), a
+     		ld	a, resetConout & 255
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
 
-resetConin: 	push	af				;disable timer 1 interrupt
+resetConout: 	push	af				;disable timer 1 interrupt
      		ld	a, 01h
      		out	(TC1), a
      		ld	a, 0ffh
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		pop	af
      		ei
      		reti
@@ -209,9 +209,10 @@ portinit:	ld      c, (hl)
 		outi   			 	 
 		jr      nz, portinit			; loop
 
-		ld      sp, 0f000h			; stack-pointer to TC0INTVEC
+		ld      sp, 0c100h			; stack-pointer
 
 		ld	hl, 00000h			; source
+		ld	(VARS + addr), hl
 		ld	de, 08000h			; dest
 		ld	bc, 02000h
 		ldir
@@ -231,144 +232,107 @@ code8000:	ld	a, 1
 code0000:	ld      a, 0ffh				; load interrupt-vector register
 		ld      i, a				; with 0ffh
 		im      2				; enable interrupt mode 2 (vectored)
-			
-     		call	init9600			;init 9600 baud send/receive
-
-		call	printstr
-		db	"Rolli-2\n", 0
 		
-		ld	a, 50h				;reset FDC
-		out	(DISKCTRL), a
 		ld	a, 41h
 		out	(DISKCTRL), a
-		
-		ld	a, 0d0h				;force int
-		out	(FDCCMD), a
-		call	fdcwait
 			
-seektrk0:	ld	a, 61h				;stepout
-		out	(FDCCMD), a
-		call	fdcwait
-		in 	a, (FDCSTAT)
-		bit	2, a				;trk00
-		jr	z, seektrk0
+     		call	init9600			;init 9600 baud send/receive
+;		call	printstack
+;		db	27,"[2J",27,"[H", "Rolli-2\n", 0
+		
+		jp	printmenu
 
-		ld	b, 70
-stepin:		ld	a, 043h				;stepin, 12ms
-		out	(FDCCMD), a
-		call	fdcwait
-		djnz	stepin
+;testloop1:	ld	hl, 00000h		
+;		ld	de, 08000h
+;		ld	bc, 02000h
+;		
+;testloop:	ld	a, (de)
+;		cp	(hl)
+;		call	nz, err
+;		inc	de
+;		inc	hl
+;		dec	bc
+;		ld	a, b
+;		or	a, c
+;		jp	nz, testloop
+;		
+;;		ld	a, 255
+;;		out	(DISKCTRL), a
+;		jp	testloop1
+;		
+;err:		ld	a, h
+;		call	printhex
+;		ld	a, l
+;		call	printhex
+;		jp	newline
+;
+;conloop:	call	dump
+;		call	getchar
+;		jp	conloop
+;			
+;dump:		call	newline
+;		call	newline
+;		
+;		
+;		ld	c, 16
+;
+;dump2:		ld	b, 16
+;dump1:		ld	a, (hl)
+;		call	printhex
+;		ld	a, ' '
+;		call	putchar
+;		inc	hl
+;		djnz	dump1
+;		call	newline
+;		dec	c
+;		jr	nz, dump2
+;		ret
 		
-loop:		call	fdcwait
-		in	a, (FDCSTAT)
-		bit	7, a
-		jr	nz, loop
-		
-		ld	a, 40h
-		out	(DISKCTRL), a
-		
-		call	conin
-		jp	code0000
-;--------------------------------------------------
-; SALLY Monitor
-;--------------------------------------------------		
-;f3de
-sallymon:     	;ld	a, 01h				
-     		;out	(ROMSWITCH), a			;turn off ROM
-     		;call	init9600			;init send/receive at 9600 baud (T/C 0 interrupt)
-     		call	printstr
-		db	"\r\n",  "SALLY1",  0
 
-monloop:	ld	hl,  monloop			;loop here
-     		push	hl
-     		call	printstr
-		db	"\r\n# ",  0 
-		
-f3fd:		call	getchar				;read from conin
-     		cp	20h				;< 20h = control-character?
-     		ret	c				;yes, return monloop
-
-		call	putchar
-		ret
-
-
-		
-fdcwait:	call	fdctime
-		in 	a, (FDCSTAT)
-		bit	0, a
-		ret	z
-		jr	fdcwait
-		
-fdctime:	ld	a, 10h
-fdctime1:	dec	a
-		jr	nz, fdctime1
-		ret
-		
-		
-puthex:		push	af
-		push	af
-		rrca
-		rrca
-		rrca
-		rrca
-		call	putnibble
-		pop	af
-		call	putnibble
-		pop	af
-		ret
-
-putnibble:	and	0fh
-		add	'0'
-		cp	'9'+1
-		jr	c, putnibble1
-		add	7
-putnibble1:	jp	putchar
-
-
-
-		
-		
-printstr:    	ex	(sp), hl			;exchange (load) hl with stackpointer
-printstr1:	ld	a, (hl)				;load char
-     		call	putchar				;print it
-     		ld	a, (hl)				;load it again
-     		inc	hl				;increment hl
-     		or	a				;char <> 0?
-     		jr	nz, printstr1			;loop
-     		ex	(sp), hl			;write hl back to stack
-     		ret
-		
-putchar:	push	hl				;echo CONOUT
-     		push	bc
+putchar:	
+;		push	hl				;echo CONOUT
+    		push	bc
      		push	af
      		ld	c, a
      		call	conout
      		pop	af
      		pop	bc
-     		pop	hl
+ ;   		pop	hl
      		ret
+		
+printstack:    	ex	(sp), hl			;exchange (load) hl with stackpointer
+printstack1:	ld	a, (hl)				;load char
+     		call	putchar				;print it
+     		ld	a, (hl)				;load it again
+     		inc	hl				;increment hl
+     		or	a				;char <> 0?
+     		jr	nz, printstack1			;loop
+     		ex	(sp), hl			;write hl back to stack
+     		ret
+		
+
 
 getchar:     	push	hl
      		push	bc
      		call	conin				;CONIN in jumptable
      		pop	bc
-f4b8:		pop	hl
+		pop	hl
 ;     		res	7, a				;reset parity bit
      		cp	20h				;char < 20h = control char?
-     		ret	c				;yes, return
+     		ret					;yes, return
 
 		
 ;--------------------------------------------------
 ; SALLY Monitor
 ;--------------------------------------------------		
 init9600:	di
-     		ld	hl, resetConin			;point Timer 1 interrupt (send)
-     		ld	(0ff12h), hl			;to 0f5eeh
+     		ld	hl, resetConout | 255		;resetConout			;point Timer 1 interrupt (send)
+     		ld	(TC1INTVEC), hl			;to 0f5eeh
      		ld	a, 07h				;Timer 1 reset, no int
      		out	(TC1), a			;load time constant
      		ld	a, (baud9600 + 1)		;01ah = 9600 Baud constant from conin
      		out	(TC1), a	
-     		ld	hl, 0ff00h	
+     		ld	hl, KEYBUF			;16-byte input buffer	
      		ld	(coninIntPtr+1), hl	
      		ld	(coninPtr), hl	
      		di	
@@ -384,11 +348,12 @@ init9600c:	in	a, (SIOIN)			;read SIO
      		ld	a, 01h				;T/C 0, count just 1 
      		out	(TC0), a	
      		ld	hl, coninInt			;set T/C 0 int to 0f500h
-     		ld	(	TC0INTVEC), hl
+     		ld	(TC0INTVEC), hl
      		ei
      		ret
 
-coninPtr:	dw	0ff00h
+
+coninPtr:	dw	0h
 		
 ;--------------------------------------------------
 ; const, is input from SIO ready?
@@ -396,7 +361,7 @@ coninPtr:	dw	0ff00h
 ;f635:
 const:     	ld	hl, coninPtr
      		ld	a, (coninIntPtr + 1)
-     		sub	(hl)
+     		cp	(hl)
      		ret	z
 
      		ld	a, 0ffh
@@ -408,23 +373,23 @@ const:     	ld	hl, coninPtr
 conin:		call	const				;0f635h
      		jr	z, conin			;input available?
      		ld	hl, (coninPtr)			;read from buffer
-     		ld	a, (hl)				;increment buffer pointer
-     		inc	l
+     		ld	a, (hl)				
+     		inc	l				;increment buffer pointer
      		res	4, l				;wrap at 16 bytes
      		ld	(coninPtr), hl
      		ret
 
 ;f650:
-conout:		ld	a, (0ff12h)
-     		cp	resetConin & 255
-     		jr	c, conout			; (-07h)		
+conout:		ld	a, (TC1INTVEC)
+     		inc	a				;resetConout & 255
+     		jr	nz, conout			; (-07h)		
      		ld	a, c
 ;     		and	7fh
 ;    		jp	po, conout1			;set parity
 ;   		or	80h
 conout1:     	ld	(conoutIntB + 2), a		;set byte to output
      		ld	a, conoutIntA & 255		;set conout interrupt
-     		ld	(0ff12h), a
+     		ld	(TC1INTVEC), a
      		ld	a, 81h				;enable timer 1 int
      		out	(TC1), a		
      		ret
@@ -441,6 +406,8 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 		db	081h, 001h			;CTC	Channel 1 time contant
 		db	082h, 003h			;CTC	Channel 2 reset
 		db	083h, 003h			;CTC	Channel 3 reset
-		db	057h, 001h			;Bit7	ATARI RXD
+		db	057h, 001h			;Bit7	CMDSIO = SIO
 		db	030h, 040h			;DSE	Floppy Control (74LS273)
 		db	040h, 0d0h			;DWR/DRW	FDC read-write	d0 = force int (with no interrupt)
+		
+		include "sallytest.asm"

@@ -1,11 +1,11 @@
-{COMPONENT C:\GITHUB\SALLY-1\SRC\IO.SYM
+{COMPONENT C:\GITHUB\ROLLI-1\GAL\IO.SYM
 
  {ENVIRONMENT
   {PDIFvrev 3.00}
   {Program "CUPL(WM) Version 5.0a"}
   {DBtype "Schematic"}
   {DBvrev 1.01}
-  {DBtime "Sat Jul 27 14:46:59 2024 "}
+  {DBtime "Fri Aug 16 23:31:45 2024 "}
   {DBunit "MIL"}
   {DBgrid 10}
   {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
@@ -40,7 +40,7 @@
    {P IORQN {Pt "INPUT"}{Lq 0}{Ploc 100 120}}
    {P RDN {Pt "INPUT"}{Lq 0}{Ploc 100 100}}
    {P WRN {Pt "INPUT"}{Lq 0}{Ploc 100 80}}
-   {P NC0 {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
+   {P M1 {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
    {P NC1 {Pt "INPUT"}{Lq 0}{Ploc 100 40}}
    {P NC2 {Pt "INPUT"}{Lq 0}{Ploc 100 20}}
    {P SIORN {Pt "I/O"}{Lq 0}{Ploc 320 20}}
@@ -114,7 +114,7 @@
    {T "IORQN" 140 120}
    {T "RDN" 140 100}
    {T "WRN" 140 80}
-   {T "NC0" 140 60}
+   {T "M1" 140 60}
    {T "NC1" 140 40}
    {T "NC2" 140 20}
    [Tj "RC"]
@@ -139,7 +139,7 @@
    {EX
     [Ly "ATTR2"]
     [Ts 12][Tj "CT"][Tr 0][Tm "N"]
-    {At PLD C:\GITHUB\SALLY-1\SRC\IO 210 220}
+    {At PLD C:\GITHUB\ROLLI-1\GAL\IO 210 220}
    }
   }
  }
@@ -163,7 +163,7 @@
    }
    {N WRN
    }
-   {N NC0
+   {N M1
    }
    {N NC1
    }

@@ -8,7 +8,7 @@ PIN  16 =  CTCEN
 PIN  15 =  DSWN 
 PIN  17 =  FDCEN 
 PIN   5 =  IORQN 
-PIN   8 =  NC0 
+PIN   8 =  M1 
 PIN   9 =  NC1 
 PIN  11 =  NC2 
 PIN  19 =  PRTRN 
@@ -27,13 +27,13 @@ PIN   7 =  WRN
     A4 & !A5 & A6 & !A7 & !IORQN & !WRN
 
 !CTCEN =>
-    !A4 & !A5 & !A6 & A7 & !IORQN
+    !A4 & !A5 & !A6 & A7 & !IORQN & M1
 
 !DSWN =>
     A4 & A5 & !A6 & !A7 & !IORQN & !WRN
 
 !FDCEN =>
-    !A4 & !A5 & A6 & !A7 & !IORQN
+    !A4 & !A5 & A6 & !A7 & !IORQN & M1
 
 !PRTRN =>
     !A4 & A5 & !A6 & !A7 & !IORQN & !RDN

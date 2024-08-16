@@ -5,7 +5,7 @@ PATH=%PATH%;%TOOLS%\tools;%TOOLS%\tools\z88dk\bin;
 set ASM=z80asm
 
 rem ****************************************************
-rem * compile CP/M 2.2
+rem * compile Rolli-1
 rem ****************************************************
 call :compile SALLY-F000 F000
 if not %ERRORLEVEL%==0 goto error
@@ -18,10 +18,10 @@ if not %ERRORLEVEL%==0 goto error
 
 del /Q	..\release\*.*
 
-move ..\src\*.o ..\release
-move ..\src\*.hex ..\release
-move ..\src\*.lis ..\release
-move ..\src\*.com ..\release
+move ..\src\*.o ..\release	>nul 2>&1	
+move ..\src\*.hex ..\release	>nul 2>&1
+move ..\src\*.lis ..\release	>nul 2>&1
+move ..\src\*.com ..\release	>nul 2>&1
 
 pushd	..\release
 copy	sally-0000.com /B + sally-f000.com /B sally.com /B

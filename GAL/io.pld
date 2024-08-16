@@ -17,7 +17,7 @@ PIN 4 	= A7;
 PIN 5	= IORQN; 
 PIN 6	= RDN; 
 PIN 7	= WRN;
-PIN 8	= NC0;
+PIN 8	= M1;
 PIN 9	= NC1;
 PIN 11	= NC2;
 /* *************** OUTPUT PINS *********************/
@@ -36,8 +36,8 @@ PIN 19	= PRTRN;
 !PRTRN	= !A7 & !A6 &  A5 & !A4 & !IORQN & !RDN;		/*$2x Printer*/
 
 /* W/R */
-!FDCEN	= !A7 &  A6 & !A5 & !A4 & !IORQN;				/*$4x FDC*/
-!CTCEN	=  A7 & !A6 & !A5 & !A4 & !IORQN;				/*$8x CTC*/
+!FDCEN	= !A7 &  A6 & !A5 & !A4 & !IORQN & M1;			/*$4x FDC*/
+!CTCEN	=  A7 & !A6 & !A5 & !A4 & !IORQN & M1;			/*$8x CTC*/
 
 /* Write Only */
 !BITWN	= !A7 &  A6 & !A5 &  A4 & !IORQN & !WRN;		/*$5x config-bits*/

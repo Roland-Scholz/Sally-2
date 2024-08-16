@@ -5,7 +5,7 @@
 
 CUPL(WM)        5.0a Serial# 60008009
 Device          g16v8as  Library DLIB-h-40-2
-Created         Sat Jul 27 14:46:59 2024
+Created         Fri Aug 16 23:31:45 2024
 Name            io
 Partno          00 
 Revision        01 
@@ -23,13 +23,13 @@ Location
     A4 & !A5 & A6 & !A7 & !IORQN & !WRN
 
 !CTCEN =>
-    !A4 & !A5 & !A6 & A7 & !IORQN
+    !A4 & !A5 & !A6 & A7 & !IORQN & M1
 
 !DSWN =>
     A4 & A5 & !A6 & !A7 & !IORQN & !WRN
 
 !FDCEN =>
-    !A4 & !A5 & A6 & !A7 & !IORQN
+    !A4 & !A5 & A6 & !A7 & !IORQN & M1
 
 !PRTRN =>
     !A4 & A5 & !A6 & !A7 & !IORQN & !RDN
@@ -61,7 +61,7 @@ Pol   Name              Ext     Pin     Type     Used   Pterms  Level
     DSWN                        15       V        1       8       1     
     FDCEN                       17       V        1       8       1     
     IORQN                       5        V        -       -       -     
-    NC0                         8        V        -       -       -     
+    M1                          8        V        -       -       -     
     NC1                         9        V        -       -       -     
     NC2                         11       V        -       -       -     
     PRTRN                       19       V        1       8       1     

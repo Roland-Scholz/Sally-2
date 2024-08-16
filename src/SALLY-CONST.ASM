@@ -1,3 +1,22 @@
+LF		equ	0ah
+CR		equ	0dh
+
+VARS		equ	0ff80h
+echo		equ	0
+sum		equ	1
+addr		equ	2
+
+;--------------------------------------------------
+; baudrate for console-io
+; 26 =  9600 baud
+; 13 = 19200 baud
+;--------------------------------------------------
+CONBAUD		equ	26
+
+;--------------------------------------------------
+; 16 bytes keyboard buffer
+;--------------------------------------------------
+KEYBUF		equ	0ff00h
 ;--------------------------------------------------
 ; FF10: Interrupt Table
 ;--------------------------------------------------
@@ -32,7 +51,7 @@ RS232DTR	equ	055h
 SETIDX		equ	056h
 CMDSIO		equ	057h				;0 = CMD, 1 = SIOOUT
 
-
+RS232		equ	050h
 SIOIN		equ	070h
 
 TC0		equ	080h

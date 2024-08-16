@@ -2,56 +2,75 @@ SALLY-0000.asm:
      1                          
      2                          		include "SALLY-CONST.asm"
 SALLY-CONST.asm:
-     1                          ;--------------------------------------------------
-     2                          ; FF10: Interrupt Table
-     3                          ;--------------------------------------------------
-     4                          TC0INTVEC	equ	0ff10h
-     5                          TC1INTVEC	equ	0ff12h
-     6                          TC2INTVEC	equ	0ff14h
-     7                          TC3INTVEC	equ	0ff16h
+     1                          LF		equ	0ah
+     2                          CR		equ	0dh
+     3                          
+     4                          VARS		equ	0ff80h
+     5                          echo		equ	0
+     6                          sum		equ	1
+     7                          addr		equ	2
      8                          
      9                          ;--------------------------------------------------
-    10                          ; Out - ports equations, Disk-Control
-    11                          ;--------------------------------------------------
-    12                          DISKCTRL	equ	030h				;7 = S/D\, 6 = S/B\, 5 = side, 4 = RES\, 3-0 = DSEL 4-1
-    13                          
-    14                          ;--------------------------------------------------
-    15                          ; In/Out - ports equations, WD177x FDC
+    10                          ; baudrate for console-io
+    11                          ; 26 =  9600 baud
+    12                          ; 13 = 19200 baud
+    13                          ;--------------------------------------------------
+    14                          CONBAUD		equ	26
+    15                          
     16                          ;--------------------------------------------------
-    17                          FDCSTAT		equ	040h
-    18                          FDCCMD		equ	040h
-    19                          FDCTRK		equ	041h
-    20                          FDCSEC		equ	042h
-    21                          FDCDAT		equ	043h
-    22                          
-    23                          ;--------------------------------------------------
-    24                          ; Out - ports equations, RS232, SIO, ROM, INDEX
-    25                          ;--------------------------------------------------
-    26                          SIOOUT		equ	050h
-    27                          RS232TX		equ	051h
-    28                          ROMSWITCH	equ	052h
-    29                          STROBE		equ	053h
-    30                          RESIDX		equ	054h
-    31                          RS232DTR	equ	055h
-    32                          SETIDX		equ	056h
-    33                          CMDSIO		equ	057h				;0 = CMD, 1 = SIOOUT
-    34                          
-    35                          
-    36                          SIOIN		equ	070h
-    37                          
-    38                          TC0		equ	080h
-    39                          TC1		equ	081h
-    40                          TC2		equ	082h
-    41                          TC3		equ	083h
-    42                          
-    43                          DDEVIC		equ	0c2fbh
-    44                          DCOMND		equ	0c2fch
-    45                          DAUX1		equ	0c2fdh
-    46                          DAUX2		equ	0c2feh
-    47                          DCHECK		equ	0c2ffh
-    48                          
-    49                          PERCOMBLOCKS	equ	0ff56h
-    50                          
+    17                          ; 16 bytes keyboard buffer
+    18                          ;--------------------------------------------------
+    19                          KEYBUF		equ	0ff00h
+    20                          ;--------------------------------------------------
+    21                          ; FF10: Interrupt Table
+    22                          ;--------------------------------------------------
+    23                          TC0INTVEC	equ	0ff10h
+    24                          TC1INTVEC	equ	0ff12h
+    25                          TC2INTVEC	equ	0ff14h
+    26                          TC3INTVEC	equ	0ff16h
+    27                          
+    28                          ;--------------------------------------------------
+    29                          ; Out - ports equations, Disk-Control
+    30                          ;--------------------------------------------------
+    31                          DISKCTRL	equ	030h				;7 = S/D\, 6 = S/B\, 5 = side, 4 = RES\, 3-0 = DSEL 4-1
+    32                          
+    33                          ;--------------------------------------------------
+    34                          ; In/Out - ports equations, WD177x FDC
+    35                          ;--------------------------------------------------
+    36                          FDCSTAT		equ	040h
+    37                          FDCCMD		equ	040h
+    38                          FDCTRK		equ	041h
+    39                          FDCSEC		equ	042h
+    40                          FDCDAT		equ	043h
+    41                          
+    42                          ;--------------------------------------------------
+    43                          ; Out - ports equations, RS232, SIO, ROM, INDEX
+    44                          ;--------------------------------------------------
+    45                          SIOOUT		equ	050h
+    46                          RS232TX		equ	051h
+    47                          ROMSWITCH	equ	052h
+    48                          STROBE		equ	053h
+    49                          RESIDX		equ	054h
+    50                          RS232DTR	equ	055h
+    51                          SETIDX		equ	056h
+    52                          CMDSIO		equ	057h				;0 = CMD, 1 = SIOOUT
+    53                          
+    54                          RS232		equ	050h
+    55                          SIOIN		equ	070h
+    56                          
+    57                          TC0		equ	080h
+    58                          TC1		equ	081h
+    59                          TC2		equ	082h
+    60                          TC3		equ	083h
+    61                          
+    62                          DDEVIC		equ	0c2fbh
+    63                          DCOMND		equ	0c2fch
+    64                          DAUX1		equ	0c2fdh
+    65                          DAUX2		equ	0c2feh
+    66                          DCHECK		equ	0c2ffh
+    67                          
+    68                          PERCOMBLOCKS	equ	0ff56h
+    69                          
 SALLY-0000.asm:
      3                          
      4                          ;--------------------------------------------------
