@@ -16,7 +16,7 @@ if not %ERRORLEVEL%==0 goto error
 call :compile rollitest 0000
 if not %ERRORLEVEL%==0 goto error
 
-del /Q	..\release\*.*
+del /Q	..\release\sally*.*
 
 move ..\src\*.o ..\release	>nul 2>&1	
 move ..\src\*.hex ..\release	>nul 2>&1

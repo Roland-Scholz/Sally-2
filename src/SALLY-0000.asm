@@ -12,7 +12,8 @@ restime:	dec     a				; do 256 times nothing
 		jr      nz, restime			; loop 
 		
 		ld      hl, portval			; init 11 ports with values at 0a3h
-		ld      b, 0bh              	
+;		ld      b, 0bh              	
+		ld      b, 10				;no FORCE              	
 portinit:	ld      c, (hl)             	
 		inc     hl                 	
 		outi   			 		 

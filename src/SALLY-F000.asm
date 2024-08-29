@@ -88,7 +88,7 @@ readsector1:	di
      		out	(TC3), a
      		dec	a
      		ld	(0ffc9h), a
-     		ld	hl, coninInt
+     		ld	hl, 0f050h
      		ld	(0ff16h), hl			;TC3 Int
      		ei
      		ret
@@ -110,6 +110,15 @@ f064:		pop	af
      		out	(FDCDAT), a
      		ld	a, 10h
      		out	(FDCCMD), a
+;		nop
+;		nop
+;		nop
+;		nop
+;		nop
+;		nop
+;		nop
+;		nop
+
      		ld	a, (0ff2fh)
      		and	0f0h
      		out	(DISKCTRL), a
@@ -139,11 +148,13 @@ f097:		ld	(ix+06h), 06h
 f0ab:		bit	7, (ix+01h)
      		jr	z, f0b3		; (+02h)
      		set	1, b
+;		nop
+;		nop
 f0b3:		ld	a, b
      		ld	(0ffc5h), a
      		call	0f11ah
      		bit	7, a
-     		jr	nz, f110		; (+52h)
+     		jr	z, f110		; (+52h)	<===== motor on!
      		ld	a, (0ff2dh)
      		cp	0ffh
      		jr	z, f0ca		; (+05h)
@@ -358,7 +369,7 @@ f248:		djnz	f248		; (-02h)
      		ld	a, 0bh
      		call	0f36bh
      		xor	04h
-     		and	84h
+     		and	04h
      		ret
 
 f257:		push	bc
@@ -399,9 +410,9 @@ f257:		push	bc
      		call	0f39eh
      		ret
 
-     		ld	a, 0c0h
+verify:     	ld	a, 0c0h
      		call	0f362h
-     		and	98h
+     		and	18h
      		ret	z
 
      		ld	a, (0ff2fh)
@@ -412,7 +423,7 @@ f257:		push	bc
      		call	0f39eh
      		ld	a, 0c0h
      		call	0f362h
-     		and	98h
+     		and	18h
      		ret
 
      		ld	hl, (0066h)
@@ -459,7 +470,7 @@ f2f8:		in	a, (FDCSTAT)
      		ld	(0068h), hl
      		pop	hl
      		ld	(0066h), hl
-     		and	0fdh
+     		and	07dh
      		ret
 
      		ld	b, a
@@ -600,7 +611,7 @@ sallymon:     	ld	a, 01h
      		out	(ROMSWITCH), a			;turn off ROM
      		call	init9600			;init send/receive at 9600 baud (T/C 0 interrupt)
      		call	printstr
-		db	"\r\n",  "SALLY1",  0
+		db	"\r\n",  "Rolli1",  0
 
 monloop:	ld	hl,  monloop			;loop here
      		push	hl
@@ -1324,9 +1335,9 @@ gettable:    	ld	c, (hl)
 devicetab:	dw	06				;number of devices
 f823:		db	40h				;printer
 		db	31h, 32h, 33h, 34h		;disk 1-4
-		db	5ah				;RS232?
+		db	'Z'				;Z80
 		
-		dw	0f854h				;RS232
+		dw	0f854h				;Z80
 		dw	0f83dh				;Disk 4
 		dw	0f83dh				;Disk 3
 		dw	0f83dh				;Disk 2
