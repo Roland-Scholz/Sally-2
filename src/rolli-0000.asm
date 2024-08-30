@@ -35,6 +35,9 @@ RECOVER		equ	0f30fh
 ACTIVON		equ	0f03ch
 
 dskhandler	equ	0f00fh
+CFRAME		equ	IOBUFF+LEN-5
+iobuflenhi	equ	(IOBUFF+LEN) / 256
+
 
 		include "equs.mac"
 		include "global.mac"
@@ -43,6 +46,13 @@ dskhandler	equ	0f00fh
 ; Code executed after Reset
 ;--------------------------------------------------
 		ORG	00000h
+		jp	reset
+		jp	serin
+		jp	serout
+		jp	serhex
+		jp	sercmd
+		jp	serdump
+		jp	serrecv
 ;
 reset:		di      				;disable interrupt
 		xor     a				;set a to zero
@@ -156,8 +166,27 @@ nextdrv:	rr      d
 noset:		add     hl, bc          	         
 		dec     a               	         
 		jr      nz, nextdrv     	         
-							 
+
+
+		ld	hl, 00000h			; source
+		ld	de, 08000h			; dest
+		ld	bc, 02000h
+		ldir		
+		ld	hl, code8000
+		set	7, h
+		jp	(hl)
+code8000:	ld	a, 1
+		out	(BANKSW), a
+		ld	hl, 08000h
+		ld	de, 00000h
+		ld	bc, 02000h
+		ldir
+		jp	code0000
+
+code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
+		call	sercr
+		call	sercr
 		jp      0f762h				;jump to code in DRAM
 ;		jp	0f003h
 ;		jp	main
@@ -188,23 +217,214 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 		db	030h, 040h			;DRIVE CONTROL 8Mhz
 	
 main:
-		ld	hl, 00000h			; source
-		ld	de, 08000h			; dest
-		ld	bc, 02000h
-		ldir		
-		ld	hl, code8000
-		set	7, h
-		jp	(hl)
-code8000:	ld	a, 1
-		out	(BANKSW), a
-		ld	hl, 08000h
-		ld	de, 00000h
-		ld	bc, 02000h
-		ldir
-		jp	code0000
+		;call	0f5fch				;coninit
 
-code0000:	call	0f5fch				;coninit
+serloop1:	ld	hl, IOBUFF+LEN-5
+serloop:	call	serrecv
+		jr	z, serloop
+		call	sercmd
+		call	0fc54h
 
+		ld	hl, IOBUFF
+		call	serrecv
+		call	serdump
+		
+		jp	main
+;
+;
+; 19200 = 208 cycles
+;
+serrecv:	
+;	LD	DE,2730		;SET ABORT COUNTER FOR 32 MILLISECONDS
+	LD	BC,0		;CLEAR B/C FOR CHECKSUM DERRIVATION
+	JR	RXB35		;GO START LOOPING FOR START BIT
+;
+RXB1:	LD	A,C		;4
+	ADD	A,B		;4
+	ADC	A,0		;7 ACCUMULATE CHECKSUM ATARI STYLE
+	LD	C,A		;4
+	EX	(SP),HL		;19
+	EX	(SP),HL		;19
+	EX	(SP),HL		;19
+	EX	(SP),HL		;19
+	LD	B,8		;7	=102
+;
+;	SERIAL->PARALLEL CONVERSION AT 52 MICROSECONDS PER BIT
+;
+RXB2:	LD	A,11		;  7 CYCLES
+	LD	A,11		;  7 CYCLES
+	NOP			;  4 CYCLES
+RXB3:	DEC	A		; 44 CYCLES  (11*4)
+	JP	NZ,RXB3		;110 CYCLES  (11*10)
+	IN	A,(ATARI)	; 11 CYCLES
+	RLA			;  4 CYCLES
+	RR	D		;  8 CYCLES
+	DJNZ	RXB2		; 13 CYCLES  (8 ON FINAL BIT)
+
+	LD	B,D		;4 SAVE COPY OF LAST DATA BYTE IN B
+	LD	(HL),D		;7 THEN STORE IN MEMORY BUFFER @HL
+	INC	HL		;6
+	LD	A,H		;4
+	CP	iobuflenhi	;7
+	CCF			;4
+	RET	C		;5 RETURN WITH CARRY SET IF BUFFER FILLED
+
+	ld	a, 6
+rxb3a:	dec	a
+	jp	nz, rxb3a
+	
+RXB35:	;LD	A,01000111B
+	;OUT	(CTC0),A	;PUT CTC0 IN COUNTER MODE
+	;XOR	A
+	;OUT	(CTC0),A	;COUNT DATA HIGH->LOW EDGES MOD 256
+
+	LD	DE,417		;10 5 MILLISECONDS @ 12 MICROSECONDS/LOOP
+RXB4:	IN	A,(ATARI)
+	RLA
+	JR	NC,RXB1		;NEW BYTE IS COMING IF START BIT LOW
+	DEC	DE
+	LD	A,D
+	OR	E
+	JR	NZ,RXB4		;ELSE LOOP TILL TIMER RUNS OUT
+
+	RET			;RETURN WITH CARRY CLEAR IF TIMED OUT
+;--------------------------------------------------
+; RS232 dump
+;--------------------------------------------------
+serdump:	ld	de, 0c100h
+		ex	de, hl
+		call	sercr
+		call	sercmd
+		call	sercr
+serdump2:	ld	b, 16
+serdump1:	ld	a, (hl)
+		call	serhex
+		call	serspace
+		inc	hl
+		dec	de
+		ld	a, d
+		or	a, e
+		jr	z, serdump3
+		djnz	serdump1
+		call	sercr
+		jr	serdump2
+serdump3:	call	sercr
+		ld	a, (hl)
+		call	serhex
+		call	sercr
+		ret
+		
+
+;--------------------------------------------------
+; RS232 sercmd
+;--------------------------------------------------
+sercmd:		push	af
+		push	bc
+		push	hl
+		ld	hl, CFRAME
+		ld	b, 4
+sercmd1:	ld	a, (hl)
+		call	serhex
+		call	serspace
+		inc	hl
+		djnz	sercmd1
+		call	sercr
+		pop	hl
+		pop	bc
+		pop	af
+		ret
+		
+;--------------------------------------------------
+; RS232 <space>
+;--------------------------------------------------
+serspace:	push	af
+		ld	a, ' '
+		call	serout
+		pop	af
+		ret
+
+;--------------------------------------------------
+; RS232 <CR>
+;--------------------------------------------------
+sercr:		push	af
+		ld	a, '\r'
+		call	serout
+		pop	af
+		ret
+		
+;--------------------------------------------------
+; RS232 output byte in hex
+;--------------------------------------------------
+serhex:		push	af
+		push	af
+		rrca
+		rrca
+		rrca
+		rrca
+		call	sernib
+		pop	af
+		call	sernib
+		pop	af
+		ret
+		
+sernib:		and	0fh
+		add	'0'
+		cp	'9' + 1
+		jr	c, sernib1
+		add	7
+sernib1:			
+;--------------------------------------------------
+; RS232 out	208 T-States
+;--------------------------------------------------
+serout:		push	af
+		push	bc
+		ld	b, a
+		xor	a
+		out	(SEROUT), a			;startbit
+		call	time19600			;17
+
+		ld	a, b
+		ld	b, 8				;7
+serout1:	out	(SEROUT), a			;11
+		call	time19600			;17
+		rrca					;4
+		djnz	serout1				;8
+
+		ld	a, 1				;7
+		out	(SEROUT), a			;11
+		call	time19600			;17
+		
+		pop	bc
+		pop	af
+		ret
+		
+		
+;--------------------------------------------------
+; RS232 in	208 T-States
+;--------------------------------------------------
+serin:		push	bc
+serin2:		in	a, (SERIN)
+		rlca
+		jr	c, serin2
+		
+		ex	(sp), hl			;19, 4.75uS
+		ex	(sp), hl			;19  9uS
+		
+		ld	b, 80h
+serin1:		call	time19600
+		in	a, (SERIN)
+		rlca
+		rr	b
+		jr	nc, serin1
+
+		ld	a, b
+		pop	bc
+		ret
+
+time19600:	ld	c, 9				;4
+time19600a:	dec	c				;4
+		jr	nz, time19600a			;12/7
+		ret					;10
 
 ;		DI
 ;		LD	A,10000111B

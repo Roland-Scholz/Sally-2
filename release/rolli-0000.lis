@@ -36,8 +36,11 @@ rolli-0000.asm:
     35                          ACTIVON		equ	0f03ch
     36                          
     37                          dskhandler	equ	0f00fh
-    38                          
-    39                          		include "equs.mac"
+    38                          CFRAME		equ	IOBUFF+LEN-5
+    39                          iobuflenhi	equ	(IOBUFF+LEN) / 256
+    40                          
+    41                          
+    42                          		include "equs.mac"
 equs.mac:
      1                          KEYBUF		equ	0ff00h		;16 byte keyboard input fifo
      2                          CTCVEC		equ	0ff10h		;8 word interrupt vector table
@@ -79,7 +82,7 @@ equs.mac:
     38                          ;
     39                          
 rolli-0000.asm:
-    40                          		include "global.mac"
+    43                          		include "global.mac"
 global.mac:
      1                          ;********************************************************
      2                          ;*							*
@@ -195,238 +198,455 @@ global.mac:
    112                          ;
    113                          
 rolli-0000.asm:
-    41                          
-    42                          ;--------------------------------------------------
-    43                          ; Code executed after Reset
-    44                          ;--------------------------------------------------
-    45                          		ORG	00000h
-    46                          ;
-    47   000000 f3              reset:		di      				;disable interrupt
-    48   000001 af              		xor     a				;set a to zero
-    49   000002 3d              restime:	dec     a				;do 256 times nothing
-    50   000003 20fd            		jr      nz, restime			;loop
-    51                          
-    52   000005 21b500          		ld      hl, portval			;init 11 ports with values at 0a3h
-    53   000008 060b            		ld      b, 0bh
-    54   00000a 4e              portinit:	ld      c, (hl)
-    55   00000b 23              		inc     hl
-    56   00000c eda3            		outi
-    57   00000e 20fa            		jr      nz, portinit			; loop
-    58                          
-    59                          
-    60   000010 2100f0          		ld      hl,0f000h          		;test ram @F000-FFFF
-    61   000013 3e01            		ld      a, 01h             		;write 1,2,4,8,16,32,64,128
-    62   000015 0610            testram2:	ld      b, 10h
-    63   000017 77              testram:	ld      (hl),a
-    64   000018 07              		rlca
-    65   000019 2c              		inc     l
-    66   00001a 20fb            		jr      nz, testram
-    67   00001c 24              		inc     h
-    68   00001d 10f8            		djnz    testram
+    44                          
+    45                          ;--------------------------------------------------
+    46                          ; Code executed after Reset
+    47                          ;--------------------------------------------------
+    48                          		ORG	00000h
+    49   000000 c31500          		jp	reset
+    50   000003 c3ed01          		jp	serin
+    51   000006 c3cf01          		jp	serout
+    52   000009 c3b601          		jp	serhex
+    53   00000c c38d01          		jp	sercmd
+    54   00000f c35f01          		jp	serdump
+    55   000012 c32301          		jp	serrecv
+    56                          ;
+    57   000015 f3              reset:		di      				;disable interrupt
+    58   000016 af              		xor     a				;set a to zero
+    59   000017 3d              restime:	dec     a				;do 256 times nothing
+    60   000018 20fd            		jr      nz, restime			;loop
+    61                          
+    62   00001a 21f300          		ld      hl, portval			;init 11 ports with values at 0a3h
+    63   00001d 060b            		ld      b, 0bh
+    64   00001f 4e              portinit:	ld      c, (hl)
+    65   000020 23              		inc     hl
+    66   000021 eda3            		outi
+    67   000023 20fa            		jr      nz, portinit			; loop
+    68                          
     69                          
-    70   00001f 0e10            		ld      c, 10h
-    71   000021 2b              testram1:	dec     hl
-    72   000022 0f              		rrca
-    73   000023 be              		cp      (hl)
-    74   000024 20fe            ramerr:		jr      nz, ramerr			;if error, loop forever
-    75   000026 10f9            		djnz    testram1
-    76   000028 0d              		dec     c
-    77   000029 20f6            		jr      nz, testram1
-    78   00002b 87              		add     a, a
-    79   00002c 20e7            		jr      nz, testram2
-    80                          
-    81   00002e 212301          		ld      hl, sallycode			;copy BIOS 0f000h
-    82   000031 1100f0          		ld      de, 0f000h			;length always 0f00h
-    83   000034 01000f          		ld      bc, 00f00h
-    84   000037 edb0            		ldir
-    85   000039 211f10          		ld      hl, sallycode+0efch		;copy initial values to 0ff20h
-    86   00003c 1120ff          		ld      de, 0ff20h			;length $2F
-    87   00003f 012f00          		ld      bc, 002fh
-    88   000042 edb0            		ldir
-    89                          
-    90   000044 af              		xor     a				;fill up to $FFFF with zeros
-    91   000045 12              ramfill:	ld      (de),a
-    92   000046 1c              		inc     e
-    93   000047 20fc            		jr      nz, ramfill
-    94                          
-    95   000049 3110ff          		ld      sp, 0ff10h			;stack-pointer to 0ff10h
-    96                          
-    97   00004c 3eff            		ld      a, 0ffh				;load interrupt-vector register
-    98   00004e ed47            		ld      i, a				;with 0ffh
-    99   000050 ed5e            		im      2				;enable interrupt mode 2 (vectored)
-   100                          
-   101                          ;--------------------------------------------------
-   102                          ; step 5 times in and then out to trk00
-   103                          ; set bit 6 for each online floppy in ff5eh
-   104                          ; percom block (16 bytes, byte 8 bit 6)
-   105                          ;--------------------------------------------------
-   106   000052 3e4f            		ld      a, 4fh				;select drive 1-4, Motor off, side 0, B/S=1, DD
-   107   000054 d330            		out     (LATCH),a
-   108                          
-   109   000056 57              		ld      d, a				;d = 4fh
-   110   000057 0605            		ld      b, 5				;step 5 times
-   111                          stepin:
-   112   000059 3e49            		ld      a, 49h				;4b = 0100 1011 = step-in
-   113   00005b cda700          		call    CMDOUT				;write A to FDC command and wait
-   114   00005e 10f9            		djnz    stepin
-   115                          
-   116   000060 0664            		ld      b, 64h				;seek track 00 for all 4 drives
-   117   000062 7a              outloop1:	ld      a, d				;select all drives
-   118   000063 d330            		out     (LATCH),a
-   119   000065 e3              		ex      (sp),hl				;???
-   120   000066 e3              		ex      (sp),hl				;???
-   121   000067 3e69            		ld      a, 69h				;step out
-   122   000069 cda700          		call    CMDOUT				;write A to FDC command and wait
-   123                          
-   124   00006c 1e01            		ld      e, 01h
-   125   00006e 7b              outloop:	ld      a, e
-   126   00006f f640            		or      40h
-   127   000071 d330            		out     (LATCH), a			;select one drive
-   128   000073 e3              		ex      (sp), hl
-   129   000074 e3              		ex      (sp), hl
-   130                          ;		call    0f391h				;stop command, get status
-   131   000075 db40            		in	a, (STSREG)
-   132   000077 cb57            		bit     2, a
-   133   000079 2804            		jr      z, excldrv			;bit not set, not at track 00
-   134   00007b 7b              		ld      a, e				;drive at track 00
-   135   00007c 2f              		cpl     				;exclude drive from seeking
-   136   00007d a2              		and     d
-   137   00007e 57              		ld      d, a
-   138                          excldrv:
-   139   00007f cb23            		sla     e
-   140   000081 cb63            		bit     4, e
-   141   000083 28e9            		jr      z, outloop			;status checked for all 4 drives?
-   142   000085 10db            		djnz    outloop1			;step out again
-   143                          
-   144                          ;		call    0f068h				;deselect floppies and seek current track?
-   145   000087 3e50            		ld	a, 50h				;reset FDC and deselct
-   146   000089 d330            		out	(LATCH), a
-   147   00008b 3e40            		ld	a, 40h				;reset FDC and deselct
-   148   00008d d330            		out	(LATCH), a
-   149                          
-   150   00008f 215eff          		ld      hl, 0ff5eh			;set bit for each connected floppy?
-   151   000092 011000          		ld      bc, 0010h
-   152   000095 3e04            		ld      a, 04h
-   153   000097 cb1a            nextdrv:	rr      d
-   154   000099 3802            		jr      c, noset
-   155   00009b cbf6            		set     6, (hl)
-   156   00009d 09              noset:		add     hl, bc
-   157   00009e 3d              		dec     a
-   158   00009f 20f6            		jr      nz, nextdrv
+    70   000025 2100f0          		ld      hl,0f000h          		;test ram @F000-FFFF
+    71   000028 3e01            		ld      a, 01h             		;write 1,2,4,8,16,32,64,128
+    72   00002a 0610            testram2:	ld      b, 10h
+    73   00002c 77              testram:	ld      (hl),a
+    74   00002d 07              		rlca
+    75   00002e 2c              		inc     l
+    76   00002f 20fb            		jr      nz, testram
+    77   000031 24              		inc     h
+    78   000032 10f8            		djnz    testram
+    79                          
+    80   000034 0e10            		ld      c, 10h
+    81   000036 2b              testram1:	dec     hl
+    82   000037 0f              		rrca
+    83   000038 be              		cp      (hl)
+    84   000039 20fe            ramerr:		jr      nz, ramerr			;if error, loop forever
+    85   00003b 10f9            		djnz    testram1
+    86   00003d 0d              		dec     c
+    87   00003e 20f6            		jr      nz, testram1
+    88   000040 87              		add     a, a
+    89   000041 20e7            		jr      nz, testram2
+    90                          
+    91   000043 213c02          		ld      hl, sallycode			;copy BIOS 0f000h
+    92   000046 1100f0          		ld      de, 0f000h			;length always 0f00h
+    93   000049 01000f          		ld      bc, 00f00h
+    94   00004c edb0            		ldir
+    95   00004e 213811          		ld      hl, sallycode+0efch		;copy initial values to 0ff20h
+    96   000051 1120ff          		ld      de, 0ff20h			;length $2F
+    97   000054 012f00          		ld      bc, 002fh
+    98   000057 edb0            		ldir
+    99                          
+   100   000059 af              		xor     a				;fill up to $FFFF with zeros
+   101   00005a 12              ramfill:	ld      (de),a
+   102   00005b 1c              		inc     e
+   103   00005c 20fc            		jr      nz, ramfill
+   104                          
+   105   00005e 3110ff          		ld      sp, 0ff10h			;stack-pointer to 0ff10h
+   106                          
+   107   000061 3eff            		ld      a, 0ffh				;load interrupt-vector register
+   108   000063 ed47            		ld      i, a				;with 0ffh
+   109   000065 ed5e            		im      2				;enable interrupt mode 2 (vectored)
+   110                          
+   111                          ;--------------------------------------------------
+   112                          ; step 5 times in and then out to trk00
+   113                          ; set bit 6 for each online floppy in ff5eh
+   114                          ; percom block (16 bytes, byte 8 bit 6)
+   115                          ;--------------------------------------------------
+   116   000067 3e4f            		ld      a, 4fh				;select drive 1-4, Motor off, side 0, B/S=1, DD
+   117   000069 d330            		out     (LATCH),a
+   118                          
+   119   00006b 57              		ld      d, a				;d = 4fh
+   120   00006c 0605            		ld      b, 5				;step 5 times
+   121                          stepin:
+   122   00006e 3e49            		ld      a, 49h				;4b = 0100 1011 = step-in
+   123   000070 cde500          		call    CMDOUT				;write A to FDC command and wait
+   124   000073 10f9            		djnz    stepin
+   125                          
+   126   000075 0664            		ld      b, 64h				;seek track 00 for all 4 drives
+   127   000077 7a              outloop1:	ld      a, d				;select all drives
+   128   000078 d330            		out     (LATCH),a
+   129   00007a e3              		ex      (sp),hl				;???
+   130   00007b e3              		ex      (sp),hl				;???
+   131   00007c 3e69            		ld      a, 69h				;step out
+   132   00007e cde500          		call    CMDOUT				;write A to FDC command and wait
+   133                          
+   134   000081 1e01            		ld      e, 01h
+   135   000083 7b              outloop:	ld      a, e
+   136   000084 f640            		or      40h
+   137   000086 d330            		out     (LATCH), a			;select one drive
+   138   000088 e3              		ex      (sp), hl
+   139   000089 e3              		ex      (sp), hl
+   140                          ;		call    0f391h				;stop command, get status
+   141   00008a db40            		in	a, (STSREG)
+   142   00008c cb57            		bit     2, a
+   143   00008e 2804            		jr      z, excldrv			;bit not set, not at track 00
+   144   000090 7b              		ld      a, e				;drive at track 00
+   145   000091 2f              		cpl     				;exclude drive from seeking
+   146   000092 a2              		and     d
+   147   000093 57              		ld      d, a
+   148                          excldrv:
+   149   000094 cb23            		sla     e
+   150   000096 cb63            		bit     4, e
+   151   000098 28e9            		jr      z, outloop			;status checked for all 4 drives?
+   152   00009a 10db            		djnz    outloop1			;step out again
+   153                          
+   154                          ;		call    0f068h				;deselect floppies and seek current track?
+   155   00009c 3e50            		ld	a, 50h				;reset FDC and deselct
+   156   00009e d330            		out	(LATCH), a
+   157   0000a0 3e40            		ld	a, 40h				;reset FDC and deselct
+   158   0000a2 d330            		out	(LATCH), a
    159                          
-   160   0000a1 3100c1          		ld      sp, 0c100h			;set stack to 0c100h
-   161   0000a4 c362f7          		jp      0f762h				;jump to code in DRAM
-   162                          ;		jp	0f003h
-   163                          ;		jp	main
-   164                          
-   165                          CMDOUT:
-   166   0000a7 d340            		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
-   167   0000a9 3e0e            CMDT1:		LD	A,14
-   168   0000ab 3d              CMDT2:		DEC	A
-   169   0000ac 20fd            		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
-   170   0000ae db40            CMDT3:		in	a, (STSREG)
-   171   0000b0 cb47            		bit	0, a
-   172   0000b2 20fa            		jr	nz, CMDT3
-   173   0000b4 c9              		RET
-   174                          
-   175                          ;--------------------------------------------------
-   176                          ; 11 times port:value
-   177                          ;--------------------------------------------------
-   178   0000b5 5001            portval:	db	050h, 001h			;Bit0	set ATARI DATA
-   179   0000b7 5101            		db	051h, 001h			;Bit1	set RS232 TX
-   180   0000b9 8003            		db	080h, 003h			;CTC	Channel 0 reset
-   181   0000bb 8010            		db 	080h, 010h			;CTC	Channel 0 interrupt vector
-   182   0000bd 8107            		db	081h, 007h			;CTC	Channel 1 reset + set time constant
-   183   0000bf 8101            		db	081h, 001h			;CTC	Channel 1 time contant
-   184   0000c1 8203            		db	082h, 003h			;CTC	Channel 2 reset
-   185   0000c3 8303            		db	083h, 003h			;CTC	Channel 3 reset
-   186   0000c5 5701            		db	057h, 001h			;Bit7	ATARI RXD
-   187   0000c7 3050            		db	030h, 050h			;DRIVE CONTROL reset FDC
-   188   0000c9 3040            		db	030h, 040h			;DRIVE CONTROL 8Mhz
-   189                          
-   190                          main:
-   191   0000cb 210000          		ld	hl, 00000h			; source
-   192   0000ce 110080          		ld	de, 08000h			; dest
-   193   0000d1 010020          		ld	bc, 02000h
-   194   0000d4 edb0            		ldir
-   195   0000d6 21dc00          		ld	hl, code8000
-   196   0000d9 cbfc            		set	7, h
-   197   0000db e9              		jp	(hl)
-   198   0000dc 3e01            code8000:	ld	a, 1
-   199   0000de d352            		out	(BANKSW), a
-   200   0000e0 210080          		ld	hl, 08000h
-   201   0000e3 110000          		ld	de, 00000h
-   202   0000e6 010020          		ld	bc, 02000h
-   203   0000e9 edb0            		ldir
-   204   0000eb c3ee00          		jp	code0000
-   205                          
-   206   0000ee cdfcf5          code0000:	call	0f5fch				;coninit
-   207                          
-   208                          
-   209                          ;		DI
-   210                          ;		LD	A,10000111B
-   211                          ;		OUT	(CTC3),A
-   212                          ;		LD	A,250
-   213                          ;		OUT	(CTC3),A
-   214                          ;		LD	HL,TMRIRQ
-   215                          ;		LD	(CTCVEC+6),HL
-   216                          ;		EI
-   217                          
-   218                          dskloop:
-   219                          ;		ld	hl, (TICKS)
-   220                          ;		call	putaddr
-   221                          ;		jp	dskloop
-   222                          
-   223   0000f1 dd211a01        		ld	ix, dcb
-   224   0000f5 cd0ff0          		call	dskhandler
-   225   0000f8 cd0101          		call	dump
-   226                          
-   227   0000fb cd40f6          		call	conin
-   228                          
-   229   0000fe c3f100          		jp	dskloop
-   230                          
+   160   0000a4 215eff          		ld      hl, 0ff5eh			;set bit for each connected floppy?
+   161   0000a7 011000          		ld      bc, 0010h
+   162   0000aa 3e04            		ld      a, 04h
+   163   0000ac cb1a            nextdrv:	rr      d
+   164   0000ae 3802            		jr      c, noset
+   165   0000b0 cbf6            		set     6, (hl)
+   166   0000b2 09              noset:		add     hl, bc
+   167   0000b3 3d              		dec     a
+   168   0000b4 20f6            		jr      nz, nextdrv
+   169                          
+   170                          
+   171   0000b6 210000          		ld	hl, 00000h			; source
+   172   0000b9 110080          		ld	de, 08000h			; dest
+   173   0000bc 010020          		ld	bc, 02000h
+   174   0000bf edb0            		ldir
+   175   0000c1 21c700          		ld	hl, code8000
+   176   0000c4 cbfc            		set	7, h
+   177   0000c6 e9              		jp	(hl)
+   178   0000c7 3e01            code8000:	ld	a, 1
+   179   0000c9 d352            		out	(BANKSW), a
+   180   0000cb 210080          		ld	hl, 08000h
+   181   0000ce 110000          		ld	de, 00000h
+   182   0000d1 010020          		ld	bc, 02000h
+   183   0000d4 edb0            		ldir
+   184   0000d6 c3d900          		jp	code0000
+   185                          
+   186                          code0000:
+   187   0000d9 3100c1          		ld      sp, 0c100h			;set stack to 0c100h
+   188   0000dc cdae01          		call	sercr
+   189   0000df cdae01          		call	sercr
+   190   0000e2 c362f7          		jp      0f762h				;jump to code in DRAM
+   191                          ;		jp	0f003h
+   192                          ;		jp	main
+   193                          
+   194                          CMDOUT:
+   195   0000e5 d340            		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
+   196   0000e7 3e0e            CMDT1:		LD	A,14
+   197   0000e9 3d              CMDT2:		DEC	A
+   198   0000ea 20fd            		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
+   199   0000ec db40            CMDT3:		in	a, (STSREG)
+   200   0000ee cb47            		bit	0, a
+   201   0000f0 20fa            		jr	nz, CMDT3
+   202   0000f2 c9              		RET
+   203                          
+   204                          ;--------------------------------------------------
+   205                          ; 11 times port:value
+   206                          ;--------------------------------------------------
+   207   0000f3 5001            portval:	db	050h, 001h			;Bit0	set ATARI DATA
+   208   0000f5 5101            		db	051h, 001h			;Bit1	set RS232 TX
+   209   0000f7 8003            		db	080h, 003h			;CTC	Channel 0 reset
+   210   0000f9 8010            		db 	080h, 010h			;CTC	Channel 0 interrupt vector
+   211   0000fb 8107            		db	081h, 007h			;CTC	Channel 1 reset + set time constant
+   212   0000fd 8101            		db	081h, 001h			;CTC	Channel 1 time contant
+   213   0000ff 8203            		db	082h, 003h			;CTC	Channel 2 reset
+   214   000101 8303            		db	083h, 003h			;CTC	Channel 3 reset
+   215   000103 5701            		db	057h, 001h			;Bit7	ATARI RXD
+   216   000105 3050            		db	030h, 050h			;DRIVE CONTROL reset FDC
+   217   000107 3040            		db	030h, 040h			;DRIVE CONTROL 8Mhz
+   218                          
+   219                          main:
+   220                          		;call	0f5fch				;coninit
+   221                          
+   222   000109 21fbc2          serloop1:	ld	hl, IOBUFF+LEN-5
+   223   00010c cd2301          serloop:	call	serrecv
+   224   00010f 28fb            		jr	z, serloop
+   225   000111 cd8d01          		call	sercmd
+   226   000114 cd54fc          		call	0fc54h
+   227                          
+   228   000117 2100c1          		ld	hl, IOBUFF
+   229   00011a cd2301          		call	serrecv
+   230   00011d cd5f01          		call	serdump
    231                          
-   232   000101 211a01          dump:		ld	hl, dcb
-   233   000104 0609            		ld	b, 9
-   234   000106 7e              loop:		ld	a, (hl)
-   235   000107 cd98f4          		call	puthex
-   236   00010a 23              		inc	hl
-   237   00010b 10f9            		djnz	loop
-   238   00010d c9              		ret
-   239                          
-   240                          ;		ld	ix, dcb
-   241                          ;		call	dskhandler
-   242                          ;		ld	hl, dcb
-   243                          ;		ld	b, 9
-   244                          ;loop1:		ld	a, (hl)
-   245                          ;		call	puthex
-   246                          ;		inc	hl
-   247                          ;		djnz	loop1
-   248                          ;
-   249                          ;		jp	dskloop
-   250                          
+   232   000120 c30901          		jp	main
+   233                          ;
+   234                          ;
+   235                          ; 19200 = 208 cycles
+   236                          ;
+   237                          serrecv:
+   238                          ;	LD	DE,2730		;SET ABORT COUNTER FOR 32 MILLISECONDS
+   239   000123 010000          	LD	BC,0		;CLEAR B/C FOR CHECKSUM DERRIVATION
+   240   000126 1829            	JR	RXB35		;GO START LOOPING FOR START BIT
+   241                          ;
+   242   000128 79              RXB1:	LD	A,C		;4
+   243   000129 80              	ADD	A,B		;4
+   244   00012a ce00            	ADC	A,0		;7 ACCUMULATE CHECKSUM ATARI STYLE
+   245   00012c 4f              	LD	C,A		;4
+   246   00012d e3              	EX	(SP),HL		;19
+   247   00012e e3              	EX	(SP),HL		;19
+   248   00012f e3              	EX	(SP),HL		;19
+   249   000130 e3              	EX	(SP),HL		;19
+   250   000131 0608            	LD	B,8		;7	=102
    251                          ;
-   252                          ;
+   252                          ;	SERIAL->PARALLEL CONVERSION AT 52 MICROSECONDS PER BIT
    253                          ;
-   254                          TMRIRQ:
-   255   00010e e5              	PUSH	HL
-   256   00010f fb              	EI
-   257   000110 2ac7ff          	LD	HL,(TICKS)
-   258   000113 23              	INC	HL		;BUMP FREE RUNING MILLISECOND COUNTER
-   259   000114 22c7ff          	LD	(TICKS),HL
-   260   000117 e1              	POP	HL
-   261   000118 ed4d            	RETI
-   262                          
+   254   000133 3e0b            RXB2:	LD	A,11		;  7 CYCLES
+   255   000135 3e0b            	LD	A,11		;  7 CYCLES
+   256   000137 00              	NOP			;  4 CYCLES
+   257   000138 3d              RXB3:	DEC	A		; 44 CYCLES  (11*4)
+   258   000139 c23801          	JP	NZ,RXB3		;110 CYCLES  (11*10)
+   259   00013c db70            	IN	A,(ATARI)	; 11 CYCLES
+   260   00013e 17              	RLA			;  4 CYCLES
+   261   00013f cb1a            	RR	D		;  8 CYCLES
+   262   000141 10f0            	DJNZ	RXB2		; 13 CYCLES  (8 ON FINAL BIT)
    263                          
-   264                          
-   265                          
-   266   00011a 00              dcb:		db	0				;DISK OPERATION CODE
-   267   00011b 00              		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
-   268   00011c 00              		db	0				;TRACK#
-   269   00011d 01              		db	1				;SECTOR#
-   270   00011e 0080            		dw	8000h				;READ/WRITE POINTER
-   271   000120 8000            		dw	128				;AUXILLIARY PARAMETERS (2 BYTES)
-   272   000122 00              		db	0				;OPERATION COMPLETION STATUS
-   273                          
-   274                          sallycode	equ	ASMPC
+   264   000143 42              	LD	B,D		;4 SAVE COPY OF LAST DATA BYTE IN B
+   265   000144 72              	LD	(HL),D		;7 THEN STORE IN MEMORY BUFFER @HL
+   266   000145 23              	INC	HL		;6
+   267   000146 7c              	LD	A,H		;4
+   268   000147 fec3            	CP	iobuflenhi	;7
+   269   000149 3f              	CCF			;4
+   270   00014a d8              	RET	C		;5 RETURN WITH CARRY SET IF BUFFER FILLED
+   271                          
+   272   00014b 3e06            	ld	a, 6
+   273   00014d 3d              rxb3a:	dec	a
+   274   00014e c24d01          	jp	nz, rxb3a
    275                          
+   276                          RXB35:	;LD	A,01000111B
+   277                          	;OUT	(CTC0),A	;PUT CTC0 IN COUNTER MODE
+   278                          	;XOR	A
+   279                          	;OUT	(CTC0),A	;COUNT DATA HIGH->LOW EDGES MOD 256
+   280                          
+   281   000151 11a101          	LD	DE,417		;10 5 MILLISECONDS @ 12 MICROSECONDS/LOOP
+   282   000154 db70            RXB4:	IN	A,(ATARI)
+   283   000156 17              	RLA
+   284   000157 30cf            	JR	NC,RXB1		;NEW BYTE IS COMING IF START BIT LOW
+   285   000159 1b              	DEC	DE
+   286   00015a 7a              	LD	A,D
+   287   00015b b3              	OR	E
+   288   00015c 20f6            	JR	NZ,RXB4		;ELSE LOOP TILL TIMER RUNS OUT
+   289                          
+   290   00015e c9              	RET			;RETURN WITH CARRY CLEAR IF TIMED OUT
+   291                          ;--------------------------------------------------
+   292                          ; RS232 dump
+   293                          ;--------------------------------------------------
+   294   00015f 1100c1          serdump:	ld	de, 0c100h
+   295   000162 eb              		ex	de, hl
+   296   000163 cdae01          		call	sercr
+   297   000166 cd8d01          		call	sercmd
+   298   000169 cdae01          		call	sercr
+   299   00016c 0610            serdump2:	ld	b, 16
+   300   00016e 7e              serdump1:	ld	a, (hl)
+   301   00016f cdb601          		call	serhex
+   302   000172 cda601          		call	serspace
+   303   000175 23              		inc	hl
+   304   000176 1b              		dec	de
+   305   000177 7a              		ld	a, d
+   306   000178 b3              		or	a, e
+   307   000179 2807            		jr	z, serdump3
+   308   00017b 10f1            		djnz	serdump1
+   309   00017d cdae01          		call	sercr
+   310   000180 18ea            		jr	serdump2
+   311   000182 cdae01          serdump3:	call	sercr
+   312   000185 7e              		ld	a, (hl)
+   313   000186 cdb601          		call	serhex
+   314   000189 cdae01          		call	sercr
+   315   00018c c9              		ret
+   316                          
+   317                          
+   318                          ;--------------------------------------------------
+   319                          ; RS232 sercmd
+   320                          ;--------------------------------------------------
+   321   00018d f5              sercmd:		push	af
+   322   00018e c5              		push	bc
+   323   00018f e5              		push	hl
+   324   000190 21fbc2          		ld	hl, CFRAME
+   325   000193 0604            		ld	b, 4
+   326   000195 7e              sercmd1:	ld	a, (hl)
+   327   000196 cdb601          		call	serhex
+   328   000199 cda601          		call	serspace
+   329   00019c 23              		inc	hl
+   330   00019d 10f6            		djnz	sercmd1
+   331   00019f cdae01          		call	sercr
+   332   0001a2 e1              		pop	hl
+   333   0001a3 c1              		pop	bc
+   334   0001a4 f1              		pop	af
+   335   0001a5 c9              		ret
+   336                          
+   337                          ;--------------------------------------------------
+   338                          ; RS232 <space>
+   339                          ;--------------------------------------------------
+   340   0001a6 f5              serspace:	push	af
+   341   0001a7 3e20            		ld	a, ' '
+   342   0001a9 cdcf01          		call	serout
+   343   0001ac f1              		pop	af
+   344   0001ad c9              		ret
+   345                          
+   346                          ;--------------------------------------------------
+   347                          ; RS232 <CR>
+   348                          ;--------------------------------------------------
+   349   0001ae f5              sercr:		push	af
+   350   0001af 3e0d            		ld	a, '\r'
+   351   0001b1 cdcf01          		call	serout
+   352   0001b4 f1              		pop	af
+   353   0001b5 c9              		ret
+   354                          
+   355                          ;--------------------------------------------------
+   356                          ; RS232 output byte in hex
+   357                          ;--------------------------------------------------
+   358   0001b6 f5              serhex:		push	af
+   359   0001b7 f5              		push	af
+   360   0001b8 0f              		rrca
+   361   0001b9 0f              		rrca
+   362   0001ba 0f              		rrca
+   363   0001bb 0f              		rrca
+   364   0001bc cdc501          		call	sernib
+   365   0001bf f1              		pop	af
+   366   0001c0 cdc501          		call	sernib
+   367   0001c3 f1              		pop	af
+   368   0001c4 c9              		ret
+   369                          
+   370   0001c5 e60f            sernib:		and	0fh
+   371   0001c7 c630            		add	'0'
+   372   0001c9 fe3a            		cp	'9' + 1
+   373   0001cb 3802            		jr	c, sernib1
+   374   0001cd c607            		add	7
+   375                          sernib1:
+   376                          ;--------------------------------------------------
+   377                          ; RS232 out	208 T-States
+   378                          ;--------------------------------------------------
+   379   0001cf f5              serout:		push	af
+   380   0001d0 c5              		push	bc
+   381   0001d1 47              		ld	b, a
+   382   0001d2 af              		xor	a
+   383   0001d3 d351            		out	(SEROUT), a			;startbit
+   384   0001d5 cd0402          		call	time19600			;17
+   385                          
+   386   0001d8 78              		ld	a, b
+   387   0001d9 0608            		ld	b, 8				;7
+   388   0001db d351            serout1:	out	(SEROUT), a			;11
+   389   0001dd cd0402          		call	time19600			;17
+   390   0001e0 0f              		rrca					;4
+   391   0001e1 10f8            		djnz	serout1				;8
+   392                          
+   393   0001e3 3e01            		ld	a, 1				;7
+   394   0001e5 d351            		out	(SEROUT), a			;11
+   395   0001e7 cd0402          		call	time19600			;17
+   396                          
+   397   0001ea c1              		pop	bc
+   398   0001eb f1              		pop	af
+   399   0001ec c9              		ret
+   400                          
+   401                          
+   402                          ;--------------------------------------------------
+   403                          ; RS232 in	208 T-States
+   404                          ;--------------------------------------------------
+   405   0001ed c5              serin:		push	bc
+   406   0001ee db50            serin2:		in	a, (SERIN)
+   407   0001f0 07              		rlca
+   408   0001f1 38fb            		jr	c, serin2
+   409                          
+   410   0001f3 e3              		ex	(sp), hl			;19, 4.75uS
+   411   0001f4 e3              		ex	(sp), hl			;19  9uS
+   412                          
+   413   0001f5 0680            		ld	b, 80h
+   414   0001f7 cd0402          serin1:		call	time19600
+   415   0001fa db50            		in	a, (SERIN)
+   416   0001fc 07              		rlca
+   417   0001fd cb18            		rr	b
+   418   0001ff 30f6            		jr	nc, serin1
+   419                          
+   420   000201 78              		ld	a, b
+   421   000202 c1              		pop	bc
+   422   000203 c9              		ret
+   423                          
+   424   000204 0e09            time19600:	ld	c, 9				;4
+   425   000206 0d              time19600a:	dec	c				;4
+   426   000207 20fd            		jr	nz, time19600a			;12/7
+   427   000209 c9              		ret					;10
+   428                          
+   429                          ;		DI
+   430                          ;		LD	A,10000111B
+   431                          ;		OUT	(CTC3),A
+   432                          ;		LD	A,250
+   433                          ;		OUT	(CTC3),A
+   434                          ;		LD	HL,TMRIRQ
+   435                          ;		LD	(CTCVEC+6),HL
+   436                          ;		EI
+   437                          
+   438                          dskloop:
+   439                          ;		ld	hl, (TICKS)
+   440                          ;		call	putaddr
+   441                          ;		jp	dskloop
+   442                          
+   443   00020a dd213302        		ld	ix, dcb
+   444   00020e cd0ff0          		call	dskhandler
+   445   000211 cd1a02          		call	dump
+   446                          
+   447   000214 cd40f6          		call	conin
+   448                          
+   449   000217 c30a02          		jp	dskloop
+   450                          
+   451                          
+   452   00021a 213302          dump:		ld	hl, dcb
+   453   00021d 0609            		ld	b, 9
+   454   00021f 7e              loop:		ld	a, (hl)
+   455   000220 cd98f4          		call	puthex
+   456   000223 23              		inc	hl
+   457   000224 10f9            		djnz	loop
+   458   000226 c9              		ret
+   459                          
+   460                          ;		ld	ix, dcb
+   461                          ;		call	dskhandler
+   462                          ;		ld	hl, dcb
+   463                          ;		ld	b, 9
+   464                          ;loop1:		ld	a, (hl)
+   465                          ;		call	puthex
+   466                          ;		inc	hl
+   467                          ;		djnz	loop1
+   468                          ;
+   469                          ;		jp	dskloop
+   470                          
+   471                          ;
+   472                          ;
+   473                          ;
+   474                          TMRIRQ:
+   475   000227 e5              	PUSH	HL
+   476   000228 fb              	EI
+   477   000229 2ac7ff          	LD	HL,(TICKS)
+   478   00022c 23              	INC	HL		;BUMP FREE RUNING MILLISECOND COUNTER
+   479   00022d 22c7ff          	LD	(TICKS),HL
+   480   000230 e1              	POP	HL
+   481   000231 ed4d            	RETI
+   482                          
+   483                          
+   484                          
+   485                          
+   486   000233 00              dcb:		db	0				;DISK OPERATION CODE
+   487   000234 00              		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
+   488   000235 00              		db	0				;TRACK#
+   489   000236 01              		db	1				;SECTOR#
+   490   000237 0080            		dw	8000h				;READ/WRITE POINTER
+   491   000239 8000            		dw	128				;AUXILLIARY PARAMETERS (2 BYTES)
+   492   00023b 00              		db	0				;OPERATION COMPLETION STATUS
+   493                          
+   494                          sallycode	equ	ASMPC
+   495                          

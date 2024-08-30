@@ -1,3 +1,11 @@
+serin		equ	03
+serout		equ	serin+3
+serhex		equ	serout+3
+sercmd		equ	serhex+3
+serdump		equ	sercmd+3
+serrecv		equ	serdump+3
+;
+
 		ORG	0f000h
 ;
 ;
