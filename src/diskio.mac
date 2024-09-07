@@ -679,7 +679,7 @@ TPCMD2:	IN	A,(STSREG)
 
 	LD	A,00010000B
 TPCMD3:	
-	res	7, a		;reset ED1797 drive not ready, WD1772: motor on!
+	res	7, a		;reset WD1797: drive not ready, WD1772: motor on!
 	;LD	B,A
 	;CALL	FORCE1
 	;LD	A,B

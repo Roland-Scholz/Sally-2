@@ -4,7 +4,7 @@
 ;*							*
 ;********************************************************
 ;
-glbvars	equ	0ff20h
+glbvars		equ	0ff20h
 ;
 ;	... GLOBAL VARIABLES FOR PHYSICAL DISK HANDLER ...
 ;
@@ -59,7 +59,7 @@ FMTPTR:		equ	PMASKS+2	;POINTER TO STANDARD FORMAT TABLES
 PBASE:		equ	FMTPTR+2	;PUT PRINT BUFFER AFTER HERE
 PSIZE:		equ	PBASE+2		;MAX BUFFER INDEX OFFSET
 
-glbsize	equ	$-glbvars		;length of initialized variables
+glbsize		equ	$-glbvars	;length of initialized variables
 ;
 ;
 ;	*** UNINITIALIZED SCRATCH VARIABLES COME AFTER HERE ***
@@ -105,8 +105,8 @@ DRVTMR:		EQU	TICKS+2			;DISK ACTIVITY TIMER
 ;
 ;
 ;
-IOBUFF	EQU	0C100H		;ATARI I/O BUFFER
-LEN	EQU	512
+IOBUFF		EQU	0C100H			;ATARI I/O BUFFER
+LEN		EQU	512
 ;
-TRKBUF	EQU	IOBUFF+LEN	;TRACK BUFFER FOR READS
+TRKBUF		EQU	IOBUFF+LEN		;TRACK BUFFER FOR READS
 ;
