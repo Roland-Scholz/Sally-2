@@ -38,6 +38,19 @@ dskhandler	equ	0f00fh
 CFRAME		equ	IOBUFF+LEN-5
 iobuflenhi	equ	(IOBUFF+LEN) / 256
 
+DISKID		equ	0f82bh
+DISKTAB		equ	0f83dh
+DRVINDEX	equ	0fc28h
+SENDBUFF	equ	0f66ch
+SENDACK		equ	0fc4ah
+HASPARMS	equ	0fbd3h
+DISKREAD	equ	0f98ch
+XMITBUF		equ	0f684h
+RXBLOCK		equ	0f6d9h
+CMDWAIT		equ	0f7e2h
+
+SIONORMAL	equ	40
+SIOFAST		equ	8
 
 		include "equs.mac"
 		include "global.mac"
@@ -52,7 +65,7 @@ iobuflenhi	equ	(IOBUFF+LEN) / 256
 		jp	serhex
 		jp	sercmd
 		jp	serdump
-		jp	serrecv
+		jp	fastrecv
 ;
 reset:		di      				;disable interrupt
 		xor     a				;set a to zero
@@ -107,7 +120,7 @@ ramfill:	ld      (de),a
 		ld      a, 0ffh				;load interrupt-vector register
 		ld      i, a				;with 0ffh
 		im      2				;enable interrupt mode 2 (vectored)	
-							 
+				
 ;--------------------------------------------------      
 ; step 5 times in and then out to trk00                  
 ; set bit 6 for each online floppy in ff5eh              
@@ -185,11 +198,11 @@ code8000:	ld	a, 1
 
 code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
-		call	sercr
-		call	sercr
-		jp      0f762h				;jump to code in DRAM
+;		call	sercr
+;		call	sercr
+;		jp      0f762h				;jump to code in DRAM
 ;		jp	0f003h
-;		jp	main
+		jp	main
 
 CMDOUT:
 		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
@@ -216,86 +229,283 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 		db	030h, 050h			;DRIVE CONTROL reset FDC
 		db	030h, 040h			;DRIVE CONTROL 8Mhz
 	
-main:
-		;call	0f5fch				;coninit
+main:		ld	hl, DISKTAB+2
+		ld	de, disktab+3
+		ld	bc, 3*7
+		ldir
 
-serloop1:	ld	hl, IOBUFF+LEN-5
-serloop:	call	serrecv
-		jr	z, serloop
-		call	sercmd
-		call	0fc54h
+		ld	hl, 8
+		ld	(disktab),hl
+		ld	a, '?'
+		ld	(disktab+2), a
+		ex	de, hl
+		
+		ld	a, getspeed & 255
+		ld	(hl), a
+		inc	hl
+		ld	a, getspeed / 256
+		ld	(hl), a
+		
+		ld	hl, disktab
+		ld	(DISKID), hl
+		ld	(DISKID+2), hl
+		ld	(DISKID+4), hl
+		ld	(DISKID+6), hl
+		
+		ld	a, 0c3h				;'JP' instruction
+		ld	(XMITBUF), a
+		ld	(RXBLOCK), a
+		ld	(CMDWAIT), a
+		
+		ld	hl, xmitbuf
+		ld	(XMITBUF+1), hl
+		ld	hl, rxblock
+		ld	(RXBLOCK+1), hl
+		ld	hl, cmdwait
+		ld	(CMDWAIT+1), hl
+		
+		ld	a, SIONORMAL
+		ld	(pokeydiv), a
+	
+		ld	hl, disktab
+		ld	de, 8*3+2
+		call	serdump
+		
+		
+		ld	c, 'A'
+testfast:	call	fastsend
+		inc	c
+		ld	a, c
+		cp	'Z' + 1
+		jr	c, testfast
+		
+		jp	0f762h
 
+
+;--------------------------------------------------
+; get Pokeydivisor command '?'
+;--------------------------------------------------
+getspeed:	ld	a, '?'
+		call	serout
+		
+		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
+			
+;		call	HASPARMS		
+;		ret	Z				;EXIT IF DISK PARAMS NOT KNOWN
+			
+		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+
+		ld	hl, IOBUFF+LEN-1
+		ld	(hl), SIOFAST
+		ld	de, 'C'		
+		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+
+
+cmdwait:	ld	a, (CMDFLG)
+                or	a				;SEE IF COMMAND FRAME HAS ARRIVED
+                ret	z				;EXIT IF NOTHING HAS HAPPENED
+					
+		call	sercmd				;5-byte command frame
+		call	serhex				;status 1 = OK
+		
+                cp	1		
+                jp	nz, cmdwait1
+		
+		jp	0f7f3h				;PROCESS COMMAND IF GOOD FRAME RECVD
+				
+cmdwait1:       di					;ELSE RESET INTERRUPT AND START AGAIN
+                ld	a, 00000011B		
+                out	(CTC0),A		
+                ei		
+
+		call	togglebaud
+		
+		jp	0f809h
+
+
+		
+xmitbuf:	ld	a, (pokeydiv)			;is fast?
+		cp	SIONORMAL
+		jr	nz, xmitbuf1			;yes, jump
+		di					;no
+		ld	bc, 0f715h
+		jp	XMITBUF+4
+		
+xmitbuf1:	ld	a, (hl)
+		inc	hl
+		xor	d
+		ld	c, a
+		add	a, e
+		adc	0
+		ld	e, a
+		call	fastsend			;send byte in c
+		ld	a, h
+		cp	iobuflenhi
+		jr	c, xmitbuf1			;loop if buffer end not reached
+		ret
+		
+		
+rxblock:	ld	a, (pokeydiv)			;is fast?
+		cp	SIONORMAL
+		jp	nz, rxblock1
+		ld	bc, 0
+		jp	0f707h
+
+rxblock1:	call	fastrecv
+		ld	c, d
+		ret
+;
+; 32 bytes for disktab
+;
+disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
+		dw	0, 0, 0, 0, 0, 0, 0, 0
+
+pokeydiv:	db	SIONORMAL
+
+togglebaud:	ld	a, (pokeydiv)
+		cp	SIONORMAL
+		ld	a, SIOFAST
+		jr	z, togglebaud1
+		ld	a, SIONORMAL
+togglebaud1:	ld	(pokeydiv), a
+		call	serhex
+		jp	sercr
+
+
+		call	clear
 		ld	hl, IOBUFF
-		call	serrecv
+		call	seraddr
+
+
+serloop:	ld	hl, IOBUFF
+		call	fastrecv
+
+		ld	a, 00000011B			;reset timer
+		out	(CTC3), a
+		ld	c, d
+		
+		jp	c, main
+		
+		ld	de, IOBUFF
+		sbc	hl, de
+		jr	z, serloop
+serloop2:	ex	de, hl
+;		ld	(hl), c
 		call	serdump
 		
 		jp	main
-;
-;
-; 19200 = 208 cycles
-;
-serrecv:	
-;	LD	DE,2730		;SET ABORT COUNTER FOR 32 MILLISECONDS
-	LD	BC,0		;CLEAR B/C FOR CHECKSUM DERRIVATION
-	JR	RXB35		;GO START LOOPING FOR START BIT
-;
-RXB1:	LD	A,C		;4
-	ADD	A,B		;4
-	ADC	A,0		;7 ACCUMULATE CHECKSUM ATARI STYLE
-	LD	C,A		;4
-	EX	(SP),HL		;19
-	EX	(SP),HL		;19
-	EX	(SP),HL		;19
-	EX	(SP),HL		;19
-	LD	B,8		;7	=102
-;
-;	SERIAL->PARALLEL CONVERSION AT 52 MICROSECONDS PER BIT
-;
-RXB2:	LD	A,11		;  7 CYCLES
-	LD	A,11		;  7 CYCLES
-	NOP			;  4 CYCLES
-RXB3:	DEC	A		; 44 CYCLES  (11*4)
-	JP	NZ,RXB3		;110 CYCLES  (11*10)
-	IN	A,(ATARI)	; 11 CYCLES
-	RLA			;  4 CYCLES
-	RR	D		;  8 CYCLES
-	DJNZ	RXB2		; 13 CYCLES  (8 ON FINAL BIT)
+		
+clear:		ld	hl, IOBUFF
+clear1:		xor	a
+		ld	(hl), a
+		inc	hl
+		ld	a, h
+		cp 	iobuflenhi
+		jr	nz, clear1
+		ret
 
-	LD	B,D		;4 SAVE COPY OF LAST DATA BYTE IN B
-	LD	(HL),D		;7 THEN STORE IN MEMORY BUFFER @HL
-	INC	HL		;6
-	LD	A,H		;4
-	CP	iobuflenhi	;7
-	CCF			;4
-	RET	C		;5 RETURN WITH CARRY SET IF BUFFER FILLED
+		
+fastsend:	xor	a
+		out	(ATROUT), a
+		call	time				;11
+		ld	a, c				;4
+		ld	b, 8				;7
+		nop					;4
+		nop					;4
+		nop					;4
+		
+fastsend1:	out	(ATROUT), a			;11
+		rrca					;4
+		call	time				;17
+		djnz	fastsend1			;12
+		
+		ld	a, 1				
+		out	(ATROUT), a
 
-	ld	a, 6
-rxb3a:	dec	a
-	jp	nz, rxb3a
+		ex	(sp), hl			;19
+		ex	(sp), hl			;19
+		ex	(sp), hl			;19
+		ex	(sp), hl			;19
+		
+time:		nop					;4
+		nop					;4
+		nop					;4
+		nop					;4
+		ret					;10 = 26
+
+;--------------------------------------------------
+; set 4ms watchdog
+;--------------------------------------------------
+irq4ms:		pop	af				;pop irq-addr
+;		ld	a, 00000011B			;reset timer
+;		out	(CTC3), a
+		or	a				;clear carry
+		reti	
+		
+;--------------------------------------------------
+; SIO receive 57600 baud
+;--------------------------------------------------
+fastrecv:
+		di
+		ld	bc, irq4ms		
+		ld	(CTCVEC+6),bc			;SET VECTOR TO irq4ms ROUTINE
+		ld	bc, CTC3			;clear b, load c with CTC3
+		ld	de, 10100111B			;clear d, load e with a7h
+		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+		out	(c), c
+		ei
+
+fastrecv1:	in	a, (ATARI)			;11
+		rla					;4
+		jp	c, fastrecv1			;10	NEW BYTE IS COMING IF START BIT LOW
+							;14-25 / 7
+		ld	a, d				;4
+		add	a, b				;4
+		adc	a, 0				;7 ACCUMULATE CHECKSUM ATARI STYLE
+		ld	d, a				;4
+							
+		ld	b, 07fh				;7
+		jp	fastrecv2a			;10 = 50
+;	
+; SERIAL->PARALLEL CONVERSION AT 17,36 MICROSECONDS PER BIT
+;	
+fastrecv2:	push	af				; 11
+		pop	af				; 10
+fastrecv2a:	ld	a, (hl)				; 7
+		ld	a, (hl)				; 7
+		
+		in	a, (ATARI)			; 11 CYCLES
+		rla					;  4 CYCLES
+		rr	b				;  8 CYCLES
+		jr	c, fastrecv2			; 12/7
+		
+		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
+		inc	hl				;6
+		ld	a, h				;4
+		cp	iobuflenhi			;7
+		ccf					;4
+		ret	c				;5 RETURN WITH CARRY SET IF BUFFER FILLED
+
+		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+		out	(c), c				;12 COUNT MOD 256
+				
+		jp	fastrecv1			;10
+
 	
-RXB35:	;LD	A,01000111B
-	;OUT	(CTC0),A	;PUT CTC0 IN COUNTER MODE
-	;XOR	A
-	;OUT	(CTC0),A	;COUNT DATA HIGH->LOW EDGES MOD 256
-
-	LD	DE,417		;10 5 MILLISECONDS @ 12 MICROSECONDS/LOOP
-RXB4:	IN	A,(ATARI)
-	RLA
-	JR	NC,RXB1		;NEW BYTE IS COMING IF START BIT LOW
-	DEC	DE
-	LD	A,D
-	OR	E
-	JR	NZ,RXB4		;ELSE LOOP TILL TIMER RUNS OUT
-
-	RET			;RETURN WITH CARRY CLEAR IF TIMED OUT
 ;--------------------------------------------------
 ; RS232 dump
 ;--------------------------------------------------
-serdump:	ld	de, 0c100h
-		ex	de, hl
-		call	sercr
-		call	sercmd
-		call	sercr
+serdump:	;call	seraddr
+;		ex	de, hl
+;		call	seraddr
+;		ex	de, hl
+;		ld	a, c
+;		call	serhex
+;		call	sercr
+		
+;		ld	hl, IOBUFF
+;		ld	de, 256
 serdump2:	ld	b, 16
 serdump1:	ld	a, (hl)
 		call	serhex
@@ -308,9 +518,9 @@ serdump1:	ld	a, (hl)
 		djnz	serdump1
 		call	sercr
 		jr	serdump2
-serdump3:	call	sercr
-		ld	a, (hl)
-		call	serhex
+serdump3:;	call	sercr
+	;	ld	a, (hl)
+	;	call	serhex
 		call	sercr
 		ret
 		
@@ -322,7 +532,7 @@ sercmd:		push	af
 		push	bc
 		push	hl
 		ld	hl, CFRAME
-		ld	b, 4
+		ld	b, 5
 sercmd1:	ld	a, (hl)
 		call	serhex
 		call	serspace
@@ -353,7 +563,15 @@ sercr:		push	af
 		ret
 		
 ;--------------------------------------------------
-; RS232 output byte in hex
+; RS232 output HL in hex
+;--------------------------------------------------
+seraddr:	ld	a, h
+		call	serhex
+		ld	a, l
+		call	serhex
+		jr	serspace
+;--------------------------------------------------
+; RS232 output A in hex
 ;--------------------------------------------------
 serhex:		push	af
 		push	af
@@ -376,7 +594,10 @@ sernib1:
 ;--------------------------------------------------
 ; RS232 out	208 T-States
 ;--------------------------------------------------
-serout:		push	af
+serout:
+		;jp	fastsend
+		
+		push	af
 		push	bc
 		ld	b, a
 		xor	a
@@ -435,28 +656,7 @@ time19600a:	dec	c				;4
 ;		LD	(CTCVEC+6),HL
 ;		EI
 	
-dskloop:
-;		ld	hl, (TICKS)
-;		call	putaddr
-;		jp	dskloop
-		
-		ld	ix, dcb
-		call	dskhandler
-		call	dump
-		
-		call	conin
-		
-		jp	dskloop
-		
-		
-dump:		ld	hl, dcb
-		ld	b, 9
-loop:		ld	a, (hl)
-		call	puthex
-		inc	hl
-		djnz	loop
-		ret
-		
+				
 ;		ld	ix, dcb
 ;		call	dskhandler
 ;		ld	hl, dcb

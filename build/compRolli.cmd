@@ -11,8 +11,10 @@ call :compile rolli-f000 F000
 if not %ERRORLEVEL%==0 goto error
 call :compile rolli-0000 0000
 if not %ERRORLEVEL%==0 goto error
+call :compile SALLY-0000 0000
+if not %ERRORLEVEL%==0 goto error
 call :compile ddinit-0100 0100
-rem if not %ERRORLEVEL%==0 goto error
+if not %ERRORLEVEL%==0 goto error
 
 rem call :compile SALLY-0000 0000
 rem if not %ERRORLEVEL%==0 goto error

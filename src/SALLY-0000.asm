@@ -116,8 +116,8 @@ noset:		add     hl, bc
 		jr      nz, nextdrv     	      
 						
 		ld      sp, 0c100h			; set stack to 0c100h
-;		jp      0f762h				; jump to code in DRAM
-		jp	0f003h
+		jp      0f762h				; jump to code in DRAM
+;		jp	0f003h
 ;--------------------------------------------------
 ; 11 times port:value
 ;--------------------------------------------------

@@ -194,8 +194,8 @@ SALLY-0000.asm:
    116   00009b 20f6            		jr      nz, nextdrv
    117                          
    118   00009d 3100c1          		ld      sp, 0c100h			; set stack to 0c100h
-   119                          ;		jp      0f762h				; jump to code in DRAM
-   120   0000a0 c303f0          		jp	0f003h
+   119   0000a0 c362f7          		jp      0f762h				; jump to code in DRAM
+   120                          ;		jp	0f003h
    121                          ;--------------------------------------------------
    122                          ; 11 times port:value
    123                          ;--------------------------------------------------

@@ -61,7 +61,7 @@ GLOBAL.MAC:
      4                          ;*							*
      5                          ;********************************************************
      6                          ;
-     7                          glbvars	equ	0ff20h
+     7                          glbvars		equ	0ff20h
      8                          ;
      9                          ;	... GLOBAL VARIABLES FOR PHYSICAL DISK HANDLER ...
     10                          ;
@@ -116,7 +116,7 @@ GLOBAL.MAC:
     59                          PBASE:		equ	FMTPTR+2	;PUT PRINT BUFFER AFTER HERE
     60                          PSIZE:		equ	PBASE+2		;MAX BUFFER INDEX OFFSET
     61                          
-    62                          glbsize	equ	$-glbvars		;length of initialized variables
+    62                          glbsize		equ	$-glbvars	;length of initialized variables
     63                          ;
     64                          ;
     65                          ;	*** UNINITIALIZED SCRATCH VARIABLES COME AFTER HERE ***
@@ -162,12 +162,60 @@ GLOBAL.MAC:
    105                          ;
    106                          ;
    107                          ;
-   108                          IOBUFF	EQU	0C100H		;ATARI I/O BUFFER
-   109                          LEN	EQU	512
+   108                          IOBUFF		EQU	0C100H			;ATARI I/O BUFFER
+   109                          LEN		EQU	512
    110                          ;
-   111                          TRKBUF	EQU	IOBUFF+LEN	;TRACK BUFFER FOR READS
+   111                          TRKBUF		EQU	IOBUFF+LEN		;TRACK BUFFER FOR READS
    112                          ;
    113                          
+   114                          ;
+   115                          ;
+   116                          ;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
+   117                          ;
+   118                          NTRKS	EQU	0		;NUMBER OF TRACKS
+   119                          STEPRT	EQU	1		;STEP RATE
+   120                          NSECS	EQU	2		;SECTORS PER TRACK (HI/LOW)
+   121                          NSIDES	EQU	4		;NUMBER OF SIDES
+   122                          MEDIA	EQU	5		;MEDIA SIZE AND FORMAT BITS
+   123                          SECLEN	EQU	6		;SECTOR LENGTH (HI/LOW)
+   124                          DSKBITS	EQU	8		;MISC NAUGHTY BITS
+   125                          SPARE0	EQU	9
+   126                          SPARE1	EQU	10
+   127                          SPARE2	EQU	11
+   128                          
+   129                          CMDSTS	EQU	12		;COMMAND STATUS
+   130                          HDWSTS	EQU	13		;HARDWARE STATUS
+   131                          
+   132                          FLAGS	EQU	14		;FLAGS BYTE FOR DISK OPERATION
+   133                          SPARE3	EQU	15
+   134                          ;
+   135                          ;
+   136                          ;	EQUATES FOR BITS IN 'MEDIA' BYTE
+   137                          ;
+   138                          SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
+   139                          DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
+   140                          ;
+   141                          ;
+   142                          ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
+   143                          ;
+   144                          PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
+   145                          ;
+   146                          ;
+   147                          ;	EQUATES FOR BITS IN 'CMDSTS' BYTE
+   148                          ;
+   149                          BADCMD	EQU	0		;BAD COMMAND FRAME BIT
+   150                          BADDAT	EQU	1		;BAD DATA FRAME BIT
+   151                          BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
+   152                          WRPROT	EQU	3		;WRITE PROTECTED BIT
+   153                          ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
+   154                          SEC256	EQU	5		;LONG/SHORT SECTOR BIT
+   155                          ;
+   156                          ;
+   157                          ;	EQUATES FOR BITS IN 'FLAGS' BYTE
+   158                          ;
+   159                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
+   160                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
+   161                          
 rolli-f000.asm:
     15                          
     16                          MONITOR		equ	$
@@ -874,7 +922,7 @@ DISKIO.MAC:
    679                          
    680   000381 3e10            	LD	A,00010000B
    681                          TPCMD3:
-   682   000383 cbbf            	res	7, a		;reset ED1797 drive not ready, WD1772: motor on!
+   682   000383 cbbf            	res	7, a		;reset WD1797: drive not ready, WD1772: motor on!
    683                          	;LD	B,A
    684                          	;CALL	FORCE1
    685                          	;LD	A,B
@@ -1862,1082 +1910,1035 @@ rolli-f000.asm:
 ATARI.MAC:
      1                          ;
      2                          ;
-     3                          ;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
+     3                          ;	PAGE
      4                          ;
-     5                          NTRKS	EQU	0		;NUMBER OF TRACKS
-     6                          STEPRT	EQU	1		;STEP RATE
-     7                          NSECS	EQU	2		;SECTORS PER TRACK (HI/LOW)
-     8                          NSIDES	EQU	4		;NUMBER OF SIDES
-     9                          MEDIA	EQU	5		;MEDIA SIZE AND FORMAT BITS
-    10                          SECLEN	EQU	6		;SECTOR LENGTH (HI/LOW)
-    11                          DSKBITS	EQU	8		;MISC NAUGHTY BITS
-    12                          SPARE0	EQU	9
-    13                          SPARE1	EQU	10
-    14                          SPARE2	EQU	11
-    15                          
-    16                          CMDSTS	EQU	12		;COMMAND STATUS
-    17                          HDWSTS	EQU	13		;HARDWARE STATUS
-    18                          
-    19                          FLAGS	EQU	14		;FLAGS BYTE FOR DISK OPERATION
-    20                          SPARE3	EQU	15
-    21                          ;
-    22                          ;
-    23                          ;	EQUATES FOR BITS IN 'MEDIA' BYTE
-    24                          ;
-    25                          SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
-    26                          DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
-    27                          ;
+     5                          ;	<<< MAIN LOOP FOR ATARI DISK EMULATOR >>>
+     6                          ;
+     7                          ;
+     8                          ;
+     9                          ;
+    10                          EMULATOR:
+    11   000762 3e01            	LD	A,1
+    12   000764 d352            	OUT	(BANKSW),A	;TURN OFF THE ROM
+    13                          ;
+    14                          ;	CHECK TO DETERMINE WHICH CONSOLE IS ACTIVE
+    15                          ;
+    16   000766 21fec2          LOGON:	LD	HL,IOBUFF+LEN-2
+    17   000769 f3              	DI
+    18   00076a cdd906          	CALL	RXBLOCK		;LISTEN FOR A MESSAGE FROM ABOVE
+    19   00076d fb              	EI
+    20   00076e 30f6            	JR	NC,LOGON	;KEEP LOOPING TILL SOMETHING RECEIVED
+    21   000770 2afec2          	LD	HL,(IOBUFF+LEN-2)
+    22   000773 11e680          	LD	DE,80E6H
+    23   000776 b7              	OR	A
+    24   000777 ed52            	SBC	HL,DE
+    25   000779 cade03          	JP	Z,MINIMON	;GOTO MONITOR IF 9600 BAUD <CR>
+    26                          ;
+    27                          ;	ENTER ATARI DISK EMULATOR MODE
     28                          ;
-    29                          ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
-    30                          ;
-    31                          PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
-    32                          ;
-    33                          ;
-    34                          ;	EQUATES FOR BITS IN 'CMDSTS' BYTE
-    35                          ;
-    36                          BADCMD	EQU	0		;BAD COMMAND FRAME BIT
-    37                          BADDAT	EQU	1		;BAD DATA FRAME BIT
-    38                          BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
-    39                          WRPROT	EQU	3		;WRITE PROTECTED BIT
-    40                          ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
-    41                          SEC256	EQU	5		;LONG/SHORT SECTOR BIT
-    42                          ;
-    43                          ;
-    44                          ;	EQUATES FOR BITS IN 'FLAGS' BYTE
-    45                          ;
-    46                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
-    47                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
-    48                          ;
-    49                          ;
-    50                          ;	PAGE
-    51                          ;
-    52                          ;	<<< MAIN LOOP FOR ATARI DISK EMULATOR >>>
-    53                          ;
-    54                          ;
-    55                          ;
-    56                          ;
-    57                          EMULATOR:
-    58   000762 3e01            	LD	A,1
-    59   000764 d352            	OUT	(BANKSW),A	;TURN OFF THE ROM
-    60                          ;
-    61                          ;	CHECK TO DETERMINE WHICH CONSOLE IS ACTIVE
+    29   00077c 3e03            	LD	A,3
+    30   00077e 3233ff          	LD	(RWMAX),A	;DO LESS RETRIES IN ATARI MODE
+    31   000781 3e38            	LD	A,38H		;LOAD ACC WITH 'JR C,XX' OPCODE
+    32   000783 328701          	LD	(KLUDGE),A	;CRIPPLE READY ERROR FROM 'SELECT'
+    33   000786 db50            	IN	A,(SERIN)
+    34   000788 cb5f            	BIT	3,A
+    35   00078a 2005            	JR	NZ,HAS850	;JUMP IF 850 JUMPER PRESENT
+    36                          
+    37   00078c 3eff            	LD	A,255
+    38   00078e 322308          	LD	(PTRID),A	;ELSE ZAP PRINTER ID IN TABLE
+    39                          
+    40   000791 21e107          HAS850:	LD	HL,DUMMY
+    41   000794 221900          	LD	(RENEW+1),HL	;MAKE DUMMY CONSOLE RE-INIT VECTOR
+    42   000797 ed5b1940        	LD	DE,(RENEW+1+16384)
+    43   00079b b7              	OR	A
+    44   00079c ed52            	SBC	HL,DE
+    45   00079e 280c            	JR	Z,MAIN		;JUMP IF 16K MEMORY SIZE MACHINE
+    46                          
+    47   0007a0 210000          	LD	HL,0
+    48   0007a3 224bff          	LD	(PBASE),HL	;ELSE SETUP FOR 48K PRINTER BUFFER
+    49   0007a6 21ffbf          	LD	HL,0BFFFH
+    50   0007a9 224dff          	LD	(PSIZE),HL
+    51                          
+    52   0007ac cdd108          MAIN:	CALL	SPOOLER		;KEEP BACKGROUND PRINTING GOING
+    53   0007af 2a3aff          	LD	HL,(FSMVEC)
+    54   0007b2 cdbd07          	CALL	CALLHL		;DO ATARI TASK ROUTINE
+    55   0007b5 2a3cff          	LD	HL,(EXTVEC)
+    56   0007b8 cdbd07          	CALL	CALLHL		;DO EXTRA TASK ROUTINE
+    57   0007bb 18ef            	JR	MAIN
+    58                          ;
+    59                          ;
+    60   0007bd e9              CALLHL:	JP	(HL)
+    61                          ;
     62                          ;
-    63   000766 21fec2          LOGON:	LD	HL,IOBUFF+LEN-2
-    64   000769 f3              	DI
-    65   00076a cdd906          	CALL	RXBLOCK		;LISTEN FOR A MESSAGE FROM ABOVE
-    66   00076d fb              	EI
-    67   00076e 30f6            	JR	NC,LOGON	;KEEP LOOPING TILL SOMETHING RECEIVED
-    68   000770 2afec2          	LD	HL,(IOBUFF+LEN-2)
-    69   000773 11e680          	LD	DE,80E6H
-    70   000776 b7              	OR	A
-    71   000777 ed52            	SBC	HL,DE
-    72   000779 cade03          	JP	Z,MINIMON	;GOTO MONITOR IF 9600 BAUD <CR>
-    73                          ;
-    74                          ;	ENTER ATARI DISK EMULATOR MODE
-    75                          ;
-    76   00077c 3e03            	LD	A,3
-    77   00077e 3233ff          	LD	(RWMAX),A	;DO LESS RETRIES IN ATARI MODE
-    78   000781 3e38            	LD	A,38H		;LOAD ACC WITH 'JR C,XX' OPCODE
-    79   000783 328701          	LD	(KLUDGE),A	;CRIPPLE READY ERROR FROM 'SELECT'
-    80   000786 db50            	IN	A,(SERIN)
-    81   000788 cb5f            	BIT	3,A
-    82   00078a 2005            	JR	NZ,HAS850	;JUMP IF 850 JUMPER PRESENT
-    83                          
-    84   00078c 3eff            	LD	A,255
-    85   00078e 322308          	LD	(PTRID),A	;ELSE ZAP PRINTER ID IN TABLE
-    86                          
-    87   000791 21e107          HAS850:	LD	HL,DUMMY
-    88   000794 221900          	LD	(RENEW+1),HL	;MAKE DUMMY CONSOLE RE-INIT VECTOR
-    89   000797 ed5b1940        	LD	DE,(RENEW+1+16384)
-    90   00079b b7              	OR	A
-    91   00079c ed52            	SBC	HL,DE
-    92   00079e 280c            	JR	Z,MAIN		;JUMP IF 16K MEMORY SIZE MACHINE
-    93                          
-    94   0007a0 210000          	LD	HL,0
-    95   0007a3 224bff          	LD	(PBASE),HL	;ELSE SETUP FOR 48K PRINTER BUFFER
-    96   0007a6 21ffbf          	LD	HL,0BFFFH
-    97   0007a9 224dff          	LD	(PSIZE),HL
-    98                          
-    99   0007ac cdd108          MAIN:	CALL	SPOOLER		;KEEP BACKGROUND PRINTING GOING
-   100   0007af 2a3aff          	LD	HL,(FSMVEC)
-   101   0007b2 cdbd07          	CALL	CALLHL		;DO ATARI TASK ROUTINE
-   102   0007b5 2a3cff          	LD	HL,(EXTVEC)
-   103   0007b8 cdbd07          	CALL	CALLHL		;DO EXTRA TASK ROUTINE
-   104   0007bb 18ef            	JR	MAIN
-   105                          ;
-   106                          ;
-   107   0007bd e9              CALLHL:	JP	(HL)
-   108                          ;
-   109                          ;
-   110                          ;
-   111                          PWRWAIT:
-   112   0007be db70            	IN	A,(ATARI)
-   113   0007c0 e68a            	AND	10001010B	;MASK TO DATA/POWER/COMMAND BITS
-   114   0007c2 fe8a            	CP	10001010B
-   115   0007c4 c0              	RET	NZ
-   116                          
-   117   0007c5 f3              	DI
-   118   0007c6 af              	XOR	A
-   119   0007c7 3255ff          	LD	(CMDFLG),A	;RESET COMMAND FRAME FLAG
-   120   0007ca d357            	OUT	(CDMUX),A	;SET MUX TO GATE COMMAND LINE TO CTC0
-   121   0007cc 3ed7            	LD	A,11010111B
-   122   0007ce d380            	OUT	(CTC0),A	;RESET CTC AND ARM FOR HIGH->LOW IRQ
-   123   0007d0 3e01            	LD	A,1
-   124   0007d2 d380            	OUT	(CTC0),A
-   125   0007d4 219906          	LD	HL,CSTART
-   126   0007d7 2210ff          	LD	(CTCVEC),HL	;STORE INTERRUPT VECTOR
-   127   0007da fb              	EI
-   128   0007db 21e207          	LD	HL,CMDWAIT
-   129   0007de 223aff          	LD	(FSMVEC),HL	;SET FSM VECTOR TO 'CMDHIGH' STATE
-   130   0007e1 c9              DUMMY:	RET
-   131                          ;
-   132                          ;
-   133                          ;
-   134                          CMDWAIT:
-   135   0007e2 3a55ff          	LD	A,(CMDFLG)
-   136   0007e5 b7              	OR	A		;SEE IF COMMAND FRAME HAS ARRIVED
-   137   0007e6 c8              	RET	Z		;EXIT IF NOTHING HAS HAPPENED
-   138                          
-   139   0007e7 fe01            	CP	1
-   140   0007e9 2808            	JR	Z,CMDL4		;PROCESS COMMAND IF GOOD FRAME RECVD
-   141                          
-   142   0007eb f3              	DI			;ELSE RESET INTERRUPT AND START AGAIN
-   143   0007ec 3e03            	LD	A,00000011B
-   144   0007ee d380            	OUT	(CTC0),A
-   145   0007f0 fb              	EI
-   146   0007f1 1816            	JR	CMDL5		;GO SET FSM VECTOR
-   147                          ;
-   148                          ;
-   149                          CFRAME	EQU	IOBUFF+LEN-5	;COMMAND FRAME IS LAST 5 BYTES OF BUFF
-   150                          ;
-   151   0007f3 3afbc2          CMDL4:	LD	A,(CFRAME)
-   152   0007f6 2a38ff          	LD	HL,(IDPTR)	;GET POINTER TO ID CODE TABLE
-   153   0007f9 cd1008          	CALL	SCAN		;SCAN TABLE FOR MATCHING UNIT ID CODE
-   154   0007fc 200b            	JR	NZ,CMDL5	;EXIT IF COMMAND IS NOT FOR US
-   155                          
-   156   0007fe 3afcc2          	LD	A,(CFRAME+1)
-   157   000801 cd1008          	CALL	SCAN		;SCAN FOR COMMAND CODE IN TABLE
-   158   000804 2003            	JR	NZ,CMDL5	;ERROR IF NO MATCH FOUND
-   159                          
-   160   000806 cdbd07          	CALL	CALLHL		;GO TO COMMAND PROCESSOR @HL
-   161                          ;
-   162   000809 21be07          CMDL5:	LD	HL,PWRWAIT
-   163   00080c 223aff          	LD	(FSMVEC),HL	;SET FSM VECTOR BACK TO IDLE STATE
-   164   00080f c9              	RET
-   165                          ;
-   166                          ;
-   167                          ;
-   168                          ;
-   169                          SCAN:
-   170   000810 4e              	LD	C,(HL)		;LOAD BC WITH TABLE LENGTH @HL
-   171   000811 23              	INC	HL
-   172   000812 46              	LD	B,(HL)
-   173   000813 23              	INC	HL
-   174   000814 edb1            	CPIR			;SCAN STRING @HL FOR MATCH WITH ACC
-   175   000816 c0              	RET	NZ		;EXIT IF NO MATCH
-   176                          
-   177   000817 f5              	PUSH	AF
-   178   000818 09              	ADD	HL,BC		;ELSE ADD RESIDUE FROM CPIR TO HL
-   179   000819 09              	ADD	HL,BC		; THREE TIMES TO POINT TO ADDRESS
-   180   00081a 09              	ADD	HL,BC		; CORRESPONDING TO MATCHED VALUE
-   181   00081b 7e              	LD	A,(HL)
-   182   00081c 23              	INC	HL
-   183   00081d 66              	LD	H,(HL)
-   184   00081e 6f              	LD	L,A
-   185   00081f f1              	POP	AF
-   186   000820 c9              	RET			;RETURN TABLE ENTRY IN HL
-   187                          ;
-   188                          ;
-   189                          ;
-   190                          ;	... DEVICE ID TABLE FOR DISK/PRINTER/RS232 COMBO BOX ...
-   191                          ;
-   192                          IDTAB:
-   193   000821 0000            	DEFW	IDMAX
-   194                          
-   195   000823 40              PTRID:	DEFB	'@'		;PRINTER CONTROLLER ID CODE
-   196   000824 31              	DEFB	'1'		;DISK UNIT #1 ID CODE
-   197   000825 32              	DEFB	'2'		;DISK #2
-   198   000826 33              	DEFB	'3'		;DISK #3
-   199   000827 34              	DEFB	'4'		;DISK #4
-   200   000828 5a              	DEFB	'Z'		;Z80 LOAD/DUMP/GOTO
+    63                          ;
+    64                          PWRWAIT:
+    65   0007be db70            	IN	A,(ATARI)
+    66   0007c0 e68a            	AND	10001010B	;MASK TO DATA/POWER/COMMAND BITS
+    67   0007c2 fe8a            	CP	10001010B
+    68   0007c4 c0              	RET	NZ
+    69                          
+    70   0007c5 f3              	DI
+    71   0007c6 af              	XOR	A
+    72   0007c7 3255ff          	LD	(CMDFLG),A	;RESET COMMAND FRAME FLAG
+    73   0007ca d357            	OUT	(CDMUX),A	;SET MUX TO GATE COMMAND LINE TO CTC0
+    74   0007cc 3ed7            	LD	A,11010111B
+    75   0007ce d380            	OUT	(CTC0),A	;RESET CTC AND ARM FOR HIGH->LOW IRQ
+    76   0007d0 3e01            	LD	A,1
+    77   0007d2 d380            	OUT	(CTC0),A
+    78   0007d4 219906          	LD	HL,CSTART
+    79   0007d7 2210ff          	LD	(CTCVEC),HL	;STORE INTERRUPT VECTOR
+    80   0007da fb              	EI
+    81   0007db 21e207          	LD	HL,CMDWAIT
+    82   0007de 223aff          	LD	(FSMVEC),HL	;SET FSM VECTOR TO 'CMDHIGH' STATE
+    83   0007e1 c9              DUMMY:	RET
+    84                          ;
+    85                          ;
+    86                          ;
+    87                          CMDWAIT:
+    88   0007e2 3a55ff          	LD	A,(CMDFLG)
+    89   0007e5 b7              	OR	A		;SEE IF COMMAND FRAME HAS ARRIVED
+    90   0007e6 c8              	RET	Z		;EXIT IF NOTHING HAS HAPPENED
+    91                          
+    92   0007e7 fe01            	CP	1
+    93   0007e9 2808            	JR	Z,CMDL4		;PROCESS COMMAND IF GOOD FRAME RECVD
+    94                          
+    95   0007eb f3              	DI			;ELSE RESET INTERRUPT AND START AGAIN
+    96   0007ec 3e03            	LD	A,00000011B
+    97   0007ee d380            	OUT	(CTC0),A
+    98   0007f0 fb              	EI
+    99   0007f1 1816            	JR	CMDL5		;GO SET FSM VECTOR
+   100                          ;
+   101                          ;
+   102                          CFRAME	EQU	IOBUFF+LEN-5	;COMMAND FRAME IS LAST 5 BYTES OF BUFF
+   103                          ;
+   104   0007f3 3afbc2          CMDL4:	LD	A,(CFRAME)
+   105   0007f6 2a38ff          	LD	HL,(IDPTR)	;GET POINTER TO ID CODE TABLE
+   106   0007f9 cd1008          	CALL	SCAN		;SCAN TABLE FOR MATCHING UNIT ID CODE
+   107   0007fc 200b            	JR	NZ,CMDL5	;EXIT IF COMMAND IS NOT FOR US
+   108                          
+   109   0007fe 3afcc2          	LD	A,(CFRAME+1)
+   110   000801 cd1008          	CALL	SCAN		;SCAN FOR COMMAND CODE IN TABLE
+   111   000804 2003            	JR	NZ,CMDL5	;ERROR IF NO MATCH FOUND
+   112                          
+   113   000806 cdbd07          	CALL	CALLHL		;GO TO COMMAND PROCESSOR @HL
+   114                          ;
+   115   000809 21be07          CMDL5:	LD	HL,PWRWAIT
+   116   00080c 223aff          	LD	(FSMVEC),HL	;SET FSM VECTOR BACK TO IDLE STATE
+   117   00080f c9              	RET
+   118                          ;
+   119                          ;
+   120                          ;
+   121                          ;
+   122                          SCAN:
+   123   000810 4e              	LD	C,(HL)		;LOAD BC WITH TABLE LENGTH @HL
+   124   000811 23              	INC	HL
+   125   000812 46              	LD	B,(HL)
+   126   000813 23              	INC	HL
+   127   000814 edb1            	CPIR			;SCAN STRING @HL FOR MATCH WITH ACC
+   128   000816 c0              	RET	NZ		;EXIT IF NO MATCH
+   129                          
+   130   000817 f5              	PUSH	AF
+   131   000818 09              	ADD	HL,BC		;ELSE ADD RESIDUE FROM CPIR TO HL
+   132   000819 09              	ADD	HL,BC		; THREE TIMES TO POINT TO ADDRESS
+   133   00081a 09              	ADD	HL,BC		; CORRESPONDING TO MATCHED VALUE
+   134   00081b 7e              	LD	A,(HL)
+   135   00081c 23              	INC	HL
+   136   00081d 66              	LD	H,(HL)
+   137   00081e 6f              	LD	L,A
+   138   00081f f1              	POP	AF
+   139   000820 c9              	RET			;RETURN TABLE ENTRY IN HL
+   140                          ;
+   141                          ;
+   142                          ;
+   143                          ;	... DEVICE ID TABLE FOR DISK/PRINTER/RS232 COMBO BOX ...
+   144                          ;
+   145                          IDTAB:
+   146   000821 0000            	DEFW	IDMAX
+   147                          
+   148   000823 40              PTRID:	DEFB	'@'		;PRINTER CONTROLLER ID CODE
+   149   000824 31              	DEFB	'1'		;DISK UNIT #1 ID CODE
+   150   000825 32              	DEFB	'2'		;DISK #2
+   151   000826 33              	DEFB	'3'		;DISK #3
+   152   000827 34              	DEFB	'4'		;DISK #4
+   153   000828 5a              	DEFB	'Z'		;Z80 LOAD/DUMP/GOTO
+   154                          
+   155   000829 5408            	DEFW	Z80TAB
+   156   00082b 3d08            	DEFW	DISKTAB
+   157   00082d 3d08            	DEFW	DISKTAB
+   158   00082f 3d08            	DEFW	DISKTAB
+   159   000831 3d08            	DEFW	DISKTAB
+   160   000833 3508            	DEFW	PTRTAB
+   161                          IDMAX	EQU	($-IDTAB)/3
+   162                          ;
+   163                          ;
+   164                          ;
+   165                          PTRTAB:				;PRINTER COMMANDS
+   166   000835 0000            	DEFW	PTRMAX
+   167                          
+   168   000837 53              	DEFB	'S'		;PRINTER STATUS
+   169   000838 57              	DEFB	'W'		;PRINTER OUTPUT
+   170                          
+   171   000839 7808            	DEFW	PTRWRITE
+   172   00083b 6208            	DEFW	PTRSTAT
+   173                          PTRMAX	EQU	($-(PTRTAB+2))/3
+   174                          ;
+   175                          ;
+   176                          ;
+   177                          DISKTAB:			;DISK COMMANDS
+   178   00083d 0000            	DEFW	DISKMAX
+   179                          
+   180   00083f 52              	DEFB	'R'		;DISK READ
+   181   000840 53              	DEFB	'S'		;DISK STATUS
+   182   000841 57              	DEFB	'W'		;DISK WRITE
+   183   000842 50              	DEFB	'P'		;DISK PUT
+   184   000843 4e              	DEFB	'N'		;GET PARAMETERS
+   185   000844 4f              	DEFB	'O'		;PUT PARAMETERS
+   186   000845 21              	DEFB	'!'		;FORMAT DISK
+   187                          
+   188   000846 380b            	DEFW	DISKINIT
+   189   000848 050c            	DEFW	PUTPARAMS
+   190   00084a e70b            	DEFW	GETPARAMS
+   191   00084c 0509            	DEFW	DISKPUT
+   192   00084e 0809            	DEFW	DISKWRITE
+   193   000850 db0a            	DEFW	DISKSTAT
+   194   000852 8c09            	DEFW	DISKREAD
+   195                          DISKMAX	EQU	($-(DISKTAB+2))/3
+   196                          ;
+   197                          ;
+   198                          ;
+   199                          Z80TAB:				;Z80 COMMANDS
+   200   000854 0000            	DEFW	Z80MAX
    201                          
-   202   000829 5408            	DEFW	Z80TAB
-   203   00082b 3d08            	DEFW	DISKTAB
-   204   00082d 3d08            	DEFW	DISKTAB
-   205   00082f 3d08            	DEFW	DISKTAB
-   206   000831 3d08            	DEFW	DISKTAB
-   207   000833 3508            	DEFW	PTRTAB
-   208                          IDMAX	EQU	($-IDTAB)/3
-   209                          ;
-   210                          ;
-   211                          ;
-   212                          PTRTAB:				;PRINTER COMMANDS
-   213   000835 0000            	DEFW	PTRMAX
-   214                          
-   215   000837 53              	DEFB	'S'		;PRINTER STATUS
-   216   000838 57              	DEFB	'W'		;PRINTER OUTPUT
-   217                          
-   218   000839 7808            	DEFW	PTRWRITE
-   219   00083b 6208            	DEFW	PTRSTAT
-   220                          PTRMAX	EQU	($-(PTRTAB+2))/3
-   221                          ;
-   222                          ;
-   223                          ;
-   224                          DISKTAB:			;DISK COMMANDS
-   225   00083d 0000            	DEFW	DISKMAX
-   226                          
-   227   00083f 52              	DEFB	'R'		;DISK READ
-   228   000840 53              	DEFB	'S'		;DISK STATUS
-   229   000841 57              	DEFB	'W'		;DISK WRITE
-   230   000842 50              	DEFB	'P'		;DISK PUT
-   231   000843 4e              	DEFB	'N'		;GET PARAMETERS
-   232   000844 4f              	DEFB	'O'		;PUT PARAMETERS
-   233   000845 21              	DEFB	'!'		;FORMAT DISK
-   234                          
-   235   000846 380b            	DEFW	DISKINIT
-   236   000848 050c            	DEFW	PUTPARAMS
-   237   00084a e70b            	DEFW	GETPARAMS
-   238   00084c 0509            	DEFW	DISKPUT
-   239   00084e 0809            	DEFW	DISKWRITE
-   240   000850 db0a            	DEFW	DISKSTAT
-   241   000852 8c09            	DEFW	DISKREAD
-   242                          DISKMAX	EQU	($-(DISKTAB+2))/3
-   243                          ;
-   244                          ;
-   245                          ;
-   246                          Z80TAB:				;Z80 COMMANDS
-   247   000854 0000            	DEFW	Z80MAX
-   248                          
-   249   000856 52              	DEFB	'R'		;MEMORY READ
-   250   000857 57              	DEFB	'W'		;MEMORY WRITE
-   251   000858 53              	DEFB	'S'		;SET ADDRESS
-   252   000859 47              	DEFB	'G'		;GOTO ADDRESS
-   253                          
-   254   00085a b40c            	DEFW	Z80GOTO
-   255   00085c a60c            	DEFW	Z80SET
-   256   00085e 7b0c            	DEFW	Z80WRITE
-   257   000860 5f0c            	DEFW	Z80READ
-   258                          Z80MAX	EQU	($-(Z80TAB+2))/3
-   259                          ;
-   260                          ;
-   261                          ;
-   262                          ;	PAGE
-   263                          ;
-   264                          ;
-   265                          ;	... PRINTER STATUS COMMAND PROCESSOR ...
-   266                          ;
-   267                          PTRSTAT:
-   268   000862 cd4a0c          	CALL	SENDACK
-   269   000865 2143ff          	LD	HL,PSMSG
-   270   000868 11fcc2          	LD	DE,IOBUFF+LEN-4
-   271   00086b d5              	PUSH	DE
-   272   00086c 010400          	LD	BC,4
-   273   00086f edb0            	LDIR			;COPY PRINTER STATUS FRAME FROM RAM
-   274   000871 e1              	POP	HL
-   275   000872 114300          	LD	DE,'C'		;SEND PRINTER STATUS UN-INVERTED
-   276   000875 c36c06          	JP	SENDBUFF
-   277                          ;	ret
-   278                          ;
-   279                          ;
-   280                          ;	... PRINTER WRITE COMMAND PROCESSOR ...
-   281                          ;
-   282                          PTRWRITE:
-   283   000878 cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
-   284   00087b cdb906          	CALL	RECVBUFF	;GET PRINT DATA FROM SERIAL BUS
-   285   00087e c0              	RET	NZ		;EXIT IF ERROR OR TIMEOUT
-   286                          
-   287   00087f 112800          	LD	DE,40
-   288   000882 b7              	OR	A
-   289   000883 ed52            	SBC	HL,DE
-   290   000885 c0              	RET	NZ		;ERROR IF RX BLOCK LENGTH <> 40 BYTES
-   291                          
-   292   000886 cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK'
-   293   000889 2100c1          	LD	HL,IOBUFF
-   294   00088c 0628            	LD	B,40
-   295   00088e 7e              PWRIT3:	LD	A,(HL)
-   296   00088f fe9b            	CP	9BH		;CHECK FOR 'ATASCII' CARRIAGE RETURN
-   297   000891 2005            	JR	NZ,PWRT3A
-   298                          
-   299   000893 213eff          	LD	HL,NEWLIN
-   300   000896 46              	LD	B,(HL)		;OUTPUT PRINTER'S NEWLINE CHARACTER(S)
-   301   000897 23              	INC	HL
-   302                          
-   303   000898 e5              PWRT3A:	PUSH	HL
-   304   000899 2a4fff          	LD	HL,(PCOUNT)
-   305   00089c ed5b4dff        	LD	DE,(PSIZE)
-   306   0008a0 b7              	OR	A
-   307   0008a1 ed52            	SBC	HL,DE		;TEST IF PRINTER BUFFER IS FULL
-   308   0008a3 e1              	POP	HL
-   309   0008a4 380e            	JR	C,PWRIT4	;STORE ANOTHER CHARACTER IF NOT FULL
-   310                          
-   311   0008a6 e5              	PUSH	HL
-   312   0008a7 c5              	PUSH	BC
-   313   0008a8 cdd108          	CALL	SPOOLER		;TRY TO CLEAR OUT BUFFER
-   314   0008ab c1              	POP	BC
-   315   0008ac e1              	POP	HL
-   316   0008ad db70            	IN	A,(ATARI)
-   317   0008af e602            	AND	00000010B	;TEST ATARI COMMAND LINE AND
-   318   0008b1 20e5            	JR	NZ,PWRT3A	;STAY IN LOOP IF INACTIVE
-   319                          
-   320   0008b3 c9              	RET			;ELSE ABORT PRINTING AND RETURN
-   321                          ;
-   322   0008b4 7e              PWRIT4:	LD	A,(HL)
-   323   0008b5 23              	INC	HL
-   324   0008b6 e5              	PUSH	HL
-   325   0008b7 c5              	PUSH	BC
-   326   0008b8 2a51ff          	LD	HL,(PINP)
-   327   0008bb cdf108          	CALL	INDEX		;GET INDEX TO FIFO INPUT PLACE
-   328   0008be ed5351ff        	LD	(PINP),DE	;STORE UPDATED INPUT OFFSET
-   329   0008c2 77              	LD	(HL),A		;STORE CHARACTER IN QUEUE
-   330   0008c3 2a4fff          	LD	HL,(PCOUNT)
-   331   0008c6 23              	INC	HL		;BUMP FIFO CHARACTER COUNTER
-   332   0008c7 224fff          	LD	(PCOUNT),HL
-   333   0008ca c1              	POP	BC
-   334   0008cb e1              	POP	HL
-   335   0008cc 10c0            	DJNZ	PWRIT3		;REPEAT TO END OF STRING
-   336                          
-   337   0008ce c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' TO ATARI
-   338                          ;	ret
-   339                          ;
-   340                          ;
-   341                          ;
-   342                          SPOOLER:
-   343   0008d1 2a4fff          	LD	HL,(PCOUNT)
-   344   0008d4 7c              	LD	A,H
-   345   0008d5 b5              	OR	L
-   346   0008d6 c8              	RET	Z		;EXIT IF NO DATA IN FIFO TO PRINT
-   347                          
-   348   0008d7 cd1500          	CALL	LISTV+3
-   349   0008da c0              	RET	NZ		;EXIT IF PRINTER BUSY
-   350                          
-   351   0008db 2a53ff          	LD	HL,(POUT)
-   352   0008de cdf108          	CALL	INDEX		;GET POINTER WITH AUTO-INCREMENT
-   353   0008e1 ed5353ff        	LD	(POUT),DE
-   354   0008e5 4e              	LD	C,(HL)
-   355   0008e6 cd1200          	CALL	LISTV		;PRINT CHARACTER AND EXIT
-   356   0008e9 2a4fff          	LD	HL,(PCOUNT)
-   357   0008ec 2b              	DEC	HL		;DIMINISH BUFFER COUNT BY ONE
-   358   0008ed 224fff          	LD	(PCOUNT),HL
-   359   0008f0 c9              	RET
-   360                          ;
-   361                          ;
-   362                          ;
-   363                          ;
-   364                          INDEX:
-   365   0008f1 eb              	EX	DE,HL
-   366   0008f2 2a4bff          	LD	HL,(PBASE)
-   367   0008f5 19              	ADD	HL,DE		;ADD OFFSET TO FIFO BASE ADDRESS
-   368   0008f6 e5              	PUSH	HL
-   369   0008f7 13              	INC	DE		;BUMP OFFSET NOW IN DE
-   370   0008f8 2a4dff          	LD	HL,(PSIZE)
-   371   0008fb b7              	OR	A
-   372   0008fc ed52            	SBC	HL,DE		;COMPARE TO MAX OFFSET VALUE
-   373   0008fe 3003            	JR	NC,INDEX2
-   374   000900 110000          	LD	DE,0		;SET OFFSET TO ZERO IF ROLL-OVER
-   375   000903 e1              INDEX2:	POP	HL
-   376   000904 c9              	RET			;RETURN DE=OFFSET AND HL=POINTER
-   377                          ;
-   378                          ;
-   379                          ;
-   380                          ;	... DISK WRITE COMMAND PROCESSOR ...
-   381                          ;
-   382                          DISKPUT:
-   383   000905 af              	XOR	A
-   384   000906 1802            	JR	DWRT0
-   385                          ;
-   386                          DISKWRITE:
-   387   000908 3e01            	LD	A,1
-   388   00090a 32b5ff          DWRT0:	LD	(VFLAG),A
-   389   00090d cd280c          	CALL	DRVINDEX	;INDEX TO GET DRIVE PARAMETER POINTER
-   390   000910 d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   202   000856 52              	DEFB	'R'		;MEMORY READ
+   203   000857 57              	DEFB	'W'		;MEMORY WRITE
+   204   000858 53              	DEFB	'S'		;SET ADDRESS
+   205   000859 47              	DEFB	'G'		;GOTO ADDRESS
+   206                          
+   207   00085a b40c            	DEFW	Z80GOTO
+   208   00085c a60c            	DEFW	Z80SET
+   209   00085e 7b0c            	DEFW	Z80WRITE
+   210   000860 5f0c            	DEFW	Z80READ
+   211                          Z80MAX	EQU	($-(Z80TAB+2))/3
+   212                          ;
+   213                          ;
+   214                          ;
+   215                          ;	PAGE
+   216                          ;
+   217                          ;
+   218                          ;	... PRINTER STATUS COMMAND PROCESSOR ...
+   219                          ;
+   220                          PTRSTAT:
+   221   000862 cd4a0c          	CALL	SENDACK
+   222   000865 2143ff          	LD	HL,PSMSG
+   223   000868 11fcc2          	LD	DE,IOBUFF+LEN-4
+   224   00086b d5              	PUSH	DE
+   225   00086c 010400          	LD	BC,4
+   226   00086f edb0            	LDIR			;COPY PRINTER STATUS FRAME FROM RAM
+   227   000871 e1              	POP	HL
+   228   000872 114300          	LD	DE,'C'		;SEND PRINTER STATUS UN-INVERTED
+   229   000875 c36c06          	JP	SENDBUFF
+   230                          ;	ret
+   231                          ;
+   232                          ;
+   233                          ;	... PRINTER WRITE COMMAND PROCESSOR ...
+   234                          ;
+   235                          PTRWRITE:
+   236   000878 cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
+   237   00087b cdb906          	CALL	RECVBUFF	;GET PRINT DATA FROM SERIAL BUS
+   238   00087e c0              	RET	NZ		;EXIT IF ERROR OR TIMEOUT
+   239                          
+   240   00087f 112800          	LD	DE,40
+   241   000882 b7              	OR	A
+   242   000883 ed52            	SBC	HL,DE
+   243   000885 c0              	RET	NZ		;ERROR IF RX BLOCK LENGTH <> 40 BYTES
+   244                          
+   245   000886 cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK'
+   246   000889 2100c1          	LD	HL,IOBUFF
+   247   00088c 0628            	LD	B,40
+   248   00088e 7e              PWRIT3:	LD	A,(HL)
+   249   00088f fe9b            	CP	9BH		;CHECK FOR 'ATASCII' CARRIAGE RETURN
+   250   000891 2005            	JR	NZ,PWRT3A
+   251                          
+   252   000893 213eff          	LD	HL,NEWLIN
+   253   000896 46              	LD	B,(HL)		;OUTPUT PRINTER'S NEWLINE CHARACTER(S)
+   254   000897 23              	INC	HL
+   255                          
+   256   000898 e5              PWRT3A:	PUSH	HL
+   257   000899 2a4fff          	LD	HL,(PCOUNT)
+   258   00089c ed5b4dff        	LD	DE,(PSIZE)
+   259   0008a0 b7              	OR	A
+   260   0008a1 ed52            	SBC	HL,DE		;TEST IF PRINTER BUFFER IS FULL
+   261   0008a3 e1              	POP	HL
+   262   0008a4 380e            	JR	C,PWRIT4	;STORE ANOTHER CHARACTER IF NOT FULL
+   263                          
+   264   0008a6 e5              	PUSH	HL
+   265   0008a7 c5              	PUSH	BC
+   266   0008a8 cdd108          	CALL	SPOOLER		;TRY TO CLEAR OUT BUFFER
+   267   0008ab c1              	POP	BC
+   268   0008ac e1              	POP	HL
+   269   0008ad db70            	IN	A,(ATARI)
+   270   0008af e602            	AND	00000010B	;TEST ATARI COMMAND LINE AND
+   271   0008b1 20e5            	JR	NZ,PWRT3A	;STAY IN LOOP IF INACTIVE
+   272                          
+   273   0008b3 c9              	RET			;ELSE ABORT PRINTING AND RETURN
+   274                          ;
+   275   0008b4 7e              PWRIT4:	LD	A,(HL)
+   276   0008b5 23              	INC	HL
+   277   0008b6 e5              	PUSH	HL
+   278   0008b7 c5              	PUSH	BC
+   279   0008b8 2a51ff          	LD	HL,(PINP)
+   280   0008bb cdf108          	CALL	INDEX		;GET INDEX TO FIFO INPUT PLACE
+   281   0008be ed5351ff        	LD	(PINP),DE	;STORE UPDATED INPUT OFFSET
+   282   0008c2 77              	LD	(HL),A		;STORE CHARACTER IN QUEUE
+   283   0008c3 2a4fff          	LD	HL,(PCOUNT)
+   284   0008c6 23              	INC	HL		;BUMP FIFO CHARACTER COUNTER
+   285   0008c7 224fff          	LD	(PCOUNT),HL
+   286   0008ca c1              	POP	BC
+   287   0008cb e1              	POP	HL
+   288   0008cc 10c0            	DJNZ	PWRIT3		;REPEAT TO END OF STRING
+   289                          
+   290   0008ce c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' TO ATARI
+   291                          ;	ret
+   292                          ;
+   293                          ;
+   294                          ;
+   295                          SPOOLER:
+   296   0008d1 2a4fff          	LD	HL,(PCOUNT)
+   297   0008d4 7c              	LD	A,H
+   298   0008d5 b5              	OR	L
+   299   0008d6 c8              	RET	Z		;EXIT IF NO DATA IN FIFO TO PRINT
+   300                          
+   301   0008d7 cd1500          	CALL	LISTV+3
+   302   0008da c0              	RET	NZ		;EXIT IF PRINTER BUSY
+   303                          
+   304   0008db 2a53ff          	LD	HL,(POUT)
+   305   0008de cdf108          	CALL	INDEX		;GET POINTER WITH AUTO-INCREMENT
+   306   0008e1 ed5353ff        	LD	(POUT),DE
+   307   0008e5 4e              	LD	C,(HL)
+   308   0008e6 cd1200          	CALL	LISTV		;PRINT CHARACTER AND EXIT
+   309   0008e9 2a4fff          	LD	HL,(PCOUNT)
+   310   0008ec 2b              	DEC	HL		;DIMINISH BUFFER COUNT BY ONE
+   311   0008ed 224fff          	LD	(PCOUNT),HL
+   312   0008f0 c9              	RET
+   313                          ;
+   314                          ;
+   315                          ;
+   316                          ;
+   317                          INDEX:
+   318   0008f1 eb              	EX	DE,HL
+   319   0008f2 2a4bff          	LD	HL,(PBASE)
+   320   0008f5 19              	ADD	HL,DE		;ADD OFFSET TO FIFO BASE ADDRESS
+   321   0008f6 e5              	PUSH	HL
+   322   0008f7 13              	INC	DE		;BUMP OFFSET NOW IN DE
+   323   0008f8 2a4dff          	LD	HL,(PSIZE)
+   324   0008fb b7              	OR	A
+   325   0008fc ed52            	SBC	HL,DE		;COMPARE TO MAX OFFSET VALUE
+   326   0008fe 3003            	JR	NC,INDEX2
+   327   000900 110000          	LD	DE,0		;SET OFFSET TO ZERO IF ROLL-OVER
+   328   000903 e1              INDEX2:	POP	HL
+   329   000904 c9              	RET			;RETURN DE=OFFSET AND HL=POINTER
+   330                          ;
+   331                          ;
+   332                          ;
+   333                          ;	... DISK WRITE COMMAND PROCESSOR ...
+   334                          ;
+   335                          DISKPUT:
+   336   000905 af              	XOR	A
+   337   000906 1802            	JR	DWRT0
+   338                          ;
+   339                          DISKWRITE:
+   340   000908 3e01            	LD	A,1
+   341   00090a 32b5ff          DWRT0:	LD	(VFLAG),A
+   342   00090d cd280c          	CALL	DRVINDEX	;INDEX TO GET DRIVE PARAMETER POINTER
+   343   000910 d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   344                          
+   345   000911 cd4a0c          	CALL	SENDACK
+   346   000914 cdb906          	CALL	RECVBUFF	;ELSE GO QUICK TO READ DATA FRAME
+   347   000917 c0              	RET	NZ		;EXIT IF BAD CHECKSUM
+   348                          
+   349   000918 22a9ff          	LD	(LOGSIZ),HL	;SAVE DATA BLOCK LENGTH
+   350   00091b 118000          	LD	DE,128
+   351   00091e b7              	OR	A
+   352   00091f ed52            	SBC	HL,DE		;TEST FOR 128 BYTE FRAME
+   353   000921 2804            	JR	Z,DWRT1
+   354   000923 b7              	OR	A
+   355   000924 ed52            	SBC	HL,DE		;TEST FOR 256 BYTE FRAME
+   356   000926 c0              	RET	NZ
+   357                          
+   358   000927 cd4a0c          DWRT1:	CALL	SENDACK		;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
+   359   00092a cd100a          	CALL	SECTRAN		;SET DISK PARAMETERS FOR WRITE
+   360   00092d 204e            	JR	NZ,DWRT4	;JUMP IF ERROR FROM 'SECTRAN'
+   361                          
+   362   00092f 2100c1          	LD	HL,IOBUFF
+   363   000932 229cff          	LD	(DKIOCB+DSKPTR),HL
+   364   000935 3aa9ff          	LD	A,(LOGSIZ)
+   365   000938 47              	LD	B,A		;PREPARE TO COMPLIMENT DISK DATA BLOCK
+   366   000939 7e              DWRT2:	LD	A,(HL)
+   367   00093a 2f              	CPL
+   368   00093b 77              	LD	(HL),A		;COMPLIMENT DISK DATA BLOCK
+   369   00093c 23              	INC	HL
+   370   00093d 10fa            	DJNZ	DWRT2		;REPEAT TO END OF BLOCK
+   371   00093f 3e02            	LD	A,PUTSEC
+   372   000941 3298ff          	LD	(DKIOCB+DSKOP),A
+   373   000944 dd2198ff        	LD	IX,DKIOCB
+   374   000948 cd0f00          	CALL	DISKV		;CALL PHYSICAL DISK DRIVER
+   375   00094b 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
+   376   00094e b7              	OR	A
+   377   00094f 202c            	JR	NZ,DWRT4	;BOMB OUT NOW IF DISK ERROR
+   378                          
+   379   000951 3ab5ff          	LD	A,(VFLAG)
+   380   000954 b7              	OR	A
+   381   000955 2826            	JR	Z,DWRT4		;EXIT OK IF NOT WRITE WITH VERIFY
+   382                          
+   383   000957 3e01            	LD	A,GETSEC
+   384   000959 3298ff          	LD	(DKIOCB+DSKOP),A
+   385   00095c 2100c3          	LD	HL,IOBUFF+LEN
+   386   00095f 229cff          	LD	(DKIOCB+DSKPTR),HL
+   387   000962 cd0f00          	CALL	DISKV		;ELSE READ SECTOR BACK FOR VERIFY
+   388   000965 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
+   389   000968 b7              	OR	A
+   390   000969 2012            	JR	NZ,DWRT4	;BOMB AGAIN IF READ ERROR
    391                          
-   392   000911 cd4a0c          	CALL	SENDACK
-   393   000914 cdb906          	CALL	RECVBUFF	;ELSE GO QUICK TO READ DATA FRAME
-   394   000917 c0              	RET	NZ		;EXIT IF BAD CHECKSUM
-   395                          
-   396   000918 22a9ff          	LD	(LOGSIZ),HL	;SAVE DATA BLOCK LENGTH
-   397   00091b 118000          	LD	DE,128
-   398   00091e b7              	OR	A
-   399   00091f ed52            	SBC	HL,DE		;TEST FOR 128 BYTE FRAME
-   400   000921 2804            	JR	Z,DWRT1
-   401   000923 b7              	OR	A
-   402   000924 ed52            	SBC	HL,DE		;TEST FOR 256 BYTE FRAME
-   403   000926 c0              	RET	NZ
-   404                          
-   405   000927 cd4a0c          DWRT1:	CALL	SENDACK		;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
-   406   00092a cd100a          	CALL	SECTRAN		;SET DISK PARAMETERS FOR WRITE
-   407   00092d 204e            	JR	NZ,DWRT4	;JUMP IF ERROR FROM 'SECTRAN'
-   408                          
-   409   00092f 2100c1          	LD	HL,IOBUFF
-   410   000932 229cff          	LD	(DKIOCB+DSKPTR),HL
-   411   000935 3aa9ff          	LD	A,(LOGSIZ)
-   412   000938 47              	LD	B,A		;PREPARE TO COMPLIMENT DISK DATA BLOCK
-   413   000939 7e              DWRT2:	LD	A,(HL)
-   414   00093a 2f              	CPL
-   415   00093b 77              	LD	(HL),A		;COMPLIMENT DISK DATA BLOCK
-   416   00093c 23              	INC	HL
-   417   00093d 10fa            	DJNZ	DWRT2		;REPEAT TO END OF BLOCK
-   418   00093f 3e02            	LD	A,PUTSEC
-   419   000941 3298ff          	LD	(DKIOCB+DSKOP),A
-   420   000944 dd2198ff        	LD	IX,DKIOCB
-   421   000948 cd0f00          	CALL	DISKV		;CALL PHYSICAL DISK DRIVER
-   422   00094b 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
-   423   00094e b7              	OR	A
-   424   00094f 202c            	JR	NZ,DWRT4	;BOMB OUT NOW IF DISK ERROR
-   425                          
-   426   000951 3ab5ff          	LD	A,(VFLAG)
-   427   000954 b7              	OR	A
-   428   000955 2826            	JR	Z,DWRT4		;EXIT OK IF NOT WRITE WITH VERIFY
-   429                          
-   430   000957 3e01            	LD	A,GETSEC
-   431   000959 3298ff          	LD	(DKIOCB+DSKOP),A
-   432   00095c 2100c3          	LD	HL,IOBUFF+LEN
-   433   00095f 229cff          	LD	(DKIOCB+DSKPTR),HL
-   434   000962 cd0f00          	CALL	DISKV		;ELSE READ SECTOR BACK FOR VERIFY
-   435   000965 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
-   436   000968 b7              	OR	A
-   437   000969 2012            	JR	NZ,DWRT4	;BOMB AGAIN IF READ ERROR
-   438                          
-   439   00096b 2100c1          	LD	HL,IOBUFF
-   440   00096e 1100c3          	LD	DE,IOBUFF+LEN
-   441   000971 3a9eff          	LD	A,(DKIOCB+DSKAUX)
-   442   000974 47              	LD	B,A		;PREPARE TO COMPARE 128 OR 256 BYTES
-   443   000975 1a              DWRT3:	LD	A,(DE)
-   444   000976 ae              	XOR	(HL)
-   445   000977 200b            	JR	NZ,DWRT5
-   446   000979 23              	INC	HL
-   447   00097a 13              	INC	DE
-   448   00097b 10f8            	djnz	DWRT3		;fall through last time with acc=0
+   392   00096b 2100c1          	LD	HL,IOBUFF
+   393   00096e 1100c3          	LD	DE,IOBUFF+LEN
+   394   000971 3a9eff          	LD	A,(DKIOCB+DSKAUX)
+   395   000974 47              	LD	B,A		;PREPARE TO COMPARE 128 OR 256 BYTES
+   396   000975 1a              DWRT3:	LD	A,(DE)
+   397   000976 ae              	XOR	(HL)
+   398   000977 200b            	JR	NZ,DWRT5
+   399   000979 23              	INC	HL
+   400   00097a 13              	INC	DE
+   401   00097b 10f8            	djnz	DWRT3		;fall through last time with acc=0
+   402                          
+   403   00097d cde309          DWRT4:	CALL	SETSTAT		;DO STATUS SETTING STUFF
+   404   000980 7b              	LD	A,E
+   405   000981 c3560c          	JP	SENDCHAR	;SEND 'COMPLETE' OR 'ERROR' TO ATARI
+   406                          ;	ret
+   407                          ;
+   408   000984 af              DWRT5:	xor	a
+   409   000985 cd060a          	call	SSTS4		;set hardware status=0 but set bad r/w
+   410   000988 7b              	ld	a,e
+   411   000989 c3560c          	jp	SENDCHAR
+   412                          ;	ret
+   413                          ;
+   414                          ;
+   415                          ;
+   416                          ;	... DISK READ COMMAND PROCESSOR ...
+   417                          ;
+   418                          DISKREAD:
+   419   00098c cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+   420   00098f d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   421                          
+   422   000990 cd4a0c          	CALL	SENDACK
+   423   000993 cd100a          	CALL	SECTRAN		;SET PARAMETERS FOR DISK OPERATION
+   424   000996 f5              	PUSH	AF		;SAVE ERROR STATUS FROM 'SECTRAN'
+   425   000997 280f            	JR	Z,DRD2		;JUMP IF PARAMS SET OK
+   426                          
+   427   000999 fd5606          	LD	D,(IY+SECLEN)
+   428   00099c fd5e07          	LD	E,(IY+SECLEN+1)	;LOAD DE WITH SECTOR LEN FROM 'DMATRIX'
+   429   00099f 7a              	LD	A,D
+   430   0009a0 b3              	OR	E
+   431   0009a1 2009            	JR	NZ,DRD2A	;JUMP IF LENGTH <> 0
+   432                          
+   433   0009a3 118000          	LD	DE,128		;ELSE REVERT TO 128 BYTES
+   434   0009a6 1804            	JR	DRD2A
+   435                          ;
+   436   0009a8 ed5b9eff        DRD2:	LD	DE,(DKIOCB+DSKAUX) ;LOAD DE WITH PHYSICAL SECTOR LENGTH
+   437   0009ac 2afdc2          DRD2A:	LD	HL,(CFRAME+2)
+   438   0009af 010400          	LD	BC,4
+   439   0009b2 b7              	OR	A
+   440   0009b3 ed42            	SBC	HL,BC		;TEST IF ACCESSING SECTOR# 1,2 OR 3
+   441   0009b5 3003            	JR	NC,DRD3		;JUMP IF NOT ACCESSING A BOOT SECTOR
+   442   0009b7 118000          	LD	DE,128
+   443   0009ba ed53a9ff        DRD3:	LD	(LOGSIZ),DE
+   444   0009be 2100c3          	LD	HL,IOBUFF+LEN
+   445   0009c1 b7              	OR	A
+   446   0009c2 ed52            	SBC	HL,DE		;COMPUTE STARTING PLACE IN BUFFER
+   447   0009c4 f1              	POP	AF
+   448   0009c5 2014            	JR	NZ,DRD4		;JUMP IF ERROR FROM 'SECTRAN' ABOVE
    449                          
-   450   00097d cde309          DWRT4:	CALL	SETSTAT		;DO STATUS SETTING STUFF
-   451   000980 7b              	LD	A,E
-   452   000981 c3560c          	JP	SENDCHAR	;SEND 'COMPLETE' OR 'ERROR' TO ATARI
-   453                          ;	ret
-   454                          ;
-   455   000984 af              DWRT5:	xor	a
-   456   000985 cd060a          	call	SSTS4		;set hardware status=0 but set bad r/w
-   457   000988 7b              	ld	a,e
-   458   000989 c3560c          	jp	SENDCHAR
-   459                          ;	ret
-   460                          ;
-   461                          ;
-   462                          ;
-   463                          ;	... DISK READ COMMAND PROCESSOR ...
+   450   0009c7 229cff          	LD	(DKIOCB+DSKPTR),HL
+   451   0009ca 3e01            	LD	A,GETSEC
+   452   0009cc 3298ff          	LD	(DKIOCB+DSKOP),A
+   453   0009cf dd2198ff        	LD	IX,DKIOCB
+   454   0009d3 e5              	PUSH	HL
+   455   0009d4 cd0f00          	CALL	DISKV		;CALL DISK I/O HANDLER
+   456   0009d7 e1              	POP	HL
+   457   0009d8 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
+   458                          
+   459   0009db cde309          DRD4:	CALL	SETSTAT		;TEST AND STORE STATUS STUFF
+   460   0009de 16ff            	LD	D,255		;SET MASK TO INVERT DISK DATA
+   461   0009e0 c36c06          	JP	SENDBUFF	;SEND RESPONSE TO ATARI
+   462                          ;	ret
+   463                          ;
    464                          ;
-   465                          DISKREAD:
-   466   00098c cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-   467   00098f d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-   468                          
-   469   000990 cd4a0c          	CALL	SENDACK
-   470   000993 cd100a          	CALL	SECTRAN		;SET PARAMETERS FOR DISK OPERATION
-   471   000996 f5              	PUSH	AF		;SAVE ERROR STATUS FROM 'SECTRAN'
-   472   000997 280f            	JR	Z,DRD2		;JUMP IF PARAMS SET OK
-   473                          
-   474   000999 fd5606          	LD	D,(IY+SECLEN)
-   475   00099c fd5e07          	LD	E,(IY+SECLEN+1)	;LOAD DE WITH SECTOR LEN FROM 'DMATRIX'
-   476   00099f 7a              	LD	A,D
-   477   0009a0 b3              	OR	E
-   478   0009a1 2009            	JR	NZ,DRD2A	;JUMP IF LENGTH <> 0
-   479                          
-   480   0009a3 118000          	LD	DE,128		;ELSE REVERT TO 128 BYTES
-   481   0009a6 1804            	JR	DRD2A
-   482                          ;
-   483   0009a8 ed5b9eff        DRD2:	LD	DE,(DKIOCB+DSKAUX) ;LOAD DE WITH PHYSICAL SECTOR LENGTH
-   484   0009ac 2afdc2          DRD2A:	LD	HL,(CFRAME+2)
-   485   0009af 010400          	LD	BC,4
-   486   0009b2 b7              	OR	A
-   487   0009b3 ed42            	SBC	HL,BC		;TEST IF ACCESSING SECTOR# 1,2 OR 3
-   488   0009b5 3003            	JR	NC,DRD3		;JUMP IF NOT ACCESSING A BOOT SECTOR
-   489   0009b7 118000          	LD	DE,128
-   490   0009ba ed53a9ff        DRD3:	LD	(LOGSIZ),DE
-   491   0009be 2100c3          	LD	HL,IOBUFF+LEN
-   492   0009c1 b7              	OR	A
-   493   0009c2 ed52            	SBC	HL,DE		;COMPUTE STARTING PLACE IN BUFFER
-   494   0009c4 f1              	POP	AF
-   495   0009c5 2014            	JR	NZ,DRD4		;JUMP IF ERROR FROM 'SECTRAN' ABOVE
+   465                          ;
+   466                          ;	ROUTINE TO CHECK STATUS AFTER READ/WRITE
+   467                          ;
+   468                          SETSTAT:
+   469   0009e3 b7              	OR	A
+   470   0009e4 200a            	JR	NZ,SSTS1	;JUMP IF SOME DISK ERROR INDICATED
+   471                          
+   472   0009e6 fd770d          	LD	(IY+HDWSTS),A	;ELSE STORE ZEROS IN HARDWARE STATUS
+   473   0009e9 1e43            	LD	E,'C'		;LOAD E WITH 'COMPLETE' CHARACTER
+   474   0009eb fdcb0c96        	RES	BADRW,(IY+CMDSTS)
+   475   0009ef c9              	RET
+   476                          ;
+   477                          ;	ACC HOLDS NON-ZERO VALUE INDICATING A DISK ERROR
+   478                          ;
+   479   0009f0 cb77            SSTS1:	BIT	6,A		;BIT HOLDS WPROT STATUS AFTER WRITE
+   480   0009f2 2802            	JR	Z,SSTS2
+   481                          
+   482   0009f4 e69f            	AND	10011111B
+   483                          
+   484   0009f6 cb6f            SSTS2:	BIT	5,A		;HOLDS DD MARK STATUS AFTER READ
+   485   0009f8 2802            	JR	Z,SSTS3
+   486                          
+   487   0009fa f660            	OR	01100000B	;CREATE 1771 DD ADDRESS MARK STATUS
+   488                          
+   489   0009fc 4f              SSTS3:	LD	C,A
+   490   0009fd e681            	AND	10000001B	;TEST FOR 'READY' OR 'BUSY' BITS SET
+   491   0009ff 79              	LD	A,C
+   492   000a00 2804            	JR	Z,SSTS4		;JUMP IF NOT READY/BUSY LOCK UP
+   493                          
+   494   000a02 e67e            	AND	01111110B	;ELSE CLEAR BOTH BITS AND REPLACE
+   495   000a04 f610            	OR	00010000B	; WITH 'RNF' ERROR BIT INSTEAD
    496                          
-   497   0009c7 229cff          	LD	(DKIOCB+DSKPTR),HL
-   498   0009ca 3e01            	LD	A,GETSEC
-   499   0009cc 3298ff          	LD	(DKIOCB+DSKOP),A
-   500   0009cf dd2198ff        	LD	IX,DKIOCB
-   501   0009d3 e5              	PUSH	HL
-   502   0009d4 cd0f00          	CALL	DISKV		;CALL DISK I/O HANDLER
-   503   0009d7 e1              	POP	HL
-   504   0009d8 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
-   505                          
-   506   0009db cde309          DRD4:	CALL	SETSTAT		;TEST AND STORE STATUS STUFF
-   507   0009de 16ff            	LD	D,255		;SET MASK TO INVERT DISK DATA
-   508   0009e0 c36c06          	JP	SENDBUFF	;SEND RESOPNSE TO ATARI
-   509                          ;	ret
-   510                          ;
-   511                          ;
-   512                          ;
-   513                          ;	ROUTINE TO CHECK STATUS AFTER READ/WRITE
-   514                          ;
-   515                          SETSTAT:
-   516   0009e3 b7              	OR	A
-   517   0009e4 200a            	JR	NZ,SSTS1	;JUMP IF SOME DISK ERROR INDICATED
-   518                          
-   519   0009e6 fd770d          	LD	(IY+HDWSTS),A	;ELSE STORE ZEROS IN HARDWARE STATUS
-   520   0009e9 1e43            	LD	E,'C'		;LOAD E WITH 'COMPLETE' CHARACTER
-   521   0009eb fdcb0c96        	RES	BADRW,(IY+CMDSTS)
-   522   0009ef c9              	RET
-   523                          ;
-   524                          ;	ACC HOLDS NON-ZERO VALUE INDICATING A DISK ERROR
-   525                          ;
-   526   0009f0 cb77            SSTS1:	BIT	6,A		;BIT HOLDS WPROT STATUS AFTER WRITE
-   527   0009f2 2802            	JR	Z,SSTS2
-   528                          
-   529   0009f4 e69f            	AND	10011111B
-   530                          
-   531   0009f6 cb6f            SSTS2:	BIT	5,A		;HOLDS DD MARK STATUS AFTER READ
-   532   0009f8 2802            	JR	Z,SSTS3
-   533                          
-   534   0009fa f660            	OR	01100000B	;CREATE 1771 DD ADDRESS MARK STATUS
-   535                          
-   536   0009fc 4f              SSTS3:	LD	C,A
-   537   0009fd e681            	AND	10000001B	;TEST FOR 'READY' OR 'BUSY' BITS SET
-   538   0009ff 79              	LD	A,C
-   539   000a00 2804            	JR	Z,SSTS4		;JUMP IF NOT READY/BUSY LOCK UP
-   540                          
-   541   000a02 e67e            	AND	01111110B	;ELSE CLEAR BOTH BITS AND REPLACE
-   542   000a04 f610            	OR	00010000B	; WITH 'RNF' ERROR BIT INSTEAD
-   543                          
-   544   000a06 fd770d          SSTS4:	LD	(IY+HDWSTS),A	;STORE HARDWARE STATUS FOR ATARI
-   545   000a09 1e45            	LD	E,'E'		;LOAD E WITH 'ERROR' CHARACTER
-   546   000a0b fdcb0cd6        	SET	BADRW,(IY+CMDSTS)
-   547   000a0f c9              	RET
-   548                          ;
-   549                          ;
-   550                          ;
-   551                          ;
-   552                          ;
-   553                          ;
-   554                          SECTRAN:
-   555                          ;	BIT	CONFIG,(IY+FLAGS)
-   556                          ;	JP	NZ,STRAN3	;SKIP IF DRIVE HAS BEEN CONFIGURED
-   557                          
-   558   000a10 3a2eff          	LD	A,(DRVOFF)
-   559   000a13 b7              	OR	A
-   560   000a14 2811            	JR	Z,STRAN2	;JUMP IF DRIVES HAVE NOT BEEN STOPPED
+   497   000a06 fd770d          SSTS4:	LD	(IY+HDWSTS),A	;STORE HARDWARE STATUS FOR ATARI
+   498   000a09 1e45            	LD	E,'E'		;LOAD E WITH 'ERROR' CHARACTER
+   499   000a0b fdcb0cd6        	SET	BADRW,(IY+CMDSTS)
+   500   000a0f c9              	RET
+   501                          ;
+   502                          ;
+   503                          ;
+   504                          ;
+   505                          ;
+   506                          ;
+   507                          SECTRAN:
+   508                          ;	BIT	CONFIG,(IY+FLAGS)
+   509                          ;	JP	NZ,STRAN3	;SKIP IF DRIVE HAS BEEN CONFIGURED
+   510                          
+   511   000a10 3a2eff          	LD	A,(DRVOFF)
+   512   000a13 b7              	OR	A
+   513   000a14 2811            	JR	Z,STRAN2	;JUMP IF DRIVES HAVE NOT BEEN STOPPED
+   514                          
+   515   000a16 af              	XOR	A
+   516   000a17 322eff          	LD	(DRVOFF),A	;CLEAR DRIVES-STOPPED FLAGS
+   517   000a1a 2164ff          	LD	HL,DMATRIX+FLAGS
+   518   000a1d 111000          	LD	DE,16
+   519   000a20 0604            	LD	B,4
+   520   000a22 cb86            STRAN1:	RES	FIRST,(HL)	;ZIP THRU ARRAY RESETING 'FIRST' FLAGS
+   521   000a24 19              	ADD	HL,DE		; TO FORCE MEDIA TO BE EXAMINED ANEW
+   522   000a25 10fb            	DJNZ	STRAN1
+   523                          
+   524   000a27 fdcb0e46        STRAN2:	BIT	FIRST,(IY+FLAGS)
+   525   000a2b 206d            	JR	NZ,STRAN3	;SKIP MEDIA CHECK IF DRIVE IS ACTIVE
+   526                          
+   527   000a2d 3e03            	LD	A,GETID
+   528   000a2f 3298ff          	LD	(DKIOCB+DSKOP),A
+   529   000a32 3a99ff          	LD	A,(DKIOCB+DSKDRV)
+   530   000a35 2120ff          	LD	HL,DRVTAB
+   531   000a38 85              	ADD	A,L
+   532   000a39 6f              	LD	L,A		;POINT TO HEAD POSITION FOR DRIVE#
+   533   000a3a 7e              	LD	A,(HL)
+   534   000a3b fe50            	CP	80
+   535   000a3d 3801            	JR	C,STR20		;JUMP IF TRACK# IN VALID RANGE
+   536   000a3f af              	XOR	A		;ELSE GOTO TRACK ZERO
+   537   000a40 329aff          STR20:	LD	(DKIOCB+DSKTRK),A
+   538   000a43 21abff          	LD	HL,IDBUF
+   539   000a46 229cff          	LD	(DKIOCB+DSKPTR),HL
+   540   000a49 dd2198ff        	LD	IX,DKIOCB
+   541   000a4d cd0f00          	CALL	DISKV		;READ AN ID MARK FROM CURRENT TRACK
+   542   000a50 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
+   543   000a53 b7              	OR	A
+   544   000a54 c0              	RET	NZ		;EXIT IF DISK ERROR ON READ-ID
+   545                          ;
+   546                          ;	ARRIVE HERE TO SET DISK PARAMS IMPLICITLY
+   547                          ;
+   548   000a55 3aaeff          	LD	A,(IDBUF+3)	;GET SECTOR LENGTH BYTE FROM ID
+   549   000a58 cdcd0a          	call	getsize		;compute sector length in bytes
+   550   000a5b fd7006          	ld	(iy+SECLEN),b
+   551   000a5e fd7107          	ld	(iy+SECLEN+1),c	;store result in 'seclen' param slot
+   552   000a61 3a9eff          	LD	A,(DKIOCB+DSKAUX)
+   553   000a64 07              	RLCA
+   554   000a65 07              	RLCA
+   555   000a66 07              	RLCA
+   556   000a67 2f              	CPL
+   557   000a68 e606            	AND	00000110B	;MAKE PERCOM DENSITY/SIZE BITS
+   558   000a6a fd7705          	LD	(IY+MEDIA),A
+   559   000a6d cb4f            	BIT	SIZE,A
+   560   000a6f 2807            	JR	Z,STR25		;JUMP IF FIVE INCH DISK SELECTED
    561                          
-   562   000a16 af              	XOR	A
-   563   000a17 322eff          	LD	(DRVOFF),A	;CLEAR DRIVES-STOPPED FLAGS
-   564   000a1a 2164ff          	LD	HL,DMATRIX+FLAGS
-   565   000a1d 111000          	LD	DE,16
-   566   000a20 0604            	LD	B,4
-   567   000a22 cb86            STRAN1:	RES	FIRST,(HL)	;ZIP THRU ARRAY RESETING 'FIRST' FLAGS
-   568   000a24 19              	ADD	HL,DE		; TO FORCE MEDIA TO BE EXAMINED ANEW
-   569   000a25 10fb            	DJNZ	STRAN1
-   570                          
-   571   000a27 fdcb0e46        STRAN2:	BIT	FIRST,(IY+FLAGS)
-   572   000a2b 206d            	JR	NZ,STRAN3	;SKIP MEDIA CHECK IF DRIVE IS ACTIVE
+   562   000a71 3e4d            	LD	A,77
+   563   000a73 211a00          	LD	HL,26
+   564   000a76 1805            	JR	STR26
+   565                          ;
+   566   000a78 3e28            STR25:	LD	A,40
+   567   000a7a 211200          	LD	HL,18
+   568   000a7d fdbe00          STR26:	cp	(iy+NTRKS)
+   569   000a80 3803            	jr	c,STR27		;skip if ntrks has been set > default
+   570   000a82 fd7700          	ld	(iy+NTRKS),a	;else set param to default value
+   571   000a85 fd7402          STR27:	LD	(IY+NSECS),H
+   572   000a88 fd7503          	LD	(IY+NSECS+1),L	;STORE SECTORS PER TRACK PARAM
    573                          
-   574   000a2d 3e03            	LD	A,GETID
-   575   000a2f 3298ff          	LD	(DKIOCB+DSKOP),A
-   576   000a32 3a99ff          	LD	A,(DKIOCB+DSKDRV)
-   577   000a35 2120ff          	LD	HL,DRVTAB
-   578   000a38 85              	ADD	A,L
-   579   000a39 6f              	LD	L,A		;POINT TO HEAD POSITION FOR DRIVE#
-   580   000a3a 7e              	LD	A,(HL)
-   581   000a3b fe50            	CP	80
-   582   000a3d 3801            	JR	C,STR20		;JUMP IF TRACK# IN VALID RANGE
-   583   000a3f af              	XOR	A		;ELSE GOTO TRACK ZERO
-   584   000a40 329aff          STR20:	LD	(DKIOCB+DSKTRK),A
-   585   000a43 21abff          	LD	HL,IDBUF
-   586   000a46 229cff          	LD	(DKIOCB+DSKPTR),HL
-   587   000a49 dd2198ff        	LD	IX,DKIOCB
-   588   000a4d cd0f00          	CALL	DISKV		;READ AN ID MARK FROM CURRENT TRACK
-   589   000a50 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
-   590   000a53 b7              	OR	A
-   591   000a54 c0              	RET	NZ		;EXIT IF DISK ERROR ON READ-ID
-   592                          ;
-   593                          ;	ARRIVE HERE TO SET DISK PARAMS IMPLICITLY
-   594                          ;
-   595   000a55 3aaeff          	LD	A,(IDBUF+3)	;GET SECTOR LENGTH BYTE FROM ID
-   596   000a58 cdcd0a          	call	getsize		;compute sector length in bytes
-   597   000a5b fd7006          	ld	(iy+SECLEN),b
-   598   000a5e fd7107          	ld	(iy+SECLEN+1),c	;store result in 'seclen' param slot
-   599   000a61 3a9eff          	LD	A,(DKIOCB+DSKAUX)
-   600   000a64 07              	RLCA
-   601   000a65 07              	RLCA
-   602   000a66 07              	RLCA
-   603   000a67 2f              	CPL
-   604   000a68 e606            	AND	00000110B	;MAKE PERCOM DENSITY/SIZE BITS
-   605   000a6a fd7705          	LD	(IY+MEDIA),A
-   606   000a6d cb4f            	BIT	SIZE,A
-   607   000a6f 2807            	JR	Z,STR25		;JUMP IF FIVE INCH DISK SELECTED
-   608                          
-   609   000a71 3e4d            	LD	A,77
-   610   000a73 211a00          	LD	HL,26
-   611   000a76 1805            	JR	STR26
+   574   000a8b fdcb0ec6        	SET	FIRST,(IY+FLAGS)
+   575   000a8f 2a96ff          	LD	HL,(OLDPTR)
+   576   000a92 7c              	LD	A,H
+   577   000a93 b5              	OR	L
+   578   000a94 2004            	JR	NZ,STRAN3	;JUMP IF NOT THE FIRST-EVER DISKOP
+   579                          
+   580   000a96 fd2296ff        	LD	(OLDPTR),IY	;ELSE SET POINTER TO THIS GUYS STUFF
+   581                          ;
+   582                          ;	ARRIVE HERE TO COMPUTE TRACK/SECTOR AND SET DISK BYTECOUNT
+   583                          ;
+   584   000a9a 2afdc2          STRAN3:	LD	HL,(CFRAME+2)
+   585   000a9d 2b              	DEC	HL		;REMOVE +1 BIAS FROM SECTOR NUMBER
+   586   000a9e 1600            	LD	D,0
+   587   000aa0 fd5e03          	LD	E,(IY+NSECS+1)
+   588   000aa3 3eff            	LD	A,-1
+   589   000aa5 3c              STRAN4:	INC	A
+   590   000aa6 b7              	OR	A
+   591   000aa7 ed52            	SBC	HL,DE
+   592   000aa9 30fa            	JR	NC,STRAN4	;DIVIDE ABSOLUTE SECTOR NUMBER BY SPT
+   593   000aab 19              	ADD	HL,DE
+   594   000aac 23              	INC	HL		;RESTORE +1 BIAS TO SECTOR NUMBER
+   595   000aad 4d              	LD	C,L
+   596   000aae 219bff          	LD	HL,DKIOCB+DSKSEC
+   597   000ab1 71              	LD	(HL),C		;STORE PHYSICAL SECTOR#
+   598                          
+   599   000ab2 fdbe00          	CP	(IY+NTRKS)	;COMPARE RESULT FROM TRACK# COMPUTATION
+   600   000ab5 3808            	JR	C,STRAN5	; TO 'NTRKS' PARAM AND JUMP IF LESS
+   601                          
+   602   000ab7 fd9600          	SUB	(IY+NTRKS)	;ELSE SUBTRACT EXTRA AND SELECT SIDE# 1
+   603   000aba 2199ff          	LD	HL,DKIOCB+DSKDRV
+   604   000abd cbfe            	SET	7,(HL)
+   605                          
+   606   000abf 329aff          STRAN5:	LD	(DKIOCB+DSKTRK),A  ;STORE PHYSICAL TRACK#
+   607   000ac2 fd6606          	LD	H,(IY+SECLEN)
+   608   000ac5 fd6e07          	LD	L,(IY+SECLEN+1)
+   609   000ac8 229eff          	LD	(DKIOCB+DSKAUX),HL  ;STORE PHYSICAL SECTOR SIZE FOR I/O
+   610   000acb af              	XOR	A
+   611   000acc c9              	RET
    612                          ;
-   613   000a78 3e28            STR25:	LD	A,40
-   614   000a7a 211200          	LD	HL,18
-   615   000a7d fdbe00          STR26:	cp	(iy+NTRKS)
-   616   000a80 3803            	jr	c,STR27		;skip if ntrks has been set > default
-   617   000a82 fd7700          	ld	(iy+NTRKS),a	;else set param to default value
-   618   000a85 fd7402          STR27:	LD	(IY+NSECS),H
-   619   000a88 fd7503          	LD	(IY+NSECS+1),L	;STORE SECTORS PER TRACK PARAM
-   620                          
-   621   000a8b fdcb0ec6        	SET	FIRST,(IY+FLAGS)
-   622   000a8f 2a96ff          	LD	HL,(OLDPTR)
-   623   000a92 7c              	LD	A,H
-   624   000a93 b5              	OR	L
-   625   000a94 2004            	JR	NZ,STRAN3	;JUMP IF NOT THE FIRST-EVER DISKOP
-   626                          
-   627   000a96 fd2296ff        	LD	(OLDPTR),IY	;ELSE SET POINTER TO THIS GUYS STUFF
+   613                          ;
+   614                          ;
+   615                          getsize:
+   616   000acd 018000          	ld	bc,128
+   617   000ad0 e603            	and	00000011b
+   618   000ad2 c8              	ret	z		;sector length code=0 means 128 bytes
+   619                          
+   620   000ad3 cb21            getsz2:	sla	c
+   621   000ad5 cb10            	rl	b		;else multiply 128 by 2,4 or 8
+   622   000ad7 3d              	dec	a
+   623   000ad8 20f9            	jr	nz,getsz2
+   624   000ada c9              	ret
+   625                          ;
+   626                          ;
+   627                          ;
    628                          ;
-   629                          ;	ARRIVE HERE TO COMPUTE TRACK/SECTOR AND SET DISK BYTECOUNT
-   630                          ;
-   631   000a9a 2afdc2          STRAN3:	LD	HL,(CFRAME+2)
-   632   000a9d 2b              	DEC	HL		;REMOVE +1 BIAS FROM SECTOR NUMBER
-   633   000a9e 1600            	LD	D,0
-   634   000aa0 fd5e03          	LD	E,(IY+NSECS+1)
-   635   000aa3 3eff            	LD	A,-1
-   636   000aa5 3c              STRAN4:	INC	A
-   637   000aa6 b7              	OR	A
-   638   000aa7 ed52            	SBC	HL,DE
-   639   000aa9 30fa            	JR	NC,STRAN4	;DIVIDE ABSOLUTE SECTOR NUMBER BY SPT
-   640   000aab 19              	ADD	HL,DE
-   641   000aac 23              	INC	HL		;RESTORE +1 BIAS TO SECTOR NUMBER
-   642   000aad 4d              	LD	C,L
-   643   000aae 219bff          	LD	HL,DKIOCB+DSKSEC
-   644   000ab1 71              	LD	(HL),C		;STORE PHYSICAL SECTOR#
-   645                          
-   646   000ab2 fdbe00          	CP	(IY+NTRKS)	;COMPARE RESULT FROM TRACK# COMPUTATION
-   647   000ab5 3808            	JR	C,STRAN5	; TO 'NTRKS' PARAM AND JUMP IF LESS
-   648                          
-   649   000ab7 fd9600          	SUB	(IY+NTRKS)	;ELSE SUBTRACT EXTRA AND SELECT SIDE# 1
-   650   000aba 2199ff          	LD	HL,DKIOCB+DSKDRV
-   651   000abd cbfe            	SET	7,(HL)
-   652                          
-   653   000abf 329aff          STRAN5:	LD	(DKIOCB+DSKTRK),A  ;STORE PHYSICAL TRACK#
-   654   000ac2 fd6606          	LD	H,(IY+SECLEN)
-   655   000ac5 fd6e07          	LD	L,(IY+SECLEN+1)
-   656   000ac8 229eff          	LD	(DKIOCB+DSKAUX),HL  ;STORE PHYSICAL SECTOR SIZE FOR I/O
-   657   000acb af              	XOR	A
-   658   000acc c9              	RET
-   659                          ;
+   629                          ;
+   630                          ;	... DISK STATUS COMMAND PROCESSOR ...
+   631                          ;
+   632                          DISKSTAT:
+   633   000adb cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+   634   000ade d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   635                          
+   636   000adf cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
+   637   000ae2 cdd30b          	CALL	HASPARMS	;CHECK IF HAS NEVER BEEN ACCESSED
+   638   000ae5 3ac9ff          	LD	A,(DRVTMR)
+   639   000ae8 f5              	PUSH	AF		;SAVE DRIVE TIMER VALUE RIGHT NOW
+   640   000ae9 3e00            	LD	A,TSTRDY
+   641   000aeb 3298ff          	LD	(DKIOCB+DSKOP),A
+   642   000aee dd2198ff        	LD	IX,DKIOCB
+   643   000af2 cd0f00          	CALL	DISKV		;CALL DISK HANDLER TO GET TYPE 1 STATUS
+   644                          
+   645   000af5 fd4e0c          	LD	C,(IY+CMDSTS)	;PREPARE TO DERRIVE REST OF 'CMDSTS'
+   646   000af8 fd360c00        	LD	(IY+CMDSTS),0	; AND RESET OLD STATUS BITS
+   647   000afc f1              	POP	AF
+   648   000afd b7              	OR	A
+   649   000afe 2804            	JR	Z,DSTAT1	;JUMP IF DRIVES WERE PREVIOUSLY STOPPED
+   650                          
+   651   000b00 cbe1            	SET	ACTIVE,C
+   652   000b02 1802            	JR	DSTAT2
+   653                          ;
+   654   000b04 cba1            DSTAT1:	RES	ACTIVE,C
+   655   000b06 fdcb0556        DSTAT2:	BIT	DENSTY,(IY+MEDIA)
+   656   000b0a 2804            	JR	Z,DSTAT3	;JUMP IF DRIVE SET FOR SINGLE DENSITY
+   657                          
+   658   000b0c cbe9            	SET	SEC256,C
+   659   000b0e 1802            	JR	DSTAT4
    660                          ;
-   661                          ;
-   662                          getsize:
-   663   000acd 018000          	ld	bc,128
-   664   000ad0 e603            	and	00000011b
-   665   000ad2 c8              	ret	z		;sector length code=0 means 128 bytes
-   666                          
-   667   000ad3 cb21            getsz2:	sla	c
-   668   000ad5 cb10            	rl	b		;else multiply 128 by 2,4 or 8
-   669   000ad7 3d              	dec	a
-   670   000ad8 20f9            	jr	nz,getsz2
-   671   000ada c9              	ret
-   672                          ;
-   673                          ;
-   674                          ;
-   675                          ;
-   676                          ;
-   677                          ;	... DISK STATUS COMMAND PROCESSOR ...
-   678                          ;
-   679                          DISKSTAT:
-   680   000adb cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-   681   000ade d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-   682                          
-   683   000adf cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
-   684   000ae2 cdd30b          	CALL	HASPARMS	;CHECK IF HAS NEVER BEEN ACCESSED
-   685   000ae5 3ac9ff          	LD	A,(DRVTMR)
-   686   000ae8 f5              	PUSH	AF		;SAVE DRIVE TIMER VALUE RIGHT NOW
-   687   000ae9 3e00            	LD	A,TSTRDY
-   688   000aeb 3298ff          	LD	(DKIOCB+DSKOP),A
-   689   000aee dd2198ff        	LD	IX,DKIOCB
-   690   000af2 cd0f00          	CALL	DISKV		;CALL DISK HANDLER TO GET TYPE 1 STATUS
-   691                          
-   692   000af5 fd4e0c          	LD	C,(IY+CMDSTS)	;PREPARE TO DERRIVE REST OF 'CMDSTS'
-   693   000af8 fd360c00        	LD	(IY+CMDSTS),0	; AND RESET OLD STATUS BITS
-   694   000afc f1              	POP	AF
-   695   000afd b7              	OR	A
-   696   000afe 2804            	JR	Z,DSTAT1	;JUMP IF DRIVES WERE PREVIOUSLY STOPPED
-   697                          
-   698   000b00 cbe1            	SET	ACTIVE,C
-   699   000b02 1802            	JR	DSTAT2
-   700                          ;
-   701   000b04 cba1            DSTAT1:	RES	ACTIVE,C
-   702   000b06 fdcb0556        DSTAT2:	BIT	DENSTY,(IY+MEDIA)
-   703   000b0a 2804            	JR	Z,DSTAT3	;JUMP IF DRIVE SET FOR SINGLE DENSITY
-   704                          
-   705   000b0c cbe9            	SET	SEC256,C
-   706   000b0e 1802            	JR	DSTAT4
-   707                          ;
-   708   000b10 cba9            DSTAT3:	RES	SEC256,C
-   709   000b12 ddcb0876        DSTAT4:	BIT	6,(IX+DSKSTS)
-   710   000b16 2804            	JR	Z,DSTAT5	;JUMP IF DRIVE IS NOT WRITE PROTECTED
+   661   000b10 cba9            DSTAT3:	RES	SEC256,C
+   662   000b12 ddcb0876        DSTAT4:	BIT	6,(IX+DSKSTS)
+   663   000b16 2804            	JR	Z,DSTAT5	;JUMP IF DRIVE IS NOT WRITE PROTECTED
+   664                          
+   665   000b18 cbd9            	SET	WRPROT,C
+   666   000b1a 1802            	JR	DSTAT6
+   667                          ;
+   668   000b1c cb99            DSTAT5:	RES	WRPROT,C
+   669   000b1e 21fcc2          DSTAT6:	LD	HL,IOBUFF+LEN-4
+   670   000b21 e5              	PUSH	HL
+   671   000b22 71              	LD	(HL),C		;STORE DRIVE COMMAND STATUS IN BUFFER
+   672   000b23 23              	INC	HL
+   673   000b24 fd7e0d          	LD	A,(IY+HDWSTS)
+   674   000b27 2f              	CPL
+   675   000b28 77              	LD	(HL),A		;STORE HARDWARE POOP NEXT
+   676   000b29 23              	INC	HL
+   677   000b2a 36e0            	LD	(HL),224	;STORE MAX TIMEOUT AFTER THAT
+   678   000b2c 23              	INC	HL
+   679   000b2d 3a2dff          	LD	A,(TRACK)
+   680   000b30 77              	LD	(HL),A		;STORE TRACK# AS FOURTH BYTE
+   681   000b31 e1              	POP	HL
+   682   000b32 114300          	LD	DE,'C'		;SEND DISK STATUS W/O COMPLIMENT
+   683   000b35 c36c06          	JP	SENDBUFF
+   684                          ;	ret
+   685                          ;
+   686                          ;
+   687                          ;
+   688                          ;	... DISK FORMAT COMMAND PROCESSOR ...
+   689                          ;
+   690                          DISKINIT:
+   691   000b38 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+   692   000b3b d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   693                          
+   694   000b3c 2a4fff          	LD	HL,(PCOUNT)
+   695   000b3f 7c              	LD	A,H
+   696   000b40 b5              	OR	L
+   697   000b41 c0              	RET	NZ		;REFUSE TO FORMAT IF SPOOLER ACTIVE
+   698                          
+   699   000b42 cdd30b          	CALL	HASPARMS
+   700   000b45 c8              	RET	Z		;REFUSE TO FORMAT IF PARAMS NOT SET
+   701                          
+   702   000b46 cd4a0c          	CALL	SENDACK
+   703   000b49 3e00            	LD	A,TSTRDY
+   704   000b4b 3298ff          	LD	(DKIOCB+DSKOP),A
+   705   000b4e dd2198ff        	LD	IX,DKIOCB
+   706   000b52 cd0f00          	CALL	DISKV		;CALL DRIVER TO TEST READY/WRITE PROT
+   707   000b55 cdcb03          	CALL	STOPTMR		;THEN KILL CTC3 TO STOP DISK TIMER
+   708   000b58 3a2fff          	LD	A,(OUTCPY)
+   709   000b5b fdcb0556        	BIT	DENSTY,(IY+MEDIA)
+   710   000b5f 2807            	JR	Z,DINIT2
    711                          
-   712   000b18 cbd9            	SET	WRPROT,C
-   713   000b1a 1802            	JR	DSTAT6
-   714                          ;
-   715   000b1c cb99            DSTAT5:	RES	WRPROT,C
-   716   000b1e 21fcc2          DSTAT6:	LD	HL,IOBUFF+LEN-4
-   717   000b21 e5              	PUSH	HL
-   718   000b22 71              	LD	(HL),C		;STORE DRIVE COMMAND STATUS IN BUFFER
-   719   000b23 23              	INC	HL
-   720   000b24 fd7e0d          	LD	A,(IY+HDWSTS)
-   721   000b27 2f              	CPL
-   722   000b28 77              	LD	(HL),A		;STORE HARDWARE POOP NEXT
-   723   000b29 23              	INC	HL
-   724   000b2a 36e0            	LD	(HL),224	;STORE MAX TIMEOUT AFTER THAT
-   725   000b2c 23              	INC	HL
-   726   000b2d 3a2dff          	LD	A,(TRACK)
-   727   000b30 77              	LD	(HL),A		;STORE TRACK# AS FOURTH BYTE
-   728   000b31 e1              	POP	HL
-   729   000b32 114300          	LD	DE,'C'		;SEND DISK STATUS W/O COMPLIMENT
-   730   000b35 c36c06          	JP	SENDBUFF
-   731                          ;	ret
-   732                          ;
-   733                          ;
-   734                          ;
-   735                          ;	... DISK FORMAT COMMAND PROCESSOR ...
-   736                          ;
-   737                          DISKINIT:
-   738   000b38 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-   739   000b3b d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-   740                          
-   741   000b3c 2a4fff          	LD	HL,(PCOUNT)
-   742   000b3f 7c              	LD	A,H
-   743   000b40 b5              	OR	L
-   744   000b41 c0              	RET	NZ		;REFUSE TO FORMAT IF SPOOLER ACTIVE
-   745                          
-   746   000b42 cdd30b          	CALL	HASPARMS
-   747   000b45 c8              	RET	Z		;REFUSE TO FORMAT IF PARAMS NOT SET
-   748                          
-   749   000b46 cd4a0c          	CALL	SENDACK
-   750   000b49 3e00            	LD	A,TSTRDY
-   751   000b4b 3298ff          	LD	(DKIOCB+DSKOP),A
-   752   000b4e dd2198ff        	LD	IX,DKIOCB
-   753   000b52 cd0f00          	CALL	DISKV		;CALL DRIVER TO TEST READY/WRITE PROT
-   754   000b55 cdcb03          	CALL	STOPTMR		;THEN KILL CTC3 TO STOP DISK TIMER
-   755   000b58 3a2fff          	LD	A,(OUTCPY)
-   756   000b5b fdcb0556        	BIT	DENSTY,(IY+MEDIA)
-   757   000b5f 2807            	JR	Z,DINIT2
-   758                          
-   759   000b61 cbbf            	RES	7,A		;RESET DENSITY BIT OF CONTROL BYTE
-   760   000b63 2100c2          	LD	HL,IOBUFF+LEN-256
-   761   000b66 1805            	JR	DINIT3
-   762                          ;
-   763   000b68 cbff            DINIT2:	SET	7,A		;SET SD/DD BIT IF SINGLE DENSITY
-   764   000b6a 2180c2          	LD	HL,IOBUFF+LEN-128
-   765   000b6d 322fff          DINIT3:	LD	(OUTCPY),A
-   766   000b70 d330            	OUT	(LATCH),A
-   767   000b72 e5              	PUSH	HL
-   768   000b73 22c1ff          	LD	(SEQPTR),HL	;STORE POINTER FOR BAD SECTOR LIST
-   769   000b76 210100          	LD	HL,1
-   770   000b79 22bfff          	LD	(SEQNUM),HL	;RESET BAD SECTOR COUNTER
-   771   000b7c 2a49ff          	LD	HL,(FMTPTR)
-   772   000b7f 11b6ff          	LD	DE,FMTSTUFF
-   773   000b82 010700          	LD	BC,FMTLEN
-   774   000b85 07              	RLCA
-   775   000b86 07              	RLCA
-   776   000b87 e603            	AND	00000011B
-   777   000b89 2804            	JR	Z,SFMT3
-   778   000b8b 09              SFMT2:	ADD	HL,BC
-   779   000b8c 3d              	DEC	A
-   780   000b8d 20fc            	JR	NZ,SFMT2	;INDEX TO PROPER PARAMS FOR DISK TYPE
-   781   000b8f edb0            SFMT3:	LDIR			;THEN COPY PARAMS TO 'FMTSTUFF'
-   782   000b91 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
-   783   000b94 e6c0            	AND	11000000B
-   784   000b96 2013            	JR	NZ,DINIT6	;ERROR IF NOT READY OR WRITE PROTECTED
-   785                          
-   786   000b98 fd7e04          	ld	a,(iy+NSIDES)	;set for SS/DS init
-   787   000b9b 32bdff          	ld	(sides),a
-   788   000b9e fd7e00          	ld	a,(iy+NTRKS)	;set for number of tracks
-   789   000ba1 32beff          	ld	(tracks),a
-   790   000ba4 fde5            	PUSH	IY
-   791   000ba6 cdbe0c          	CALL	FORMAT		;CALL FORMAT SUBROUTINE
-   792   000ba9 fde1            	POP	IY
-   793                          
-   794   000bab e1              DINIT6:	POP	HL
-   795   000bac cde309          	CALL	SETSTAT		;UPDATE STATUS AS SPECIFIED BY ACC
-   796   000baf 1600            	LD	D,0
-   797   000bb1 cd6c06          	CALL	SENDBUFF	;SEND BAD SECTOR DATA FRAME
-   798   000bb4 c33c00          	JP	ACTIVON		;THEN RESTART THE DISK TIMER
-   799                          ;	ret
+   712   000b61 cbbf            	RES	7,A		;RESET DENSITY BIT OF CONTROL BYTE
+   713   000b63 2100c2          	LD	HL,IOBUFF+LEN-256
+   714   000b66 1805            	JR	DINIT3
+   715                          ;
+   716   000b68 cbff            DINIT2:	SET	7,A		;SET SD/DD BIT IF SINGLE DENSITY
+   717   000b6a 2180c2          	LD	HL,IOBUFF+LEN-128
+   718   000b6d 322fff          DINIT3:	LD	(OUTCPY),A
+   719   000b70 d330            	OUT	(LATCH),A
+   720   000b72 e5              	PUSH	HL
+   721   000b73 22c1ff          	LD	(SEQPTR),HL	;STORE POINTER FOR BAD SECTOR LIST
+   722   000b76 210100          	LD	HL,1
+   723   000b79 22bfff          	LD	(SEQNUM),HL	;RESET BAD SECTOR COUNTER
+   724   000b7c 2a49ff          	LD	HL,(FMTPTR)
+   725   000b7f 11b6ff          	LD	DE,FMTSTUFF
+   726   000b82 010700          	LD	BC,FMTLEN
+   727   000b85 07              	RLCA
+   728   000b86 07              	RLCA
+   729   000b87 e603            	AND	00000011B
+   730   000b89 2804            	JR	Z,SFMT3
+   731   000b8b 09              SFMT2:	ADD	HL,BC
+   732   000b8c 3d              	DEC	A
+   733   000b8d 20fc            	JR	NZ,SFMT2	;INDEX TO PROPER PARAMS FOR DISK TYPE
+   734   000b8f edb0            SFMT3:	LDIR			;THEN COPY PARAMS TO 'FMTSTUFF'
+   735   000b91 3aa0ff          	LD	A,(DKIOCB+DSKSTS)
+   736   000b94 e6c0            	AND	11000000B
+   737   000b96 2013            	JR	NZ,DINIT6	;ERROR IF NOT READY OR WRITE PROTECTED
+   738                          
+   739   000b98 fd7e04          	ld	a,(iy+NSIDES)	;set for SS/DS init
+   740   000b9b 32bdff          	ld	(sides),a
+   741   000b9e fd7e00          	ld	a,(iy+NTRKS)	;set for number of tracks
+   742   000ba1 32beff          	ld	(tracks),a
+   743   000ba4 fde5            	PUSH	IY
+   744   000ba6 cdbe0c          	CALL	FORMAT		;CALL FORMAT SUBROUTINE
+   745   000ba9 fde1            	POP	IY
+   746                          
+   747   000bab e1              DINIT6:	POP	HL
+   748   000bac cde309          	CALL	SETSTAT		;UPDATE STATUS AS SPECIFIED BY ACC
+   749   000baf 1600            	LD	D,0
+   750   000bb1 cd6c06          	CALL	SENDBUFF	;SEND BAD SECTOR DATA FRAME
+   751   000bb4 c33c00          	JP	ACTIVON		;THEN RESTART THE DISK TIMER
+   752                          ;	ret
+   753                          ;
+   754                          ;
+   755                          ;
+   756                          ;
+   757                          ;
+   758                          FMTS:
+   759   000bb7 9f0e            	DEFW	DD8N26		;DOUBLE DENSITY 8 INCH
+   760   000bb9 e20e            	DEFW	SKEW17
+   761   000bbb 1a              	DEFB	26
+   762   000bbc b028            	DEFW	10416
+   763                          
+   764   000bbe 350e            	DEFW	DD5N18		;DOUBLE DENSITY 5 INCH
+   765   000bc0 680e            	DEFW	SKEWDD
+   766   000bc2 12              	DEFB	18
+   767   000bc3 6a18            	DEFW	6250
+   768                          
+   769   000bc5 7a0e            	DEFW	SD8N26		;SINGLE DENSITY 8 INCH
+   770   000bc7 c80e            	DEFW	SKEW13
+   771   000bc9 1a              	DEFB	26
+   772   000bca 5814            	DEFW	5208
+   773                          
+   774   000bcc 160e            	DEFW	SD5N18		;SINGLE DENSITY 5 INCH
+   775   000bce 560e            	DEFW	SKEWSD
+   776   000bd0 12              	DEFB	18
+   777   000bd1 350c            	DEFW	3125
+   778                          ;
+   779                          ;
+   780                          ;
+   781                          ;
+   782                          HASPARMS:
+   783   000bd3 fd7e00          	LD	A,(IY+NTRKS)
+   784   000bd6 b7              	OR	A
+   785   000bd7 c0              	RET	NZ		;EXIT IF PARAMS HAVE BEEN SET
+   786                          
+   787   000bd8 2a96ff          	LD	HL,(OLDPTR)
+   788   000bdb 7c              	LD	A,H		;IF POINTER IS ZERO THEN NO DRIVE
+   789   000bdc b5              	OR	L		; PARAMS HAVE EVER BEEN SET
+   790   000bdd c8              	RET	Z
+   791                          
+   792   000bde fde5            	PUSH	IY
+   793   000be0 d1              	POP	DE
+   794   000be1 010c00          	LD	BC,12
+   795   000be4 edb0            	LDIR			;COPY BOOT DISK'S PARAMS TO THIS GUY
+   796   000be6 c9              	RET
+   797                          ;
+   798                          ;
+   799                          ;
    800                          ;
-   801                          ;
+   801                          ;	... PERCOM 'N' COMMAND PROCESSOR ...
    802                          ;
-   803                          ;
-   804                          ;
-   805                          FMTS:
-   806   000bb7 9f0e            	DEFW	DD8N26		;DOUBLE DENSITY 8 INCH
-   807   000bb9 e20e            	DEFW	SKEW17
-   808   000bbb 1a              	DEFB	26
-   809   000bbc b028            	DEFW	10416
-   810                          
-   811   000bbe 350e            	DEFW	DD5N18		;DOUBLE DENSITY 5 INCH
-   812   000bc0 680e            	DEFW	SKEWDD
-   813   000bc2 12              	DEFB	18
-   814   000bc3 6a18            	DEFW	6250
-   815                          
-   816   000bc5 7a0e            	DEFW	SD8N26		;SINGLE DENSITY 8 INCH
-   817   000bc7 c80e            	DEFW	SKEW13
-   818   000bc9 1a              	DEFB	26
-   819   000bca 5814            	DEFW	5208
-   820                          
-   821   000bcc 160e            	DEFW	SD5N18		;SINGLE DENSITY 5 INCH
-   822   000bce 560e            	DEFW	SKEWSD
-   823   000bd0 12              	DEFB	18
-   824   000bd1 350c            	DEFW	3125
-   825                          ;
+   803                          GETPARAMS:
+   804   000be7 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+   805   000bea d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   806                          
+   807   000beb cdd30b          	CALL	HASPARMS
+   808   000bee c8              	RET	Z		;EXIT IF DISK PARAMS NOT KNOWN
+   809                          
+   810   000bef cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
+   811                          ;	SET	CONFIG,(IY+FLAGS)
+   812   000bf2 fde5            	PUSH	IY
+   813   000bf4 e1              	POP	HL
+   814   000bf5 11f4c2          	LD	DE,IOBUFF+LEN-12
+   815   000bf8 d5              	PUSH	DE
+   816   000bf9 010c00          	LD	BC,12
+   817   000bfc edb0            	LDIR			;COPY PARAMS TO OUTPUT BUFFER
+   818   000bfe e1              	POP	HL
+   819   000bff 114300          	LD	DE,'C'
+   820   000c02 c36c06          	JP	SENDBUFF	;SEND 'C' AND PARAMS DATA FRAME
+   821                          ;	ret
+   822                          ;
+   823                          ;
+   824                          ;
+   825                          ;	... PERCOM 'O' COMMAND PROCESSOR ...
    826                          ;
-   827                          ;
-   828                          ;
-   829                          HASPARMS:
-   830   000bd3 fd7e00          	LD	A,(IY+NTRKS)
-   831   000bd6 b7              	OR	A
-   832   000bd7 c0              	RET	NZ		;EXIT IF PARAMS HAVE BEEN SET
-   833                          
-   834   000bd8 2a96ff          	LD	HL,(OLDPTR)
-   835   000bdb 7c              	LD	A,H		;IF POINTER IS ZERO THEN NO DRIVE
-   836   000bdc b5              	OR	L		; PARAMS HAVE EVER BEEN SET
-   837   000bdd c8              	RET	Z
-   838                          
-   839   000bde fde5            	PUSH	IY
-   840   000be0 d1              	POP	DE
-   841   000be1 010c00          	LD	BC,12
-   842   000be4 edb0            	LDIR			;COPY BOOT DISK'S PARAMS TO THIS GUY
-   843   000be6 c9              	RET
-   844                          ;
-   845                          ;
-   846                          ;
-   847                          ;
-   848                          ;	... PERCOM 'N' COMMAND PROCESSOR ...
+   827                          PUTPARAMS:
+   828   000c05 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+   829   000c08 d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+   830                          
+   831   000c09 cd4a0c          	CALL	SENDACK
+   832   000c0c cdb906          	CALL	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
+   833   000c0f c0              	RET	NZ
+   834                          
+   835   000c10 110c00          	LD	DE,12
+   836   000c13 b7              	OR	A
+   837   000c14 ed52            	SBC	HL,DE
+   838   000c16 c0              	RET	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
+   839                          
+   840   000c17 cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
+   841                          ;	SET	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
+   842   000c1a 2100c1          	LD	HL,IOBUFF
+   843   000c1d fde5            	PUSH	IY
+   844   000c1f d1              	POP	DE		;POINT DE TO PARAMETERS FOR DRIVE(N)
+   845   000c20 010c00          	LD	BC,12
+   846   000c23 edb0            	LDIR			;COPY NEW STUFF IN THE PLACE
+   847   000c25 c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
+   848                          ;	ret
    849                          ;
-   850                          GETPARAMS:
-   851   000be7 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-   852   000bea d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-   853                          
-   854   000beb cdd30b          	CALL	HASPARMS
-   855   000bee c8              	RET	Z		;EXIT IF DISK PARAMS NOT KNOWN
-   856                          
-   857   000bef cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
-   858                          ;	SET	CONFIG,(IY+FLAGS)
-   859   000bf2 fde5            	PUSH	IY
-   860   000bf4 e1              	POP	HL
-   861   000bf5 11f4c2          	LD	DE,IOBUFF+LEN-12
-   862   000bf8 d5              	PUSH	DE
-   863   000bf9 010c00          	LD	BC,12
-   864   000bfc edb0            	LDIR			;COPY PARAMS TO OUTPUT BUFFER
-   865   000bfe e1              	POP	HL
-   866   000bff 114300          	LD	DE,'C'
-   867   000c02 c36c06          	JP	SENDBUFF	;SEND 'C' AND PARAMS DATA FRAME
-   868                          ;	ret
-   869                          ;
-   870                          ;
-   871                          ;
-   872                          ;	... PERCOM 'O' COMMAND PROCESSOR ...
-   873                          ;
-   874                          PUTPARAMS:
-   875   000c05 cd280c          	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-   876   000c08 d8              	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-   877                          
-   878   000c09 cd4a0c          	CALL	SENDACK
-   879   000c0c cdb906          	CALL	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
-   880   000c0f c0              	RET	NZ
-   881                          
-   882   000c10 110c00          	LD	DE,12
-   883   000c13 b7              	OR	A
-   884   000c14 ed52            	SBC	HL,DE
-   885   000c16 c0              	RET	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
-   886                          
-   887   000c17 cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
-   888                          ;	SET	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
-   889   000c1a 2100c1          	LD	HL,IOBUFF
-   890   000c1d fde5            	PUSH	IY
-   891   000c1f d1              	POP	DE		;POINT DE TO PARAMETERS FOR DRIVE(N)
-   892   000c20 010c00          	LD	BC,12
-   893   000c23 edb0            	LDIR			;COPY NEW STUFF IN THE PLACE
-   894   000c25 c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
-   895                          ;	ret
-   896                          ;
+   850                          ;
+   851                          ;
+   852                          ;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
+   853                          ;
+   854                          ;NTRKS	EQU	0		;NUMBER OF TRACKS
+   855                          ;STEPRT	EQU	1		;STEP RATE
+   856                          ;NSECS	EQU	2		;SECTORS PER TRACK (HI/LOW)
+   857                          ;NSIDES	EQU	4		;NUMBER OF SIDES
+   858                          ;MEDIA	EQU	5		;MEDIA SIZE AND FORMAT BITS
+   859                          ;SECLEN	EQU	6		;SECTOR LENGTH (HI/LOW)
+   860                          ;DSKBITS	EQU	8		;MISC NAUGHTY BITS
+   861                          ;SPARE0	EQU	9
+   862                          ;SPARE1	EQU	10
+   863                          ;SPARE2	EQU	11
+   864                          ;
+   865                          ;CMDSTS	EQU	12		;COMMAND STATUS
+   866                          ;HDWSTS	EQU	13		;HARDWARE STATUS
+   867                          ;
+   868                          ;FLAGS	EQU	14		;FLAGS BYTE FOR DISK OPERATION
+   869                          ;SPARE3	EQU	15
+   870                          ;;
+   871                          ;;
+   872                          ;;	EQUATES FOR BITS IN 'MEDIA' BYTE
+   873                          ;;
+   874                          ;SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
+   875                          ;DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
+   876                          ;;
+   877                          ;;
+   878                          ;;	EQUATES FOR BITS IN 'DSKBITS' BYTE
+   879                          ;;
+   880                          ;PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
+   881                          ;;
+   882                          ;;
+   883                          ;;	EQUATES FOR BITS IN 'CMDSTS' BYTE
+   884                          ;;
+   885                          ;BADCMD	EQU	0		;BAD COMMAND FRAME BIT
+   886                          ;BADDAT	EQU	1		;BAD DATA FRAME BIT
+   887                          ;BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
+   888                          ;WRPROT	EQU	3		;WRITE PROTECTED BIT
+   889                          ;ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
+   890                          ;SEC256	EQU	5		;LONG/SHORT SECTOR BIT
+   891                          ;;
+   892                          ;;
+   893                          ;;	EQUATES FOR BITS IN 'FLAGS' BYTE
+   894                          ;;
+   895                          ;FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
+   896                          ;CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
    897                          ;
    898                          ;
-   899                          ;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
+   899                          ;
    900                          ;
-   901                          ;NTRKS	EQU	0		;NUMBER OF TRACKS
-   902                          ;STEPRT	EQU	1		;STEP RATE
-   903                          ;NSECS	EQU	2		;SECTORS PER TRACK (HI/LOW)
-   904                          ;NSIDES	EQU	4		;NUMBER OF SIDES
-   905                          ;MEDIA	EQU	5		;MEDIA SIZE AND FORMAT BITS
-   906                          ;SECLEN	EQU	6		;SECTOR LENGTH (HI/LOW)
-   907                          ;DSKBITS	EQU	8		;MISC NAUGHTY BITS
-   908                          ;SPARE0	EQU	9
-   909                          ;SPARE1	EQU	10
-   910                          ;SPARE2	EQU	11
-   911                          ;
-   912                          ;CMDSTS	EQU	12		;COMMAND STATUS
-   913                          ;HDWSTS	EQU	13		;HARDWARE STATUS
-   914                          ;
-   915                          ;FLAGS	EQU	14		;FLAGS BYTE FOR DISK OPERATION
-   916                          ;SPARE3	EQU	15
-   917                          ;;
-   918                          ;;
-   919                          ;;	EQUATES FOR BITS IN 'MEDIA' BYTE
-   920                          ;;
-   921                          ;SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
-   922                          ;DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
-   923                          ;;
-   924                          ;;
-   925                          ;;	EQUATES FOR BITS IN 'DSKBITS' BYTE
-   926                          ;;
-   927                          ;PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
-   928                          ;;
-   929                          ;;
-   930                          ;;	EQUATES FOR BITS IN 'CMDSTS' BYTE
-   931                          ;;
-   932                          ;BADCMD	EQU	0		;BAD COMMAND FRAME BIT
-   933                          ;BADDAT	EQU	1		;BAD DATA FRAME BIT
-   934                          ;BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
-   935                          ;WRPROT	EQU	3		;WRITE PROTECTED BIT
-   936                          ;ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
-   937                          ;SEC256	EQU	5		;LONG/SHORT SECTOR BIT
-   938                          ;;
-   939                          ;;
-   940                          ;;	EQUATES FOR BITS IN 'FLAGS' BYTE
-   941                          ;;
-   942                          ;FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
-   943                          ;CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
-   944                          ;
-   945                          ;
+   901                          ;
+   902                          DRVINDEX:
+   903   000c28 3afbc2          	LD	A,(CFRAME)	;GET DRIVE# FROM COMAND FRAME
+   904   000c2b d631            	SUB	'1'
+   905   000c2d fe04            	CP	4
+   906   000c2f 3f              	CCF
+   907   000c30 d8              	RET	C		;EXIT IF NOT DRIVE 1,2,3 OR 4
+   908                          
+   909   000c31 2600            	LD	H,0
+   910   000c33 6f              	LD	L,A
+   911   000c34 29              	ADD	HL,HL
+   912   000c35 29              	ADD	HL,HL
+   913   000c36 29              	ADD	HL,HL
+   914   000c37 29              	ADD	HL,HL		;MULTIPLY DRIVE INDEX BY 16
+   915   000c38 0156ff          	LD	BC,DMATRIX
+   916   000c3b 09              	ADD	HL,BC		;INDEX TO DRIVE'S PARAMETERS
+   917   000c3c e5              	PUSH	HL
+   918   000c3d fde1            	POP	IY		;GET POINTER INTO IY FOR RETURN
+   919   000c3f fdcb0876        	BIT	PRESENT,(IY+DSKBITS)
+   920   000c43 37              	SCF
+   921   000c44 c8              	RET	Z		;EXIT IT DRIVE NOT PRESENT
+   922                          
+   923   000c45 3299ff          	LD	(DKIOCB+DSKDRV),A
+   924   000c48 af              	XOR	A
+   925   000c49 c9              	RET
+   926                          ;
+   927                          ;
+   928                          ;
+   929                          ;
+   930                          SENDACK:
+   931   000c4a db70            	IN	A,(ATARI)
+   932   000c4c cb4f            	BIT	1,A
+   933   000c4e 28fa            	JR	Z,SENDACK
+   934                          
+   935   000c50 3e41            	LD	A,'A'
+   936   000c52 1802            	JR	SENDCHAR
+   937                          ;
+   938                          SENDCOMP:
+   939   000c54 3e43            	LD	A,'C'
+   940                          SENDCHAR:
+   941   000c56 2101c3          	LD	HL,IOBUFF+LEN+1
+   942   000c59 77              	LD	(HL),A
+   943   000c5a 1600            	LD	D,0		;SET FOR TRUE DATA
+   944   000c5c c38406          	JP	XMITBUF		;SEND 1 BYTE BLOCK TO ATARI
+   945                          ;	ret
    946                          ;
    947                          ;
    948                          ;
-   949                          DRVINDEX:
-   950   000c28 3afbc2          	LD	A,(CFRAME)	;GET DRIVE# FROM COMAND FRAME
-   951   000c2b d631            	SUB	'1'
-   952   000c2d fe04            	CP	4
-   953   000c2f 3f              	CCF
-   954   000c30 d8              	RET	C		;EXIT IF NOT DRIVE 1,2,3 OR 4
-   955                          
-   956   000c31 2600            	LD	H,0
-   957   000c33 6f              	LD	L,A
-   958   000c34 29              	ADD	HL,HL
-   959   000c35 29              	ADD	HL,HL
-   960   000c36 29              	ADD	HL,HL
-   961   000c37 29              	ADD	HL,HL		;MULTIPLY DRIVE INDEX BY 16
-   962   000c38 0156ff          	LD	BC,DMATRIX
-   963   000c3b 09              	ADD	HL,BC		;INDEX TO DRIVE'S PARAMETERS
-   964   000c3c e5              	PUSH	HL
-   965   000c3d fde1            	POP	IY		;GET POINTER INTO IY FOR RETURN
-   966   000c3f fdcb0876        	BIT	PRESENT,(IY+DSKBITS)
-   967   000c43 37              	SCF
-   968   000c44 c8              	RET	Z		;EXIT IT DRIVE NOT PRESENT
-   969                          
-   970   000c45 3299ff          	LD	(DKIOCB+DSKDRV),A
-   971   000c48 af              	XOR	A
-   972   000c49 c9              	RET
-   973                          ;
-   974                          ;
-   975                          ;
-   976                          ;
-   977                          SENDACK:
-   978   000c4a db70            	IN	A,(ATARI)
-   979   000c4c cb4f            	BIT	1,A
-   980   000c4e 28fa            	JR	Z,SENDACK
-   981                          
-   982   000c50 3e41            	LD	A,'A'
-   983   000c52 1802            	JR	SENDCHAR
-   984                          ;
-   985                          SENDCOMP:
-   986   000c54 3e43            	LD	A,'C'
-   987                          SENDCHAR:
-   988   000c56 2101c3          	LD	HL,IOBUFF+LEN+1
-   989   000c59 77              	LD	(HL),A
-   990   000c5a 1600            	LD	D,0		;SET FOR TRUE DATA
-   991   000c5c c38406          	JP	XMITBUF		;SEND 1 BYTE BLOCK TO ATARI
+   949                          ;
+   950                          ;	... Z80 MEMORY READ COMMAND PROCESSOR ...
+   951                          ;
+   952                          Z80READ:
+   953   000c5f cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND
+   954   000c62 cd9c0c          	CALL	ZLENGTH		;GET ZCMD BYTECOUNT INTO BC
+   955   000c65 2100c3          	LD	HL,IOBUFF+LEN
+   956   000c68 b7              	OR	A
+   957   000c69 ed42            	SBC	HL,BC
+   958   000c6b e5              	PUSH	HL
+   959   000c6c eb              	EX	DE,HL
+   960   000c6d 2ab20c          	LD	HL,(MEMPTR)
+   961   000c70 f3              	DI
+   962   000c71 edb0            	LDIR			;DO BLOCK MOVE INTO BUFFER
+   963   000c73 fb              	EI
+   964   000c74 e1              	POP	HL
+   965   000c75 114300          	LD	DE,'C'		;SEND DATA W/O INVERSION
+   966   000c78 c36c06          	JP	SENDBUFF
+   967                          ;	ret
+   968                          ;
+   969                          ;
+   970                          ;
+   971                          ;	... Z80 MEMORY WRITE COMMAND PROCESSOR ...
+   972                          ;
+   973                          Z80WRITE:
+   974   000c7b cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
+   975   000c7e cdb906          	CALL	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
+   976   000c81 c0              	RET	NZ
+   977                          
+   978   000c82 cd9c0c          	CALL	ZLENGTH		;GET BYTECOUNT FROM CMD FRAME
+   979   000c85 b7              	OR	A
+   980   000c86 ed42            	SBC	HL,BC
+   981   000c88 c0              	RET	NZ		;ERROR IF DATA FRAME LENGTH NOT SAME
+   982                          
+   983   000c89 c5              	PUSH	BC
+   984   000c8a cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
+   985   000c8d c1              	POP	BC
+   986   000c8e 2100c1          	LD	HL,IOBUFF
+   987   000c91 ed5bb20c        	LD	DE,(MEMPTR)
+   988   000c95 f3              	DI
+   989   000c96 edb0            	LDIR			;DO BLOCK MOVE INTO BUFFER
+   990   000c98 fb              	EI
+   991   000c99 c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
    992                          ;	ret
    993                          ;
    994                          ;
    995                          ;
-   996                          ;
-   997                          ;	... Z80 MEMORY READ COMMAND PROCESSOR ...
-   998                          ;
-   999                          Z80READ:
-  1000   000c5f cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND
-  1001   000c62 cd9c0c          	CALL	ZLENGTH		;GET ZCMD BYTECOUNT INTO BC
-  1002   000c65 2100c3          	LD	HL,IOBUFF+LEN
-  1003   000c68 b7              	OR	A
-  1004   000c69 ed42            	SBC	HL,BC
-  1005   000c6b e5              	PUSH	HL
-  1006   000c6c eb              	EX	DE,HL
-  1007   000c6d 2ab20c          	LD	HL,(MEMPTR)
-  1008   000c70 f3              	DI
-  1009   000c71 edb0            	LDIR			;DO BLOCK MOVE INTO BUFFER
-  1010   000c73 fb              	EI
-  1011   000c74 e1              	POP	HL
-  1012   000c75 114300          	LD	DE,'C'		;SEND DATA W/O INVERSION
-  1013   000c78 c36c06          	JP	SENDBUFF
+   996                          ZLENGTH:
+   997   000c9c 3afdc2          	LD	A,(CFRAME+2)	;GET BYTECOUNT FROM COMMAND FRAME
+   998   000c9f 4f              	LD	C,A
+   999   000ca0 0600            	LD	B,0		;LOAD BC WITH BYTECOUNT
+  1000   000ca2 b7              	OR	A
+  1001   000ca3 c0              	RET	NZ		;EXIT IF BYTECOUNT NOT=0
+  1002                          
+  1003   000ca4 04              	INC	B		;ELSE MAKE BC=256
+  1004   000ca5 c9              	RET
+  1005                          ;
+  1006                          ;
+  1007                          ;	... Z80 SET MEMORY POINTER COMMAND PROCESSOR ...
+  1008                          ;
+  1009                          Z80SET:
+  1010   000ca6 cd4a0c          	CALL	SENDACK
+  1011   000ca9 2afdc2          	LD	HL,(CFRAME+2)	;SET MEMORY POINTER FROM COMMAND
+  1012   000cac 22b20c          	LD	(MEMPTR),HL
+  1013   000caf c3540c          	JP	SENDCOMP
   1014                          ;	ret
   1015                          ;
   1016                          ;
-  1017                          ;
-  1018                          ;	... Z80 MEMORY WRITE COMMAND PROCESSOR ...
+  1017   000cb2 0000            MEMPTR:	DEFW	0		;POINTER FOR MEMORY READ/WRITE
+  1018                          ;
   1019                          ;
-  1020                          Z80WRITE:
-  1021   000c7b cd4a0c          	CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
-  1022   000c7e cdb906          	CALL	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
-  1023   000c81 c0              	RET	NZ
-  1024                          
-  1025   000c82 cd9c0c          	CALL	ZLENGTH		;GET BYTECOUNT FROM CMD FRAME
-  1026   000c85 b7              	OR	A
-  1027   000c86 ed42            	SBC	HL,BC
-  1028   000c88 c0              	RET	NZ		;ERROR IF DATA FRAME LENGTH NOT SAME
-  1029                          
-  1030   000c89 c5              	PUSH	BC
-  1031   000c8a cd4a0c          	CALL	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
-  1032   000c8d c1              	POP	BC
-  1033   000c8e 2100c1          	LD	HL,IOBUFF
-  1034   000c91 ed5bb20c        	LD	DE,(MEMPTR)
-  1035   000c95 f3              	DI
-  1036   000c96 edb0            	LDIR			;DO BLOCK MOVE INTO BUFFER
-  1037   000c98 fb              	EI
-  1038   000c99 c3540c          	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
-  1039                          ;	ret
-  1040                          ;
-  1041                          ;
-  1042                          ;
-  1043                          ZLENGTH:
-  1044   000c9c 3afdc2          	LD	A,(CFRAME+2)	;GET BYTECOUNT FROM COMMAND FRAME
-  1045   000c9f 4f              	LD	C,A
-  1046   000ca0 0600            	LD	B,0		;LOAD BC WITH BYTECOUNT
-  1047   000ca2 b7              	OR	A
-  1048   000ca3 c0              	RET	NZ		;EXIT IF BYTECOUNT NOT=0
-  1049                          
-  1050   000ca4 04              	INC	B		;ELSE MAKE BC=256
-  1051   000ca5 c9              	RET
-  1052                          ;
-  1053                          ;
-  1054                          ;	... Z80 SET MEMORY POINTER COMMAND PROCESSOR ...
-  1055                          ;
-  1056                          Z80SET:
-  1057   000ca6 cd4a0c          	CALL	SENDACK
-  1058   000ca9 2afdc2          	LD	HL,(CFRAME+2)	;SET MEMORY POINTER FROM COMMAND
-  1059   000cac 22b20c          	LD	(MEMPTR),HL
-  1060   000caf c3540c          	JP	SENDCOMP
-  1061                          ;	ret
-  1062                          ;
-  1063                          ;
-  1064   000cb2 0000            MEMPTR:	DEFW	0		;POINTER FOR MEMORY READ/WRITE
-  1065                          ;
-  1066                          ;
-  1067                          ;	... Z80 GOTO MEMORY LOCATION COMMAND PROCESSOR ...
-  1068                          ;
-  1069                          Z80GOTO:
-  1070   000cb4 cd4a0c          	CALL	SENDACK
-  1071   000cb7 cd540c          	CALL	SENDCOMP
-  1072   000cba 2afdc2          	LD	HL,(CFRAME+2)
-  1073   000cbd e9              	jp	(hl)		;execute routine @hl
-  1074                          ;
-  1075                          ;
-  1076                          ;
-  1077                          ;
-  1078                          
+  1020                          ;	... Z80 GOTO MEMORY LOCATION COMMAND PROCESSOR ...
+  1021                          ;
+  1022                          Z80GOTO:
+  1023   000cb4 cd4a0c          	CALL	SENDACK
+  1024   000cb7 cd540c          	CALL	SENDCOMP
+  1025   000cba 2afdc2          	LD	HL,(CFRAME+2)
+  1026   000cbd e9              	jp	(hl)		;execute routine @hl
+  1027                          ;
+  1028                          ;
+  1029                          ;
+  1030                          ;
+  1031                          
 rolli-f000.asm:
     49                          		INCLUDE	"FORMAT.MAC"
 FORMAT.MAC:
@@ -2973,7 +2974,7 @@ FORMAT.MAC:
     30   000cc1 3c              	INC	A
     31   000cc2 d354            	OUT	(INDXCLR),A
     32                          ;	LD	A,RSTCMD+HLOAD+3
-    33   000cc4 3e01            	LD	A,RSTCMD+HLOAD+1;WD1772: 1=12ms
+    33   000cc4 3e01            	LD	A,RSTCMD+HLOAD+1;WD1772: 1=12ms step rate
     34   000cc6 cd6c03          	CALL	TYP1CMD		;ISSUE SLOW RESTORE COMMAND
     35   000cc9 ee04            	XOR	00000100B	;FLIP TK0 STATUS BIT
     36   000ccb e684            	AND	10000100B
@@ -3004,314 +3005,315 @@ FORMAT.MAC:
     61   000cf4 322dff          FORM3:	LD	(TRACK),A	;A HOLDS NEXT TRACK NUMBER
     62   000cf7 b7              	OR	A
     63   000cf8 2805            	JR	Z,FORM3A	;SKIP STEP-IN IF ON TRACK ZERO
-    64   000cfa 3e43            	LD	A,STEPIN+HLOAD+3
-    65   000cfc cd6c03          	CALL	TYP1CMD		;STEP TO NEXT TRACK
-    66   000cff dd2ab6ff        FORM3A:	LD	IX,(FRMPTR)	;GET SELECTED FORMAT DATA POINTER
-    67   000d03 fd2ab8ff        	LD	IY,(SKWPTR)	;GET SELECTED SKEW TABLE POINTER
-    68   000d07 3abdff          	ld	a,(sides)
-    69   000d0a 1f              	rra
-    70   000d0b 3a2fff          	ld	a,(OUTCPY)
-    71   000d0e 3007            	jr	nc,form3b	;jump if not formatting both sides
-    72   000d10 ee20            	xor	00100000b
-    73   000d12 322fff          	ld	(OUTCPY),a	;else flip side select bit in latch
-    74   000d15 d330            	out	(LATCH),a
-    75   000d17 cda40d          form3b:	call	BUILD
-    76   000d1a 3a2dff          	LD	A,(TRACK)
-    77   000d1d d341            	OUT	(TRKREG),A
-    78   000d1f 2ac3ff          	LD	HL,(TRKPTR)	;POINT TO START OF TRACK IMAGE
-    79   000d22 f3              	DI
-    80   000d23 3ef4            	LD	A,11110100B	;write track + 30ms settle delay
-    81   000d25 cd8703          	CALL	CMDOUT		;ISSUE WRITE TRACK COMMAND
-    82   000d28 3abbff          	LD	A,(TRKSIZ)
-    83   000d2b 47              	LD	B,A		;LOAD B WITH TRACK SIZE MOD 256
-    84   000d2c 0e43            	LD	C,DATREG
-    85   000d2e cd00c3          	CALL	IOBUFF+LEN	;EXECUTE WRITE TRACK FROM BUFFER
-    86   000d31 fb              	EI
-    87   000d32 db40            FORM4:	IN	A,(STSREG)
-    88   000d34 cb47            	BIT	0,A
-    89   000d36 20fa            	JR	NZ,FORM4
-    90   000d38 ed5bbfff        	LD	DE,(SEQNUM)	;LOAD DE WITH SEQUENCE NUMBER
-    91   000d3c 2ac1ff          	LD	HL,(SEQPTR)	; AND HL WITH CACA TABLE POINTER
-    92   000d3f 3abaff          	LD	A,(NSECTS)
-    93   000d42 47              	LD	B,A
-    94   000d43 dd2ab8ff        	LD	IX,(SKWPTR)	;POINT TO SECTOR TABLE
-    95   000d47 dd7e00          FORM5:	LD	A,(IX)
-    96   000d4a dd23            	INC	IX
-    97   000d4c d342            	OUT	(SECREG),A
-    98   000d4e 3a2fff          	ld	a,(OUTCPY)
-    99   000d51 e620            	and	00100000b
-   100   000d53 3e80            	ld	a,RDCMD		;determine if reading side 0 or 1
-   101                          ;	jr	z,form51
-   102                          ;	set	1,a		;WD1772 no side-no in cmd
-   103   000d55 00              	nop
-   104   000d56 00              	nop
-   105   000d57 00              	nop
-   106   000d58 00              	nop
-   107   000d59 cd6303          form51:	call	TYP2CMD		;read sector discarding the data
-   108   000d5c e698            	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
-   109   000d5e 2814            	JR	Z,FORM6		;JUMP IF SECTOR READ OK
-   110                          
-   111   000d60 e680            	AND	10000000B
-   112   000d62 2036            	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
-   113   000d64 e5              	PUSH	HL
-   114   000d65 c5              	PUSH	BC
-   115   000d66 01fdc2          	LD	BC,IOBUFF+LEN-3
-   116   000d69 b7              	OR	A
-   117   000d6a ed42            	SBC	HL,BC		;TEST IF CA-CA SECTOR LIST IS FULL
-   118   000d6c c1              	POP	BC
-   119   000d6d e1              	POP	HL
-   120   000d6e 3004            	JR	NC,FORM6	;SKIP IF NO MORE ROOM
-   121   000d70 73              	LD	(HL),E
-   122   000d71 23              	INC	HL
-   123   000d72 72              	LD	(HL),D
-   124   000d73 23              	INC	HL		;STORE BAD SECTOR NUMBER
-   125   000d74 13              FORM6:	INC	DE
-   126   000d75 10d0            	DJNZ	FORM5
-   127   000d77 ed53bfff        	LD	(SEQNUM),DE	;STORE UPDATED ERROR TRACE STUFF
-   128   000d7b 22c1ff          	LD	(SEQPTR),HL
-   129   000d7e 3a2fff          	ld	a,(OUTCPY)
-   130   000d81 e620            	and	00100000b
-   131   000d83 c2ff0c          	jp	nz,FORM3A	;go back and do side 0 if on side 1 now
-   132   000d86 3a2dff          	LD	A,(TRACK)
-   133   000d89 3c              	INC	A
-   134   000d8a 21beff          	ld	hl,tracks
-   135   000d8d be              	CP	(HL)
-   136   000d8e daf40c          	JP	C,FORM3		;FORMAT UP TO LAST TRACK ON DISK
-   137                          
-   138   000d91 2ac1ff          	LD	HL,(SEQPTR)
-   139   000d94 36ff            	LD	(HL),255	;STORE TERMINATOR ON CA-CA BUFFER
-   140   000d96 23              	INC	HL
-   141   000d97 36ff            	LD	(HL),255
-   142   000d99 af              	XOR	A		;INDICATE FORMAT COMPLETED
-   143   000d9a f5              FORMX:	PUSH	AF
-   144   000d9b 3eff            	LD	A,255
-   145   000d9d 322dff          	LD	(TRACK),A
-   146   000da0 d341            	OUT	(TRKREG),A	;FORCE DISK HANDLER TO RECALIBRATE
-   147   000da2 f1              	POP	AF
-   148   000da3 c9              	RET			;RETURN COMPLETION STATUS IN A
-   149                          ;
+    64                          ;	LD	A,STEPIN+HLOAD+3
+    65   000cfa 3e41            	LD	A,STEPIN+HLOAD+1
+    66   000cfc cd6c03          	CALL	TYP1CMD		;STEP TO NEXT TRACK
+    67   000cff dd2ab6ff        FORM3A:	LD	IX,(FRMPTR)	;GET SELECTED FORMAT DATA POINTER
+    68   000d03 fd2ab8ff        	LD	IY,(SKWPTR)	;GET SELECTED SKEW TABLE POINTER
+    69   000d07 3abdff          	ld	a,(sides)
+    70   000d0a 1f              	rra
+    71   000d0b 3a2fff          	ld	a,(OUTCPY)
+    72   000d0e 3007            	jr	nc,form3b	;jump if not formatting both sides
+    73   000d10 ee20            	xor	00100000b
+    74   000d12 322fff          	ld	(OUTCPY),a	;else flip side select bit in latch
+    75   000d15 d330            	out	(LATCH),a
+    76   000d17 cda40d          form3b:	call	BUILD
+    77   000d1a 3a2dff          	LD	A,(TRACK)
+    78   000d1d d341            	OUT	(TRKREG),A
+    79   000d1f 2ac3ff          	LD	HL,(TRKPTR)	;POINT TO START OF TRACK IMAGE
+    80   000d22 f3              	DI
+    81   000d23 3ef4            	LD	A,11110100B	;write track + 30ms settle delay
+    82   000d25 cd8703          	CALL	CMDOUT		;ISSUE WRITE TRACK COMMAND
+    83   000d28 3abbff          	LD	A,(TRKSIZ)
+    84   000d2b 47              	LD	B,A		;LOAD B WITH TRACK SIZE MOD 256
+    85   000d2c 0e43            	LD	C,DATREG
+    86   000d2e cd00c3          	CALL	IOBUFF+LEN	;EXECUTE WRITE TRACK FROM BUFFER
+    87   000d31 fb              	EI
+    88   000d32 db40            FORM4:	IN	A,(STSREG)
+    89   000d34 cb47            	BIT	0,A
+    90   000d36 20fa            	JR	NZ,FORM4
+    91   000d38 ed5bbfff        	LD	DE,(SEQNUM)	;LOAD DE WITH SEQUENCE NUMBER
+    92   000d3c 2ac1ff          	LD	HL,(SEQPTR)	; AND HL WITH CACA TABLE POINTER
+    93   000d3f 3abaff          	LD	A,(NSECTS)
+    94   000d42 47              	LD	B,A
+    95   000d43 dd2ab8ff        	LD	IX,(SKWPTR)	;POINT TO SECTOR TABLE
+    96   000d47 dd7e00          FORM5:	LD	A,(IX)
+    97   000d4a dd23            	INC	IX
+    98   000d4c d342            	OUT	(SECREG),A
+    99   000d4e 3a2fff          	ld	a,(OUTCPY)
+   100   000d51 e620            	and	00100000b
+   101   000d53 3e80            	ld	a,RDCMD		;determine if reading side 0 or 1
+   102                          ;	jr	z,form51
+   103                          ;	set	1,a		;WD1772 no side-no in cmd
+   104   000d55 00              	nop
+   105   000d56 00              	nop
+   106   000d57 00              	nop
+   107   000d58 00              	nop
+   108   000d59 cd6303          form51:	call	TYP2CMD		;read sector discarding the data
+   109   000d5c e698            	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
+   110   000d5e 2814            	JR	Z,FORM6		;JUMP IF SECTOR READ OK
+   111                          
+   112   000d60 e680            	AND	10000000B
+   113   000d62 2036            	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
+   114   000d64 e5              	PUSH	HL
+   115   000d65 c5              	PUSH	BC
+   116   000d66 01fdc2          	LD	BC,IOBUFF+LEN-3
+   117   000d69 b7              	OR	A
+   118   000d6a ed42            	SBC	HL,BC		;TEST IF CA-CA SECTOR LIST IS FULL
+   119   000d6c c1              	POP	BC
+   120   000d6d e1              	POP	HL
+   121   000d6e 3004            	JR	NC,FORM6	;SKIP IF NO MORE ROOM
+   122   000d70 73              	LD	(HL),E
+   123   000d71 23              	INC	HL
+   124   000d72 72              	LD	(HL),D
+   125   000d73 23              	INC	HL		;STORE BAD SECTOR NUMBER
+   126   000d74 13              FORM6:	INC	DE
+   127   000d75 10d0            	DJNZ	FORM5
+   128   000d77 ed53bfff        	LD	(SEQNUM),DE	;STORE UPDATED ERROR TRACE STUFF
+   129   000d7b 22c1ff          	LD	(SEQPTR),HL
+   130   000d7e 3a2fff          	ld	a,(OUTCPY)
+   131   000d81 e620            	and	00100000b
+   132   000d83 c2ff0c          	jp	nz,FORM3A	;go back and do side 0 if on side 1 now
+   133   000d86 3a2dff          	LD	A,(TRACK)
+   134   000d89 3c              	INC	A
+   135   000d8a 21beff          	ld	hl,tracks
+   136   000d8d be              	CP	(HL)
+   137   000d8e daf40c          	JP	C,FORM3		;FORMAT UP TO LAST TRACK ON DISK
+   138                          
+   139   000d91 2ac1ff          	LD	HL,(SEQPTR)
+   140   000d94 36ff            	LD	(HL),255	;STORE TERMINATOR ON CA-CA BUFFER
+   141   000d96 23              	INC	HL
+   142   000d97 36ff            	LD	(HL),255
+   143   000d99 af              	XOR	A		;INDICATE FORMAT COMPLETED
+   144   000d9a f5              FORMX:	PUSH	AF
+   145   000d9b 3eff            	LD	A,255
+   146   000d9d 322dff          	LD	(TRACK),A
+   147   000da0 d341            	OUT	(TRKREG),A	;FORCE DISK HANDLER TO RECALIBRATE
+   148   000da2 f1              	POP	AF
+   149   000da3 c9              	RET			;RETURN COMPLETION STATUS IN A
    150                          ;
    151                          ;
    152                          ;
-   153                          ;	... SUBROUTINE TO BUILD IMAGE OF FORMATTED TRACK ...
-   154                          ;
-   155                          ;	PARAMETERS ARE:  IX ....... (POINTER TO FORMAT PARAMETERS)
-   156                          ;			 IY ....... (TABLE OF SECTOR NUMBERS)
-   157                          ;			 TRKPTR ... (POINTER TO TRACK DATA BUFFER)
-   158                          ;			 TRACK .... (TRACK NUMBER)
-   159                          ;			 NSECTS ... (NUMBER OF SECTORS)
-   160                          ;			 sides .... (copy of 'nsides' param)
-   161                          ;
-   162                          BUILD:
-   163   000da4 3abaff          	LD	A,(NSECTS)
-   164   000da7 4f              	LD	C,A
-   165   000da8 dde5            	PUSH	IX
-   166   000daa e1              	POP	HL
-   167   000dab 46              	LD	B,(HL)		;LOAD B WITH # OF FIELDS IN PREAMBLE
-   168   000dac 23              	INC	HL
-   169   000dad ed5bc3ff        	LD	DE,(TRKPTR)
-   170   000db1 cd0b0e          BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
-   171   000db4 10fb            	DJNZ	BUILD1
-   172                          
-   173   000db6 46              	LD	B,(HL)		;LOAD B WITH NUMBER OF ITEMS IN SECTOR
-   174   000db7 23              	INC	HL
-   175   000db8 e5              	PUSH	HL
-   176   000db9 dde1            	POP	IX		;IX POINTS TO START OF SECTOR POOP
-   177   000dbb 3a2dff          BUILD3:	LD	A,(TRACK)
-   178   000dbe dd7707          	LD	(IX+7),A	;STORE TRACK# FOR TRACK BEING FORMATTED
-   179   000dc1 3a2fff          	ld	a,(OUTCPY)
-   180   000dc4 e620            	and	00100000b
-   181   000dc6 3e00            	ld	a,0
-   182   000dc8 2801            	jr	z,bild31	;jump if formatting side 0
-   183   000dca 3c              	inc	a
-   184   000dcb dd7709          bild31:	ld	(ix+9),a	;store side# in id
-   185   000dce fd7e00          	LD	A,(IY)
-   186   000dd1 fd23            	INC	IY
-   187   000dd3 dd770b          	LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
-   188                          
-   189   000dd6 dde5            	PUSH	IX
-   190   000dd8 e1              	POP	HL		;POINT HL TO SECTOR POOP
-   191   000dd9 c5              	PUSH	BC
-   192   000dda cd0b0e          BUILD4:	CALL	INSERT
-   193   000ddd 10fb            	DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
-   194                          
-   195   000ddf dd7e0d          	LD	A,(IX+13)
-   196   000de2 cdcd0a          	call	getsize		;compute sector size in bytes
-   197   000de5 3eff            BUILD6:	ld	a,0ffh
-   198   000de7 12              	ld	(de),a		;fill sector data with ff's
-   199   000de8 13              	INC	DE
-   200   000de9 0b              	DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
-   201   000dea 78              	LD	A,B
-   202   000deb b1              	OR	C
-   203   000dec 20f7            	JR	NZ,BUILD6
-   204                          
-   205   000dee 46              	LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
-   206   000def 23              	INC	HL
-   207   000df0 cd0b0e          BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
-   208   000df3 10fb            	DJNZ	BUILD7
-   209   000df5 c1              	POP	BC
-   210                          
-   211   000df6 0d              	DEC	C
-   212   000df7 20c2            	JR	NZ,BUILD3
-   213                          
-   214   000df9 2ac3ff          	LD	HL,(TRKPTR)
-   215   000dfc 01d827          	LD	BC,10200
-   216   000dff 09              	ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
-   217   000e00 ed52            	SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
-   218   000e02 44              	LD	B,H
-   219   000e03 4d              	LD	C,L
-   220   000e04 62              	LD	H,D
-   221   000e05 6b              	LD	L,E
-   222   000e06 13              	INC	DE
-   223   000e07 77              	LD	(HL),A
-   224   000e08 edb0            	LDIR			;FILL REST OF BUFFER
-   225   000e0a c9              	RET
-   226                          ;
+   153                          ;
+   154                          ;	... SUBROUTINE TO BUILD IMAGE OF FORMATTED TRACK ...
+   155                          ;
+   156                          ;	PARAMETERS ARE:  IX ....... (POINTER TO FORMAT PARAMETERS)
+   157                          ;			 IY ....... (TABLE OF SECTOR NUMBERS)
+   158                          ;			 TRKPTR ... (POINTER TO TRACK DATA BUFFER)
+   159                          ;			 TRACK .... (TRACK NUMBER)
+   160                          ;			 NSECTS ... (NUMBER OF SECTORS)
+   161                          ;			 sides .... (copy of 'nsides' param)
+   162                          ;
+   163                          BUILD:
+   164   000da4 3abaff          	LD	A,(NSECTS)
+   165   000da7 4f              	LD	C,A
+   166   000da8 dde5            	PUSH	IX
+   167   000daa e1              	POP	HL
+   168   000dab 46              	LD	B,(HL)		;LOAD B WITH # OF FIELDS IN PREAMBLE
+   169   000dac 23              	INC	HL
+   170   000dad ed5bc3ff        	LD	DE,(TRKPTR)
+   171   000db1 cd0b0e          BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
+   172   000db4 10fb            	DJNZ	BUILD1
+   173                          
+   174   000db6 46              	LD	B,(HL)		;LOAD B WITH NUMBER OF ITEMS IN SECTOR
+   175   000db7 23              	INC	HL
+   176   000db8 e5              	PUSH	HL
+   177   000db9 dde1            	POP	IX		;IX POINTS TO START OF SECTOR POOP
+   178   000dbb 3a2dff          BUILD3:	LD	A,(TRACK)
+   179   000dbe dd7707          	LD	(IX+7),A	;STORE TRACK# FOR TRACK BEING FORMATTED
+   180   000dc1 3a2fff          	ld	a,(OUTCPY)
+   181   000dc4 e620            	and	00100000b
+   182   000dc6 3e00            	ld	a,0
+   183   000dc8 2801            	jr	z,bild31	;jump if formatting side 0
+   184   000dca 3c              	inc	a
+   185   000dcb dd7709          bild31:	ld	(ix+9),a	;store side# in id
+   186   000dce fd7e00          	LD	A,(IY)
+   187   000dd1 fd23            	INC	IY
+   188   000dd3 dd770b          	LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
+   189                          
+   190   000dd6 dde5            	PUSH	IX
+   191   000dd8 e1              	POP	HL		;POINT HL TO SECTOR POOP
+   192   000dd9 c5              	PUSH	BC
+   193   000dda cd0b0e          BUILD4:	CALL	INSERT
+   194   000ddd 10fb            	DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
+   195                          
+   196   000ddf dd7e0d          	LD	A,(IX+13)
+   197   000de2 cdcd0a          	call	getsize		;compute sector size in bytes
+   198   000de5 3eff            BUILD6:	ld	a,0ffh
+   199   000de7 12              	ld	(de),a		;fill sector data with ff's
+   200   000de8 13              	INC	DE
+   201   000de9 0b              	DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
+   202   000dea 78              	LD	A,B
+   203   000deb b1              	OR	C
+   204   000dec 20f7            	JR	NZ,BUILD6
+   205                          
+   206   000dee 46              	LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
+   207   000def 23              	INC	HL
+   208   000df0 cd0b0e          BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
+   209   000df3 10fb            	DJNZ	BUILD7
+   210   000df5 c1              	POP	BC
+   211                          
+   212   000df6 0d              	DEC	C
+   213   000df7 20c2            	JR	NZ,BUILD3
+   214                          
+   215   000df9 2ac3ff          	LD	HL,(TRKPTR)
+   216   000dfc 01d827          	LD	BC,10200
+   217   000dff 09              	ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
+   218   000e00 ed52            	SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
+   219   000e02 44              	LD	B,H
+   220   000e03 4d              	LD	C,L
+   221   000e04 62              	LD	H,D
+   222   000e05 6b              	LD	L,E
+   223   000e06 13              	INC	DE
+   224   000e07 77              	LD	(HL),A
+   225   000e08 edb0            	LDIR			;FILL REST OF BUFFER
+   226   000e0a c9              	RET
    227                          ;
    228                          ;
-   229   000e0b c5              INSERT:	PUSH	BC
-   230   000e0c 46              	LD	B,(HL)
-   231   000e0d 23              	INC	HL
-   232   000e0e 7e              	LD	A,(HL)
-   233   000e0f 23              	INC	HL
-   234   000e10 12              INS2:	LD	(DE),A
-   235   000e11 13              	INC	DE
-   236   000e12 10fc            	DJNZ	INS2
-   237   000e14 c1              	POP	BC
-   238   000e15 c9              	RET
-   239                          ;
+   229                          ;
+   230   000e0b c5              INSERT:	PUSH	BC
+   231   000e0c 46              	LD	B,(HL)
+   232   000e0d 23              	INC	HL
+   233   000e0e 7e              	LD	A,(HL)
+   234   000e0f 23              	INC	HL
+   235   000e10 12              INS2:	LD	(DE),A
+   236   000e11 13              	INC	DE
+   237   000e12 10fc            	DJNZ	INS2
+   238   000e14 c1              	POP	BC
+   239   000e15 c9              	RET
    240                          ;
    241                          ;
    242                          ;
-   243                          ;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
-   244                          ;
+   243                          ;
+   244                          ;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
    245                          ;
-   246   000e16 01              SD5N18:	DEFB	1
-   247   000e17 10ff            	DEFB	16,0FFH
-   248                          
-   249   000e19 0b              	DEFB	11
-   250   000e1a 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
-   251   000e1c 0300            	DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
-   252   000e1e 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
-   253   000e20 0100            	DEFB	1,00H		;TRACK
-   254   000e22 0100            	DEFB	1,00H		;SIDE
-   255   000e24 0100            	DEFB	1,00H		;SECTOR
-   256   000e26 0100            	DEFB	1,00H		;LENGTH
-   257   000e28 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   258   000e2a 0bff            	DEFB	11,0FFH		;GAP2
-   259   000e2c 0600            	DEFB	6,00H		;GAP2
-   260   000e2e 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
-   261                          
-   262   000e30 02              	DEFB	2
-   263   000e31 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   264   000e33 09ff            	DEFB	9,0FFH		;GAP 3
-   265                          ;
+   246                          ;
+   247   000e16 01              SD5N18:	DEFB	1
+   248   000e17 10ff            	DEFB	16,0FFH
+   249                          
+   250   000e19 0b              	DEFB	11
+   251   000e1a 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
+   252   000e1c 0300            	DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
+   253   000e1e 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
+   254   000e20 0100            	DEFB	1,00H		;TRACK
+   255   000e22 0100            	DEFB	1,00H		;SIDE
+   256   000e24 0100            	DEFB	1,00H		;SECTOR
+   257   000e26 0100            	DEFB	1,00H		;LENGTH
+   258   000e28 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   259   000e2a 0bff            	DEFB	11,0FFH		;GAP2
+   260   000e2c 0600            	DEFB	6,00H		;GAP2
+   261   000e2e 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
+   262                          
+   263   000e30 02              	DEFB	2
+   264   000e31 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   265   000e33 09ff            	DEFB	9,0FFH		;GAP 3
    266                          ;
    267                          ;
    268                          ;
    269                          ;
-   270   000e35 01              DD5N18:	DEFB	1
-   271   000e36 204e            	DEFB	32,4EH		;GAP 1
-   272                          
-   273   000e38 0c              	DEFB	12
-   274   000e39 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
-   275   000e3b 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   276   000e3d 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
-   277   000e3f 0100            	DEFB	1,0		;TRACK#
-   278   000e41 0100            	DEFB	1,00000000B	;SIDE
-   279   000e43 0100            	DEFB	1,0		;SECTOR#
-   280   000e45 0101            	DEFB	1,00000001B	;LENGTH
-   281   000e47 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   282   000e49 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
-   283   000e4b 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
-   284   000e4d 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   285   000e4f 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
-   286                          
-   287   000e51 02              	DEFB	2
-   288   000e52 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   289   000e54 104e            	DEFB	16,4EH		;FIRST PART OF GAP 3
-   290                          ;
+   270                          ;
+   271   000e35 01              DD5N18:	DEFB	1
+   272   000e36 204e            	DEFB	32,4EH		;GAP 1
+   273                          
+   274   000e38 0c              	DEFB	12
+   275   000e39 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
+   276   000e3b 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   277   000e3d 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+   278   000e3f 0100            	DEFB	1,0		;TRACK#
+   279   000e41 0100            	DEFB	1,00000000B	;SIDE
+   280   000e43 0100            	DEFB	1,0		;SECTOR#
+   281   000e45 0101            	DEFB	1,00000001B	;LENGTH
+   282   000e47 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   283   000e49 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
+   284   000e4b 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
+   285   000e4d 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   286   000e4f 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+   287                          
+   288   000e51 02              	DEFB	2
+   289   000e52 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   290   000e54 104e            	DEFB	16,4EH		;FIRST PART OF GAP 3
    291                          ;
    292                          ;
-   293   000e56 12100e0c0a080604SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
+   293                          ;
+   294   000e56 12100e0c0a080604SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
                 02              
-   294   000e5f 110f0d0b09070503	DEFB	17,15,13,11,9,7,5,3,1
+   295   000e5f 110f0d0b09070503	DEFB	17,15,13,11,9,7,5,3,1
                 01              
-   295                          ;
-   296   000e68 01070d          SKEWDD:	DEFB	1,7,13
-   297   000e6b 060c12          	DEFB	6,12,18
-   298   000e6e 050b11          	DEFB	5,11,17
-   299   000e71 040a10          	DEFB	4,10,16
-   300   000e74 03090f          	DEFB	3,9,15
-   301   000e77 02080e          	DEFB	2,8,14
-   302                          ;
+   296                          ;
+   297   000e68 01070d          SKEWDD:	DEFB	1,7,13
+   298   000e6b 060c12          	DEFB	6,12,18
+   299   000e6e 050b11          	DEFB	5,11,17
+   300   000e71 040a10          	DEFB	4,10,16
+   301   000e74 03090f          	DEFB	3,9,15
+   302   000e77 02080e          	DEFB	2,8,14
    303                          ;
    304                          ;
-   305   000e7a 04              SD8N26:	DEFB	4		;PREAMBLE FIELD
-   306   000e7b 28ff            	DEFB	40,0FFH		;GAP 4
-   307   000e7d 0600            	DEFB	6,00
-   308   000e7f 01fc            	DEFB	1,0FCH		;INDEX ADDRESS MARK
-   309   000e81 1aff            	DEFB	26,0FFH
-   310                          
-   311   000e83 0b              	DEFB	11
-   312   000e84 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
-   313   000e86 0300            	DEFB	3,00H		;
-   314   000e88 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
-   315   000e8a 0100            	DEFB	1,00H		;TRACK
-   316   000e8c 0100            	DEFB	1,00H		;SIDE
-   317   000e8e 0100            	DEFB	1,00H		;SECTOR
-   318   000e90 0100            	DEFB	1,00H		;LENGTH
-   319   000e92 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   320   000e94 0bff            	DEFB	11,0FFH		;GAP2
-   321   000e96 0600            	DEFB	6,00H		;GAP2
-   322   000e98 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
-   323                          
-   324   000e9a 02              	DEFB	2
-   325   000e9b 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   326   000e9d 1bff            	DEFB	27,0FFH		;GAP 3
-   327                          ;
+   305                          ;
+   306   000e7a 04              SD8N26:	DEFB	4		;PREAMBLE FIELD
+   307   000e7b 28ff            	DEFB	40,0FFH		;GAP 4
+   308   000e7d 0600            	DEFB	6,00
+   309   000e7f 01fc            	DEFB	1,0FCH		;INDEX ADDRESS MARK
+   310   000e81 1aff            	DEFB	26,0FFH
+   311                          
+   312   000e83 0b              	DEFB	11
+   313   000e84 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
+   314   000e86 0300            	DEFB	3,00H		;
+   315   000e88 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
+   316   000e8a 0100            	DEFB	1,00H		;TRACK
+   317   000e8c 0100            	DEFB	1,00H		;SIDE
+   318   000e8e 0100            	DEFB	1,00H		;SECTOR
+   319   000e90 0100            	DEFB	1,00H		;LENGTH
+   320   000e92 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   321   000e94 0bff            	DEFB	11,0FFH		;GAP2
+   322   000e96 0600            	DEFB	6,00H		;GAP2
+   323   000e98 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
+   324                          
+   325   000e9a 02              	DEFB	2
+   326   000e9b 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   327   000e9d 1bff            	DEFB	27,0FFH		;GAP 3
    328                          ;
    329                          ;
-   330   000e9f 05              DD8N26:	DEFB	5
-   331   000ea0 504e            	DEFB	80,4EH		;POST-INDEX GAP
-   332   000ea2 0c00            	DEFB	12,00H		;INDEX SYNC
-   333   000ea4 03f6            	DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
-   334   000ea6 01fc            	DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
-   335   000ea8 324e            	DEFB	50,4EH		;GAP 1
-   336                          
-   337   000eaa 0c              	DEFB	12
-   338   000eab 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
-   339   000ead 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   340   000eaf 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
-   341   000eb1 0100            	DEFB	1,0		;TRACK#
-   342   000eb3 0100            	DEFB	1,00000000B	;SIDE
-   343   000eb5 0100            	DEFB	1,0		;SECTOR#
-   344   000eb7 0101            	DEFB	1,00000001B	;LENGTH
-   345   000eb9 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   346   000ebb 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
-   347   000ebd 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
-   348   000ebf 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   349   000ec1 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
-   350                          
-   351   000ec3 02              	DEFB	2
-   352   000ec4 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   353   000ec6 354e            	DEFB	53,4EH		;FIRST PART OF GAP 3
-   354                          ;
+   330                          ;
+   331   000e9f 05              DD8N26:	DEFB	5
+   332   000ea0 504e            	DEFB	80,4EH		;POST-INDEX GAP
+   333   000ea2 0c00            	DEFB	12,00H		;INDEX SYNC
+   334   000ea4 03f6            	DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
+   335   000ea6 01fc            	DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
+   336   000ea8 324e            	DEFB	50,4EH		;GAP 1
+   337                          
+   338   000eaa 0c              	DEFB	12
+   339   000eab 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
+   340   000ead 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   341   000eaf 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+   342   000eb1 0100            	DEFB	1,0		;TRACK#
+   343   000eb3 0100            	DEFB	1,00000000B	;SIDE
+   344   000eb5 0100            	DEFB	1,0		;SECTOR#
+   345   000eb7 0101            	DEFB	1,00000001B	;LENGTH
+   346   000eb9 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   347   000ebb 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
+   348   000ebd 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
+   349   000ebf 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   350   000ec1 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+   351                          
+   352   000ec3 02              	DEFB	2
+   353   000ec4 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   354   000ec6 354e            	DEFB	53,4EH		;FIRST PART OF GAP 3
    355                          ;
    356                          ;
-   357   000ec8 010e031005120714SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
+   357                          ;
+   358   000ec8 010e031005120714SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
                 09160b180d1a    
-   358   000ed6 020f041106130815	DEFB	2,15,4,17,6,19,8,21,10,23,12,25
+   359   000ed6 020f041106130815	DEFB	2,15,4,17,6,19,8,21,10,23,12,25
                 0a170c19        
-   359                          ;
    360                          ;
-   361   000ee2 0112091a11081910SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
+   361                          ;
+   362   000ee2 0112091a11081910SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
                 07180f0617      
-   362   000eef 0e05160d04150c03	DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
+   363   000eef 0e05160d04150c03	DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
                 140b02130a      
-   363                          ;
    364                          ;
-   365                          
+   365                          ;
+   366                          
 rolli-f000.asm:
     50                          
     51   000efc ffffffff        		DEFB	255,255,255,255	;HEAD POSITIONS FOR 4 DRIVES
