@@ -348,13 +348,17 @@ xmitbuf1:	ld	a, (hl)
 		
 rxblock:	ld	a, (pokeydiv)			;is fast?
 		cp	SIONORMAL
-		jp	nz, rxblock1
-		ld	bc, 0
+		jp	z, rxblock1
+
+		call	fastrecv			;yes, fast speed
+		ld	c, d				;checksum in c
+		ld	a, 00000011B			;reset timer
+		out	(CTC3), a
+		ret
+
+rxblock1:	ld	bc, 0				;no, normal speed
 		jp	0f707h
 
-rxblock1:	call	fastrecv
-		ld	c, d
-		ret
 ;
 ; 32 bytes for disktab
 ;
@@ -438,8 +442,6 @@ time:		nop					;4
 ; set 4ms watchdog
 ;--------------------------------------------------
 irq4ms:		pop	af				;pop irq-addr
-;		ld	a, 00000011B			;reset timer
-;		out	(CTC3), a
 		or	a				;clear carry
 		reti	
 		
@@ -478,7 +480,7 @@ fastrecv2a:	ld	a, (hl)				; 7
 		in	a, (ATARI)			; 11 CYCLES
 		rla					;  4 CYCLES
 		rr	b				;  8 CYCLES
-		jr	c, fastrecv2			; 12/7
+		jr	c, fastrecv2			; 12/7 = 70 / 65 cycles
 		
 		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
 		inc	hl				;6
