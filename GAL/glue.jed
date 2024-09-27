@@ -1,7 +1,7 @@
 
 CUPL(WM)        5.0a  Serial# 60008009
 Device          g16v8ms  Library DLIB-h-40-11
-Created         Sat Aug 03 00:08:25 2024
+Created         Sun Sep 22 15:52:28 2024
 Name            glue
 Partno          00 
 Revision        01 
@@ -26,4 +26,4 @@ Location
 *L02144 11111111111111111111111111111111
 *L02176 111111111111111101
 *C24A8
-*A6F2
+*A714

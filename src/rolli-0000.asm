@@ -49,6 +49,11 @@ XMITBUF		equ	0f684h
 RXBLOCK		equ	0f6d9h
 CMDWAIT		equ	0f7e2h
 
+TRKBUF		equ	00800h
+TRK14BUF	equ	TRKBUF + 18 * 256
+
+DEBUG		equ	0f9d4h
+
 SIONORMAL	equ	40
 SIOFAST		equ	8
 
@@ -198,6 +203,7 @@ code8000:	ld	a, 1
 
 code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
+		
 ;		call	sercr
 ;		call	sercr
 ;		jp      0f762h				;jump to code in DRAM
@@ -229,7 +235,14 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 		db	030h, 050h			;DRIVE CONTROL reset FDC
 		db	030h, 040h			;DRIVE CONTROL 8Mhz
 	
-main:		ld	hl, DISKTAB+2
+main:
+;--------------------------------------------------
+; firmware patch
+;--------------------------------------------------
+		ld	hl, 0ffffh
+		ld	(track), hl
+
+		ld	hl, DISKTAB+2
 		ld	de, disktab+3
 		ld	bc, 3*7
 		ldir
@@ -256,6 +269,7 @@ main:		ld	hl, DISKTAB+2
 		ld	(XMITBUF), a
 		ld	(RXBLOCK), a
 		ld	(CMDWAIT), a
+		ld	(DEBUG), a
 		
 		ld	hl, xmitbuf
 		ld	(XMITBUF+1), hl
@@ -263,30 +277,275 @@ main:		ld	hl, DISKTAB+2
 		ld	(RXBLOCK+1), hl
 		ld	hl, cmdwait
 		ld	(CMDWAIT+1), hl
+		ld	hl, debug
+		ld	(DEBUG+1), hl
 		
 		ld	a, SIONORMAL
-		ld	(pokeydiv), a
+		ld	(pokeydiv), a		
+
+		
+		call	sercr
+		call	sercr
+
+test:		jp	0f762h
+
+;
+;
+;
+;--------------------------------------------------
+; debug
+;--------------------------------------------------
+debug:	
+;		ld	a, 'r'
+;		call	serout
+;		ld	a, 't'
+;		call	serout
+;		ld	a, (ix + DSKTRK)
+;		call	serhex
+;		ld	a, 's'
+;		call	serout
+;		ld	a, (ix + DSKSEC)
+;		call	serhex
+;		ld	a, 'l'
+;		call	serout
+;		ld	a, (ix + DSKAUX+1)
+;		call	serhex
+;		ld	a, (ix + DSKAUX)
+;		call	serhex
+;		ld	a, 'a'
+;		call	serout		
+;		ld	l, (ix + DSKPTR)
+;		ld	h, (ix + DSKPTR+1)
+;		call	seraddr
+
+		
+		ld	a, (ix + DSKTRK)
+		cp	014h				;track 20 (directory)
+		jr	nz, readtrack3
+
+		ld	hl, TRK14BUF
+		ld	(bufaddr), hl
+		ld	a, (track14)			;track14 read?
+		inc	a	
+		jr	nz, match			;yes
+		jr	readtrack4
+		
+readtrack3:	ld	hl, TRKBUF
+		ld	(bufaddr), hl
+
+		ld	a, (track)
+		cp	(ix + DSKTRK)
+		jr	z, match
+
+readtrack4:	push	ix
+		push	ix				;copy dcb
+		pop	hl
+		ld	de, dcb
+		ld	bc, 9
+		ldir		
+		
+		ld	ix, dcb
+		ld	(ix + DSKSEC), 1
+		ld	b, 18
+		
+readtrack:	push	bc
+		call	compbufadr
+		ld	(dcb + DSKPTR), hl
+				
+		call	0f00fh
+		
+		pop	bc
+		ld	a, (dcb + DSKSTS)		;error occured?
+		or	a
+		jr	z, readtrack6			;no	
+		pop	ix				;yes, store in original dcb
+		jr	match2
 	
-		ld	hl, disktab
-		ld	de, 8*3+2
-		call	serdump
+readtrack6:	ld	a, (dcb + DSKSEC)
+		add	a, 5
+		cp	19
+		jr	c, readtrack2
+		sub	a, 18
+readtrack2:	ld	(dcb + DSKSEC), a
+		djnz	readtrack
+		
+		ld	hl, track
+		ld	a, (dcb + DSKTRK)
+		cp	014h
+		jr	nz, readtrack5
+		inc	hl
+readtrack5:	ld	(hl), a
+
+		pop	ix
+
+match:		call	compbufadr
+		ld	d, (ix + DSKPTR+1)
+		ld	e, (ix + DSKPTR)
+		ld	bc, (LOGSIZ)		
+		ldir
+		
+		xor	a
+match2:		ld	(ix + DSKSTS), a
+		call	0f03ch
+		jp	0f9d7h
+
+
+
+compbufadr:	ld	hl, (bufaddr)
+		ld	b, (ix + DSKSEC)
+		dec	b
+		ld	c, 0
+		ld	a, (dcb + DSKAUX)
+		or	a
+		jr	z, compbufadr1
+		srl	b
+		rr	c
+compbufadr1:	add	hl, bc
+		ret
+		
+track:		db	255
+track14:	db	255
+bufaddr:	dw	0
+
+TSTRDY		EQU	0				;SELECT DRIVE AND TEST READY
+GETSEC		EQU	1				;READ SECTOR
+PUTSEC		EQU	2				;WRITE SECTOR
+GETID		EQU	3				;READ ID MARK
+DISKV		equ	0f00fh
+;
+;		
+;
+dcb:		db	0				;DISK OPERATION CODE
+		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
+		db	0				;TRACK#
+		db	0				;SECTOR#
+		dw	0				;READ/WRITE POINTER
+		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
+		db	0				;OPERATION COMPLETION STATUS
+
+		ld	ix, dcb
+		ld	(ix + DSKOP), GETSEC
+		ld	b, 18
+testloop:	push	bc
+
+;		ld	a, (ix + DSKSEC)
+;		call	serhex
+		
+		call	DISKV
+		pop	bc
+		
+;		ld	a, (dcb + DSKSTS)
+;		call	serhex
+;		call	serspace
+		
+		ld	a, (ix + DSKSEC)
+		add	a, 4
+		cp	19
+		jr	c, testloop1
+		sub	18
+testloop1:	ld	(ix + DSKSEC), a
+		djnz	testloop
+
+		ld	a, '-'
+		call	serout
+
+		jr	$
+
+
+		call	0f0abh
+		push	af
+		ld	a, '-'
+		call	serout
+		pop	af
+		jp	0f0f6h
+
+
+
+		call	STARTMR		
+		call	FORCE
+		
+		ld	C,A		;SAVE CURRENT TYPE 1 DISK STATUS
+		ld	B,6		;SET FOR 6 DISK REVOLUTIONS
+		ld	HL,0
+		ld	(TICKS),HL	;RESET MILLISECOND COUNTER FOR IRQ
+
+SPIN2:		ld	DE,(TICKS)
+		
+		call	EDGE		;WAIT FOR INDEX INPUT TO CHANGE
+		jr	c, SPIN3	;ABORT IF TIMEOUT
+		call	EDGE		;WAIT FOR CHANGE BACK AGAIN
+		jr	c, SPIN3
+		djnz	SPIN2		;LET 6 REVOLUTIONS PASS
+	
+		ld	HL,(TICKS)	;READ TIME AT END OF REVOLUTION
+		or	A
+		sbc	HL,DE		;COMPUTE INDEX PERIOD IN MILLISECONDS
+
+		call	STOPTMR
+		
+		ld	a, l
+		ld	(PERIOD), a
+;		call	serhex
+;		push	af
+;		ld	a, '+'
+;		call	serout
+;		pop	af
+		jp	DEBUG+3
+
+
+SPIN3:		ld	a, '*'
+		call	serout
+		
+		jr	$
 		
 		
-		ld	c, 'A'
-testfast:	call	fastsend
-		inc	c
-		ld	a, c
-		cp	'Z' + 1
-		jr	c, testfast
+EDGE:
+;		call	FORCE		;GET 1797 TYPE 1 STATUS
+		in	a, (STSREG)
+;		call	serhex
+		xor	C
+		and	00000010B	;CHECK FOR CHANGE IN INDEX BIT
+		jr	NZ,EDGE2	;EXIT IF BIT CHANGES
+		ld	A,(TICKS+1)
+		cp	2048/256	;ELSE CHECK TIME ACCUMULATED IN 'TICKS'
+		jr	C,EDGE		;KEEP LOOPING TILL 2 SECONDS PASS
+	
+		scf
+		ret			;THEN RETURN WITH CARRY=1
+;	
+EDGE2:		ld	A,C
+		cpl			;FLIP INDEX STATE HELD IN C
+		ld	C,A
+		ret			;RETURN WITH CARRY=0
 		
-		jp	0f762h
+		
+		
+FORCE:
+;		ld	a, FINCMD	;LOAD FORCE-INTERRUPT-IMMEDIATE CMD
+		in	a, (TRKREG)
+		out	(DATREG), a
+		ld	a, SKCMD+8
+		out	(CMDREG), a
+	
+		ld	a, 14
+force1:		dec	a
+		jr	nz, force1
+		IN	A,(STSREG)	;READ STATUS REGISTER CONTENTS
+;		RES	7, A
+		ret
+	
 
 
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
-getspeed:	ld	a, '?'
-		call	serout
+getspeed:
+;		ld	a, 041h
+;		out	(LATCH), a
+;		call	FORCE
+		
+;		ld	a, '?'
+;		call	serout
 		
 		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
@@ -299,61 +558,107 @@ getspeed:	ld	a, '?'
 		ld	hl, IOBUFF+LEN-1
 		ld	(hl), SIOFAST
 		ld	de, 'C'		
-		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+		call	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+		jp	togglebaud
+		ret
 
 
+
+;--------------------------------------------------
+; cmdwait
+;--------------------------------------------------
 cmdwait:	ld	a, (CMDFLG)
                 or	a				;SEE IF COMMAND FRAME HAS ARRIVED
                 ret	z				;EXIT IF NOTHING HAS HAPPENED
 					
-		call	sercmd				;5-byte command frame
-		call	serhex				;status 1 = OK
-		
+;		call	sercmd				;5-byte command frame
+
+		ld	a, (CMDFLG)
                 cp	1		
+
+		di					;ELSE RESET INTERRUPT AND START AGAIN
+                ld	a, 00000011B		
+                out	(CTC0),A		
+                ei		
+				
                 jp	nz, cmdwait1
 		
 		jp	0f7f3h				;PROCESS COMMAND IF GOOD FRAME RECVD
 				
-cmdwait1:       di					;ELSE RESET INTERRUPT AND START AGAIN
-                ld	a, 00000011B		
-                out	(CTC0),A		
-                ei		
-
-		call	togglebaud
-		
+cmdwait1:
+		call	togglebaud	
 		jp	0f809h
 
 
 		
-xmitbuf:	ld	a, (pokeydiv)			;is fast?
+;--------------------------------------------------
+; xmitbuf
+;--------------------------------------------------
+xmitbuf:	
+		di	
+		ld	a, (pokeydiv)			;is fast?
 		cp	SIONORMAL
-		jr	nz, xmitbuf1			;yes, jump
-		di					;no
+		jr	nz, xmitfast			;yes, jump
 		ld	bc, 0f715h
 		jp	XMITBUF+4
 		
-xmitbuf1:	ld	a, (hl)
-		inc	hl
-		xor	d
-		ld	c, a
-		add	a, e
-		adc	0
-		ld	e, a
-		call	fastsend			;send byte in c
-		ld	a, h
-		cp	iobuflenhi
-		jr	c, xmitbuf1			;loop if buffer end not reached
+xmitfast:		
+		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
+		out	(CTC1), a
+		ld	a, 1
+		out	(CTC1), a
+		
+xmitfast1:	ld	a, (hl)				;7
+		inc	hl				;6
+		xor	d				;4
+		ld	c, a				;4
+		add	a, e				;4
+		adc	0				;7
+		ld	e, a				;4
+		call	fastsend			;17 send byte in c
+		ld	a, h				;4
+		cp	iobuflenhi			;7
+		jr	c, xmitfast1			;12/7 loop if buffer end not reached	
+		
+		ld	a, 00000011B	
+		out	(CTC1), a	
+		ei
 		ret
 		
+fastsend:	xor	a
+		out	(ATROUT), a
 		
+		push	ix				;15
+		pop	ix				;14
+		ld	a, c				;4
+		ld	b, 8				;7
+		inc	bc				;6
+		nop					;4
+		
+fastsend1:	nop					;4
+		cp	1				;7
+		out	(ATROUT), a			;11
+		rrca					;4
+		push	ix				;15
+		pop	ix				;14
+		djnz	fastsend1			;13 / 8
+
+		ld	a, r				;9
+		ld	a, 1				;7
+		out	(ATROUT), a			;11
+		ret					;10
+		
+;--------------------------------------------------
+; rxblock
+;--------------------------------------------------		
 rxblock:	ld	a, (pokeydiv)			;is fast?
 		cp	SIONORMAL
 		jp	z, rxblock1
 
 		call	fastrecv			;yes, fast speed
-		ld	c, d				;checksum in c
 		ld	a, 00000011B			;reset timer
-		out	(CTC3), a
+		out	(CTC3), a		
+		ld	c, d				;checksum in c
 		ret
 
 rxblock1:	ld	bc, 0				;no, normal speed
@@ -367,38 +672,25 @@ disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
 
 pokeydiv:	db	SIONORMAL
 
+;--------------------------------------------------
+; togglebaud
+;--------------------------------------------------		
 togglebaud:	ld	a, (pokeydiv)
 		cp	SIONORMAL
 		ld	a, SIOFAST
 		jr	z, togglebaud1
 		ld	a, SIONORMAL
 togglebaud1:	ld	(pokeydiv), a
+		ret
+		push	af
+		ld	a, 'B'
+		call	serout
+		pop	af
 		call	serhex
 		jp	sercr
 
 
-		call	clear
-		ld	hl, IOBUFF
-		call	seraddr
 
-
-serloop:	ld	hl, IOBUFF
-		call	fastrecv
-
-		ld	a, 00000011B			;reset timer
-		out	(CTC3), a
-		ld	c, d
-		
-		jp	c, main
-		
-		ld	de, IOBUFF
-		sbc	hl, de
-		jr	z, serloop
-serloop2:	ex	de, hl
-;		ld	(hl), c
-		call	serdump
-		
-		jp	main
 		
 clear:		ld	hl, IOBUFF
 clear1:		xor	a
@@ -410,39 +702,14 @@ clear1:		xor	a
 		ret
 
 		
-fastsend:	xor	a
-		out	(ATROUT), a
-		call	time				;11
-		ld	a, c				;4
-		ld	b, 8				;7
-		nop					;4
-		nop					;4
-		nop					;4
-		
-fastsend1:	out	(ATROUT), a			;11
-		rrca					;4
-		call	time				;17
-		djnz	fastsend1			;12
-		
-		ld	a, 1				
-		out	(ATROUT), a
 
-		ex	(sp), hl			;19
-		ex	(sp), hl			;19
-		ex	(sp), hl			;19
-		ex	(sp), hl			;19
-		
-time:		nop					;4
-		nop					;4
-		nop					;4
-		nop					;4
-		ret					;10 = 26
 
 ;--------------------------------------------------
 ; set 4ms watchdog
 ;--------------------------------------------------
 irq4ms:		pop	af				;pop irq-addr
 		or	a				;clear carry
+irq4ms1:	ei
 		reti	
 		
 ;--------------------------------------------------
@@ -495,55 +762,44 @@ fastrecv2a:	ld	a, (hl)				; 7
 		jp	fastrecv1			;10
 
 	
-;--------------------------------------------------
-; RS232 dump
-;--------------------------------------------------
-serdump:	;call	seraddr
-;		ex	de, hl
-;		call	seraddr
-;		ex	de, hl
-;		ld	a, c
-;		call	serhex
-;		call	sercr
-		
-;		ld	hl, IOBUFF
-;		ld	de, 256
-serdump2:	ld	b, 16
-serdump1:	ld	a, (hl)
-		call	serhex
-		call	serspace
-		inc	hl
-		dec	de
-		ld	a, d
-		or	a, e
-		jr	z, serdump3
-		djnz	serdump1
-		call	sercr
-		jr	serdump2
-serdump3:;	call	sercr
-	;	ld	a, (hl)
-	;	call	serhex
-		call	sercr
-		ret
-		
+serdumpcpl:	push	hl
+                push	af
+                push	bc
+                push	de
+		ld	d, 255
+		jr	serdump1
 
 ;--------------------------------------------------
 ; RS232 sercmd
 ;--------------------------------------------------
-sercmd:		push	af
-		push	bc
-		push	hl
+sercmd:		push	hl
 		ld	hl, CFRAME
-		ld	b, 5
-sercmd1:	ld	a, (hl)
+		call	sercr
+		jr	serdump2
+
+;--------------------------------------------------
+; RS232 dump 
+;--------------------------------------------------
+serdump:	push	hl
+serdump2:	push	af
+		push	bc
+		push	de
+		
+		ld	d, 0
+		
+serdump1:	ld	a, (hl)
+		xor 	d
 		call	serhex
 		call	serspace
 		inc	hl
-		djnz	sercmd1
-		call	sercr
-		pop	hl
+		ld	a, h
+		cp	a, 0c3h
+		jr	c, serdump1
+
+		pop	de
 		pop	bc
 		pop	af
+		pop	hl
 		ret
 		
 ;--------------------------------------------------
@@ -598,11 +854,11 @@ sernib1:
 ;--------------------------------------------------
 serout:
 		;jp	fastsend
-		
 		push	af
 		push	bc
 		ld	b, a
 		xor	a
+		di
 		out	(SEROUT), a			;startbit
 		call	time19600			;17
 
@@ -612,7 +868,7 @@ serout1:	out	(SEROUT), a			;11
 		call	time19600			;17
 		rrca					;4
 		djnz	serout1				;8
-
+		ei
 		ld	a, 1				;7
 		out	(SEROUT), a			;11
 		call	time19600			;17
@@ -648,49 +904,41 @@ time19600:	ld	c, 9				;4
 time19600a:	dec	c				;4
 		jr	nz, time19600a			;12/7
 		ret					;10
-
-;		DI
-;		LD	A,10000111B
-;		OUT	(CTC3),A
-;		LD	A,250
-;		OUT	(CTC3),A
-;		LD	HL,TMRIRQ
-;		LD	(CTCVEC+6),HL
-;		EI
+		
+;
+;	... MILLISECOND TIMER INTERRUPT ROUTINES ...
+;
+;
+STARTMR:
+		di
+		ld	A,10000111B
+		out	(CTC3),A
+		ld	A,250
+		out	(CTC3),A
+		ld	HL,TMRIRQ
+		ld	(CTCVEC+6),HL
+		ei
+		ret
 	
-				
-;		ld	ix, dcb
-;		call	dskhandler
-;		ld	hl, dcb
-;		ld	b, 9
-;loop1:		ld	a, (hl)
-;		call	puthex
-;		inc	hl
-;		djnz	loop1
-;		
-;		jp	dskloop
-
+STOPTMR:
+		di
+		ld	A,00000001B
+		out	(CTC3),A
+		ei
+		ret
 ;
 ;
 ;
 TMRIRQ:
-	PUSH	HL
-	EI
-	LD	HL,(TICKS)
-	INC	HL		;BUMP FREE RUNING MILLISECOND COUNTER
-	LD	(TICKS),HL
-	POP	HL
-	RETI
-		
+		push	HL
+		ei
+		ld	HL,(TICKS)
+		inc	HL		;BUMP FREE RUNING MILLISECOND COUNTER
+		ld	(TICKS),HL
+		pop	HL
+		reti
+	
+	
 
-
-		
-dcb:		db	0				;DISK OPERATION CODE
-		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
-		db	0				;TRACK#
-		db	1				;SECTOR#
-		dw	8000h				;READ/WRITE POINTER
-		dw	128				;AUXILLIARY PARAMETERS (2 BYTES)
-		db	0				;OPERATION COMPLETION STATUS
 		
 sallycode	equ	ASMPC
