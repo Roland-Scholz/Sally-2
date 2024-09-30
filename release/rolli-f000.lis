@@ -1973,7 +1973,7 @@ ATARI.MAC:
     44   00079c ed52            	SBC	HL,DE
     45   00079e 280c            	JR	Z,MAIN		;JUMP IF 16K MEMORY SIZE MACHINE
     46                          
-    47   0007a0 210000          	LD	HL,0
+    47   0007a0 210022          	LD	HL, 02200h	;was 0000h, now 0800h+26*256 track buffer
     48   0007a3 224bff          	LD	(PBASE),HL	;ELSE SETUP FOR 48K PRINTER BUFFER
     49   0007a6 21ffbf          	LD	HL,0BFFFH
     50   0007a9 224dff          	LD	(PSIZE),HL

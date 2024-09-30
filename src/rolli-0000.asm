@@ -20,6 +20,13 @@ DSKPTR		equ	4		;READ/WRITE POINTER
 DSKAUX		equ	6		;AUXILLIARY PARAMETERS (2 BYTES)
 DSKSTS		equ	8		;OPERATION COMPLETION STATUS
 
+TSTRDY		EQU	0				;SELECT DRIVE AND TEST READY
+GETSEC		EQU	1				;READ SECTOR
+PUTSEC		EQU	2				;WRITE SECTOR
+GETID		EQU	3				;READ ID MARK
+
+DISKV		equ	0f00fh
+
 putaddr		equ	0f493h
 puthex		equ	0f498h
 coninit		equ	0f5fch
@@ -34,7 +41,6 @@ WATCHDOG	equ	0f3a8h
 RECOVER		equ	0f30fh
 ACTIVON		equ	0f03ch
 
-dskhandler	equ	0f00fh
 CFRAME		equ	IOBUFF+LEN-5
 iobuflenhi	equ	(IOBUFF+LEN) / 256
 
@@ -44,13 +50,15 @@ DRVINDEX	equ	0fc28h
 SENDBUFF	equ	0f66ch
 SENDACK		equ	0fc4ah
 HASPARMS	equ	0fbd3h
-DISKREAD	equ	0f98ch
+DISKREAD	equ	0f9d4h
+DISKWRITE	equ	0f948h
 XMITBUF		equ	0f684h
 RXBLOCK		equ	0f6d9h
 CMDWAIT		equ	0f7e2h
+EMULATOR	equ	0f762h
 
 TRKBUF		equ	00800h
-TRK14BUF	equ	TRKBUF + 18 * 256
+SKEWDD		equ	0fe68h
 
 DEBUG		equ	0f9d4h
 
@@ -64,13 +72,6 @@ SIOFAST		equ	8
 ; Code executed after Reset
 ;--------------------------------------------------
 		ORG	00000h
-		jp	reset
-		jp	serin
-		jp	serout
-		jp	serhex
-		jp	sercmd
-		jp	serdump
-		jp	fastrecv
 ;
 reset:		di      				;disable interrupt
 		xor     a				;set a to zero
@@ -203,44 +204,13 @@ code8000:	ld	a, 1
 
 code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
-		
-;		call	sercr
-;		call	sercr
-;		jp      0f762h				;jump to code in DRAM
-;		jp	0f003h
-		jp	main
-
-CMDOUT:
-		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
-CMDT1:		LD	A,14	
-CMDT2:		DEC	A
-		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
-CMDT3:		in	a, (STSREG)
-		bit	0, a
-		jr	nz, CMDT3
-		RET
-
-;--------------------------------------------------
-; 11 times port:value
-;--------------------------------------------------
-portval:	db	050h, 001h			;Bit0	set ATARI DATA
-		db	051h, 001h			;Bit1	set RS232 TX
-		db	080h, 003h			;CTC	Channel 0 reset
-		db 	080h, 010h			;CTC	Channel 0 interrupt vector
-		db	081h, 007h			;CTC	Channel 1 reset + set time constant
-		db	081h, 001h			;CTC	Channel 1 time contant
-		db	082h, 003h			;CTC	Channel 2 reset
-		db	083h, 003h			;CTC	Channel 3 reset
-		db	057h, 001h			;Bit7	ATARI RXD
-		db	030h, 050h			;DRIVE CONTROL reset FDC
-		db	030h, 040h			;DRIVE CONTROL 8Mhz
 	
 main:
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
 		ld	hl, 0ffffh
-		ld	(track), hl
+		ld	(drive), hl
 
 		ld	hl, DISKTAB+2
 		ld	de, disktab+3
@@ -269,7 +239,6 @@ main:
 		ld	(XMITBUF), a
 		ld	(RXBLOCK), a
 		ld	(CMDWAIT), a
-		ld	(DEBUG), a
 		
 		ld	hl, xmitbuf
 		ld	(XMITBUF+1), hl
@@ -277,82 +246,62 @@ main:
 		ld	(RXBLOCK+1), hl
 		ld	hl, cmdwait
 		ld	(CMDWAIT+1), hl
-		ld	hl, debug
-		ld	(DEBUG+1), hl
+		ld	hl, diskread
+		ld	(DISKREAD+1), hl
+		ld	hl, diskwrite
+		ld	(DISKWRITE+1), hl
 		
 		ld	a, SIONORMAL
 		ld	(pokeydiv), a		
-
 		
-		call	sercr
-		call	sercr
-
-test:		jp	0f762h
+		jp	EMULATOR
 
 ;
 ;
 ;
 ;--------------------------------------------------
-; debug
+; diskwrite: write through sector
 ;--------------------------------------------------
-debug:	
-;		ld	a, 'r'
-;		call	serout
-;		ld	a, 't'
-;		call	serout
-;		ld	a, (ix + DSKTRK)
-;		call	serhex
-;		ld	a, 's'
-;		call	serout
-;		ld	a, (ix + DSKSEC)
-;		call	serhex
-;		ld	a, 'l'
-;		call	serout
-;		ld	a, (ix + DSKAUX+1)
-;		call	serhex
-;		ld	a, (ix + DSKAUX)
-;		call	serhex
-;		ld	a, 'a'
-;		call	serout		
-;		ld	l, (ix + DSKPTR)
-;		ld	h, (ix + DSKPTR+1)
-;		call	seraddr
-
+diskwrite:	call	checktrack		
+		jr	nz, diskwrite1
 		
-		ld	a, (ix + DSKTRK)
-		cp	014h				;track 20 (directory)
-		jr	nz, readtrack3
-
-		ld	hl, TRK14BUF
-		ld	(bufaddr), hl
-		ld	a, (track14)			;track14 read?
-		inc	a	
-		jr	nz, match			;yes
-		jr	readtrack4
+		call	compbufadr
+		ex	de, hl
+		ld	h, (ix + DSKPTR+1)
+		ld	l, (ix + DSKPTR)
+		ld	bc, (LOGSIZ)		
+		ldir		
 		
-readtrack3:	ld	hl, TRKBUF
-		ld	(bufaddr), hl
+diskwrite1:	jp	DISKV
 
-		ld	a, (track)
-		cp	(ix + DSKTRK)
+;--------------------------------------------------
+; diskread: cache a track
+;--------------------------------------------------
+diskread:			
+		call	checktrack		
 		jr	z, match
-
-readtrack4:	push	ix
-		push	ix				;copy dcb
+	
+		ld	(drive), de			;save new drive and track		
+		push	ix				;save ix
+		
+		push	ix				;load hl with ix 
 		pop	hl
 		ld	de, dcb
 		ld	bc, 9
-		ldir		
+		ldir					;copy dcb
 		
-		ld	ix, dcb
+		ld	ix, dcb				;load ix with new dcb
+		ld	hl, SKEWDD			;reset sector skew pointer
+		ld	(secptr), hl
+		
 		ld	(ix + DSKSEC), 1
-		ld	b, 18
+		ld	b, (iy + NSECS+1)
 		
 readtrack:	push	bc
 		call	compbufadr
 		ld	(dcb + DSKPTR), hl
 				
-		call	0f00fh
+		call	DISKV
 		
 		pop	bc
 		ld	a, (dcb + DSKSTS)		;error occured?
@@ -361,21 +310,13 @@ readtrack:	push	bc
 		pop	ix				;yes, store in original dcb
 		jr	match2
 	
-readtrack6:	ld	a, (dcb + DSKSEC)
-		add	a, 5
-		cp	19
-		jr	c, readtrack2
-		sub	a, 18
-readtrack2:	ld	(dcb + DSKSEC), a
+readtrack6:	ld	hl, (secptr)
+		inc	hl
+		ld	(secptr), hl
+		ld	a, (hl)
+		ld	(dcb + DSKSEC), a
 		djnz	readtrack
 		
-		ld	hl, track
-		ld	a, (dcb + DSKTRK)
-		cp	014h
-		jr	nz, readtrack5
-		inc	hl
-readtrack5:	ld	(hl), a
-
 		pop	ix
 
 match:		call	compbufadr
@@ -386,12 +327,11 @@ match:		call	compbufadr
 		
 		xor	a
 match2:		ld	(ix + DSKSTS), a
-		call	0f03ch
-		jp	0f9d7h
+		jp	ACTIVON
 
 
 
-compbufadr:	ld	hl, (bufaddr)
+compbufadr:	ld	hl, TRKBUF
 		ld	b, (ix + DSKSEC)
 		dec	b
 		ld	c, 0
@@ -402,16 +342,18 @@ compbufadr:	ld	hl, (bufaddr)
 		rr	c
 compbufadr1:	add	hl, bc
 		ret
+	
+checktrack:	ld	hl, (drive)
+		ld	d, (ix + DSKTRK)		;high
+		ld	e, (ix + DSKDRV)		;low
+		or	a				;clear carry
+		sbc	hl, de
+		ret
 		
+drive:		db	255
 track:		db	255
-track14:	db	255
-bufaddr:	dw	0
+secptr:		dw	0		
 
-TSTRDY		EQU	0				;SELECT DRIVE AND TEST READY
-GETSEC		EQU	1				;READ SECTOR
-PUTSEC		EQU	2				;WRITE SECTOR
-GETID		EQU	3				;READ ID MARK
-DISKV		equ	0f00fh
 ;
 ;		
 ;
@@ -423,130 +365,10 @@ dcb:		db	0				;DISK OPERATION CODE
 		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
 		db	0				;OPERATION COMPLETION STATUS
 
-		ld	ix, dcb
-		ld	(ix + DSKOP), GETSEC
-		ld	b, 18
-testloop:	push	bc
-
-;		ld	a, (ix + DSKSEC)
-;		call	serhex
-		
-		call	DISKV
-		pop	bc
-		
-;		ld	a, (dcb + DSKSTS)
-;		call	serhex
-;		call	serspace
-		
-		ld	a, (ix + DSKSEC)
-		add	a, 4
-		cp	19
-		jr	c, testloop1
-		sub	18
-testloop1:	ld	(ix + DSKSEC), a
-		djnz	testloop
-
-		ld	a, '-'
-		call	serout
-
-		jr	$
-
-
-		call	0f0abh
-		push	af
-		ld	a, '-'
-		call	serout
-		pop	af
-		jp	0f0f6h
-
-
-
-		call	STARTMR		
-		call	FORCE
-		
-		ld	C,A		;SAVE CURRENT TYPE 1 DISK STATUS
-		ld	B,6		;SET FOR 6 DISK REVOLUTIONS
-		ld	HL,0
-		ld	(TICKS),HL	;RESET MILLISECOND COUNTER FOR IRQ
-
-SPIN2:		ld	DE,(TICKS)
-		
-		call	EDGE		;WAIT FOR INDEX INPUT TO CHANGE
-		jr	c, SPIN3	;ABORT IF TIMEOUT
-		call	EDGE		;WAIT FOR CHANGE BACK AGAIN
-		jr	c, SPIN3
-		djnz	SPIN2		;LET 6 REVOLUTIONS PASS
-	
-		ld	HL,(TICKS)	;READ TIME AT END OF REVOLUTION
-		or	A
-		sbc	HL,DE		;COMPUTE INDEX PERIOD IN MILLISECONDS
-
-		call	STOPTMR
-		
-		ld	a, l
-		ld	(PERIOD), a
-;		call	serhex
-;		push	af
-;		ld	a, '+'
-;		call	serout
-;		pop	af
-		jp	DEBUG+3
-
-
-SPIN3:		ld	a, '*'
-		call	serout
-		
-		jr	$
-		
-		
-EDGE:
-;		call	FORCE		;GET 1797 TYPE 1 STATUS
-		in	a, (STSREG)
-;		call	serhex
-		xor	C
-		and	00000010B	;CHECK FOR CHANGE IN INDEX BIT
-		jr	NZ,EDGE2	;EXIT IF BIT CHANGES
-		ld	A,(TICKS+1)
-		cp	2048/256	;ELSE CHECK TIME ACCUMULATED IN 'TICKS'
-		jr	C,EDGE		;KEEP LOOPING TILL 2 SECONDS PASS
-	
-		scf
-		ret			;THEN RETURN WITH CARRY=1
-;	
-EDGE2:		ld	A,C
-		cpl			;FLIP INDEX STATE HELD IN C
-		ld	C,A
-		ret			;RETURN WITH CARRY=0
-		
-		
-		
-FORCE:
-;		ld	a, FINCMD	;LOAD FORCE-INTERRUPT-IMMEDIATE CMD
-		in	a, (TRKREG)
-		out	(DATREG), a
-		ld	a, SKCMD+8
-		out	(CMDREG), a
-	
-		ld	a, 14
-force1:		dec	a
-		jr	nz, force1
-		IN	A,(STSREG)	;READ STATUS REGISTER CONTENTS
-;		RES	7, A
-		ret
-	
-
-
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
-getspeed:
-;		ld	a, 041h
-;		out	(LATCH), a
-;		call	FORCE
-		
-;		ld	a, '?'
-;		call	serout
-		
+getspeed:		
 		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 			
@@ -739,15 +561,15 @@ fastrecv1:	in	a, (ATARI)			;11
 ;	
 ; SERIAL->PARALLEL CONVERSION AT 17,36 MICROSECONDS PER BIT
 ;	
-fastrecv2:	push	af				; 11
-		pop	af				; 10
-fastrecv2a:	ld	a, (hl)				; 7
-		ld	a, (hl)				; 7
-		
-		in	a, (ATARI)			; 11 CYCLES
-		rla					;  4 CYCLES
-		rr	b				;  8 CYCLES
-		jr	c, fastrecv2			; 12/7 = 70 / 65 cycles
+fastrecv2:	push	af				;11
+		pop	af				;10
+fastrecv2a:	ld	a, (hl)				;7
+		ld	a, (hl)				;7
+							 
+		in	a, (ATARI)			;11 CYCLES
+		rla					; 4 CYCLES
+		rr	b				; 8 CYCLES
+		jr	c, fastrecv2			;12/7 = 70 / 65 cycles
 		
 		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
 		inc	hl				;6
@@ -853,7 +675,6 @@ sernib1:
 ; RS232 out	208 T-States
 ;--------------------------------------------------
 serout:
-		;jp	fastsend
 		push	af
 		push	bc
 		ld	b, a
@@ -905,40 +726,29 @@ time19600a:	dec	c				;4
 		jr	nz, time19600a			;12/7
 		ret					;10
 		
-;
-;	... MILLISECOND TIMER INTERRUPT ROUTINES ...
-;
-;
-STARTMR:
-		di
-		ld	A,10000111B
-		out	(CTC3),A
-		ld	A,250
-		out	(CTC3),A
-		ld	HL,TMRIRQ
-		ld	(CTCVEC+6),HL
-		ei
-		ret
-	
-STOPTMR:
-		di
-		ld	A,00000001B
-		out	(CTC3),A
-		ei
-		ret
-;
-;
-;
-TMRIRQ:
-		push	HL
-		ei
-		ld	HL,(TICKS)
-		inc	HL		;BUMP FREE RUNING MILLISECOND COUNTER
-		ld	(TICKS),HL
-		pop	HL
-		reti
-	
-	
+CMDOUT:
+		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
+CMDT1:		LD	A,14	
+CMDT2:		DEC	A
+		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
+CMDT3:		in	a, (STSREG)
+		bit	0, a
+		jr	nz, CMDT3
+		RET
 
+;--------------------------------------------------
+; 11 times port:value
+;--------------------------------------------------
+portval:	db	050h, 001h			;Bit0	set ATARI DATA
+		db	051h, 001h			;Bit1	set RS232 TX
+		db	080h, 003h			;CTC	Channel 0 reset
+		db 	080h, 010h			;CTC	Channel 0 interrupt vector
+		db	081h, 007h			;CTC	Channel 1 reset + set time constant
+		db	081h, 001h			;CTC	Channel 1 time contant
+		db	082h, 003h			;CTC	Channel 2 reset
+		db	083h, 003h			;CTC	Channel 3 reset
+		db	057h, 001h			;Bit7	ATARI RXD
+		db	030h, 050h			;DRIVE CONTROL reset FDC
+		db	030h, 040h			;DRIVE CONTROL 8Mhz
 		
 sallycode	equ	ASMPC
