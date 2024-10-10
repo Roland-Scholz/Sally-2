@@ -56,9 +56,12 @@ XMITBUF		equ	0f684h
 RXBLOCK		equ	0f6d9h
 CMDWAIT		equ	0f7e2h
 EMULATOR	equ	0f762h
+SPIN		equ	0f15dh
+PUTPARAMS	equ	0fc23h
+GETPARAMS	equ	0fbe7h
+LOGON		equ	0f77eh
 
 TRKBUF		equ	00800h
-SKEWDD		equ	0fe68h
 
 DEBUG		equ	0f9d4h
 
@@ -209,7 +212,7 @@ main:
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
-		ld	hl, 0ffffh
+		ld	hl, 0ffffh			;reset drive / track buffer
 		ld	(drive), hl
 
 		ld	hl, DISKTAB+2
@@ -234,11 +237,15 @@ main:
 		ld	(DISKID+2), hl
 		ld	(DISKID+4), hl
 		ld	(DISKID+6), hl
-		
+				
+		ld	a, SIONORMAL
+		ld	(pokeydiv), a		
+
 		ld	a, 0c3h				;'JP' instruction
 		ld	(XMITBUF), a
 		ld	(RXBLOCK), a
 		ld	(CMDWAIT), a
+		ld	(LOGON), a
 		
 		ld	hl, xmitbuf
 		ld	(XMITBUF+1), hl
@@ -250,19 +257,140 @@ main:
 		ld	(DISKREAD+1), hl
 		ld	hl, diskwrite
 		ld	(DISKWRITE+1), hl
-		
-		ld	a, SIONORMAL
-		ld	(pokeydiv), a		
-		
+		ld	hl, logon
+		ld	(LOGON+1), hl
+
 		jp	EMULATOR
 
+
+logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
+
+		ld	a, 0c3h				;'JP' instruction
+		ld	(SPIN), a		
+		ld	hl, spin
+		ld	(SPIN+1), hl
+		
+;		ld	hl, getparams
+;		ld	(GETPARAMS+1), hl
+		jp	LOGON+3
+
+
+getparams:	ld	a, 'N'
+		call	serout
+		ld	a, (CFRAME)
+		call	serout
+		call	sercr
+		jp	0fc28h
+
+
+
+
+putparams:	ld	a, 'O'
+		call	serout
+		push	hl
+		push	iy
+		pop	hl
+		push	bc
+		
+		ld	a, (CFRAME)
+		call	serout
+		call	serspace
+		ld	b, 12
+putparams2:	ld	a, (hl)
+		call	serhex
+		call	serspace
+		inc	hl
+		djnz	putparams2
+		pop	bc
+		pop	hl
+putparams1:	call	sercr
+		ldir
+		jp	0fc54h
 ;
 ;
 ;
+spin:		bit	6, b
+		jr	z, spin1
+		
+		push	bc
+		push	de
+		push	hl
+		push	ix
+		
+		ld	a, b
+;		call	serhex
+		
+		res	6, a
+		out	(LATCH), a
+
+		push	ix				;load hl with ix 
+		pop	hl
+		ld	de, dcb
+		ld	bc, 9
+		ldir					;copy dcb
+
+spin3:		ld	ix, dcb
+		ld	hl, id
+		ld	(dcb + DSKPTR), hl
+		ld	hl, 6
+		ld	(dcb + DSKAUX), hl
+		ld	a, RIDCMD
+		ld	(dcb + DSKOP), a
+		ld	(CMDBYT), a
+		ld	a, 018h
+		ld	(0f0f6h), a
+		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
+		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
+		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
+		ld	a, 028h
+		ld	(0f0f6h), a
+			
+;		ld	b, 6
+;		ld	hl, id
+;spin2:	ld	a, (hl)
+;		call	serhex
+;		inc	hl
+;		djnz	spin2
+;		call	sercr
+;		jp	spin3
+		
+		pop	ix
+		pop	hl
+		pop	de
+		pop	bc
+		
+		ld	a, (dcb + DSKSTS)
+;		call	serhex
+		or	a
+		jr	nz, spin1
+		res	6, b
+spin1:	
+		ld	a, b
+;		call	serhex
+;		call	sercr
+		ld	d, 0
+		jp	0f160h
+		
+id:		dw	0, 0, 0	
+
+;		ld	a, (IX+DSKSTS)
+;		call	serhex
+;		ld	a, (IX+DSKPTR+1)
+;		call	serhex
+;		ld	a, (IX+DSKPTR)
+;		call	serhex
+		jp	0f0384h
+ 		
 ;--------------------------------------------------
 ; diskwrite: write through sector
 ;--------------------------------------------------
-diskwrite:	call	checktrack		
+diskwrite:	
+;		ld	a, 'W'
+;		call	debug
+		
+;		jp	DISKV
+		
+		call	checktrack		
 		jr	nz, diskwrite1
 		
 		call	compbufadr
@@ -274,10 +402,39 @@ diskwrite:	call	checktrack
 		
 diskwrite1:	jp	DISKV
 
+
+debug:		call	serout
+		ld	a, (ix + DSKDRV)
+		call	serhex
+		ld	a, 't'
+		call	serout
+		ld	a, (ix + DSKTRK)
+		call	serhex		
+		ld	a, 's'
+		call	serout
+		ld	a, (ix + DSKSEC)
+		call	serhex
+		
+		call	serspace
+		ld	a, (CFRAME+3)
+		call	serhex
+		ld	a, (CFRAME+2)
+		call	serhex
+		call	serspace
+		ld	a, (IY+NSECS+1)
+		call	serhex
+		ld	a, (iy+NTRKS)
+		call	serhex
+		
+		call	sercr
+		ret
 ;--------------------------------------------------
 ; diskread: cache a track
 ;--------------------------------------------------
-diskread:			
+diskread:	
+;		ld	a, 'R'
+;		call	debug
+		
 		call	checktrack		
 		jr	z, match
 	
@@ -289,15 +446,27 @@ diskread:
 		ld	de, dcb
 		ld	bc, 9
 		ldir					;copy dcb
-		
-		ld	ix, dcb				;load ix with new dcb
-		ld	hl, SKEWDD			;reset sector skew pointer
+	
+		ld	b, 0				;compute skew-list from media type
+		ld	c, (iy + MEDIA)		
+		ld	hl, skewtab
+		add	hl, bc
+		ld	a, (hl)
+		inc	hl
+		ld	h, (hl)
+		ld	l, a
 		ld	(secptr), hl
-		
-		ld	(ix + DSKSEC), 1
+
+		ld	ix, dcb				;load ix with new dcb		
 		ld	b, (iy + NSECS+1)
 		
-readtrack:	push	bc
+readtrack:	ld	hl, (secptr)
+		ld	a, (hl)
+		ld	(dcb + DSKSEC), a
+		inc	hl
+		ld	(secptr), hl
+		
+		push	bc
 		call	compbufadr
 		ld	(dcb + DSKPTR), hl
 				
@@ -309,16 +478,9 @@ readtrack:	push	bc
 		jr	z, readtrack6			;no	
 		pop	ix				;yes, store in original dcb
 		jr	match2
-	
-readtrack6:	ld	hl, (secptr)
-		inc	hl
-		ld	(secptr), hl
-		ld	a, (hl)
-		ld	(dcb + DSKSEC), a
-		djnz	readtrack
-		
+readtrack6:	djnz	readtrack
 		pop	ix
-
+		
 match:		call	compbufadr
 		ld	d, (ix + DSKPTR+1)
 		ld	e, (ix + DSKPTR)
@@ -327,6 +489,12 @@ match:		call	compbufadr
 		
 		xor	a
 match2:		ld	(ix + DSKSTS), a
+
+		in	a, (DATREG)				;keeps motor spinning
+		out	(TRKREG), a
+		ld	a, SKCMD
+		call	CMDOUT
+		
 		jp	ACTIVON
 
 
@@ -354,6 +522,15 @@ drive:		db	255
 track:		db	255
 secptr:		dw	0		
 
+SKEWSD		equ	0fe56h
+SKEW13		equ	0fec8h
+SKEWDD		equ	0fe68h
+SKEW17		equ	0fee2h
+
+skewtab:	dw	SKEWSD
+		dw	SKEW13
+		dw	SKEWDD
+		dw	SKEW17
 ;
 ;		
 ;
@@ -368,7 +545,10 @@ dcb:		db	0				;DISK OPERATION CODE
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
-getspeed:		
+getspeed:	
+;		ld	a, '?'
+;		call	serout
+		
 		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 			
@@ -381,8 +561,8 @@ getspeed:
 		ld	(hl), SIOFAST
 		ld	de, 'C'		
 		call	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
-		jp	togglebaud
 		ret
+		jp	togglebaud
 
 
 
@@ -396,6 +576,7 @@ cmdwait:	ld	a, (CMDFLG)
 ;		call	sercmd				;5-byte command frame
 
 		ld	a, (CMDFLG)
+;		call	serhex
                 cp	1		
 
 		di					;ELSE RESET INTERRUPT AND START AGAIN
@@ -403,12 +584,9 @@ cmdwait:	ld	a, (CMDFLG)
                 out	(CTC0),A		
                 ei		
 				
-                jp	nz, cmdwait1
-		
-		jp	0f7f3h				;PROCESS COMMAND IF GOOD FRAME RECVD
-				
-cmdwait1:
-		call	togglebaud	
+                jp	z, 0f7f3h			;good cmd-frame
+	
+		call	togglebaud		
 		jp	0f809h
 
 
@@ -504,12 +682,12 @@ togglebaud:	ld	a, (pokeydiv)
 		ld	a, SIONORMAL
 togglebaud1:	ld	(pokeydiv), a
 		ret
-		push	af
-		ld	a, 'B'
-		call	serout
-		pop	af
-		call	serhex
-		jp	sercr
+;		push	af
+;		ld	a, 'B'
+;		call	serout
+;		pop	af
+;		call	serhex
+;		jp	sercr
 
 
 

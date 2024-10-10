@@ -307,7 +307,7 @@ DISKIO.MAC:
     64   000041 af              	XOR	A
     65   000042 d383            	OUT	(CTC3),A	;COUNT MOD 256
     66                          ;	DEC	A
-    67   000044 3ea0            	LD	A, 160
+    67   000044 3e8c            	LD	A, 140
     68   000046 32c9ff          	LD	(DRVTMR),A	;STOP DRIVES AFTER 255 INTERRUPTS
     69   000049 215100          	LD	HL,ACTIVTY
     70   00004c 2216ff          	LD	(CTCVEC+6),HL	;SET VECTOR TO ACTIVITY-CHECK ROUTINE
@@ -698,7 +698,7 @@ DISKIO.MAC:
    455                          
    456                          RESTORE:
    457   000240 cd2e02          	CALL	resetfdc
-   458   000243 3e03            	LD	A,RSTCMD+HLOAD+3
+   458   000243 3e01            	LD	A,RSTCMD+HLOAD+1
    459   000245 cd6103          	CALL	TYP1CMD		;DO RESTORE AT SLOWEST STEP RATE
    460   000248 ee04            	XOR	00000100B
    461                          ;	AND	10000100B
@@ -742,306 +742,309 @@ DISKIO.MAC:
    499   000277 85              	ADD	A,L
    500   000278 6f              	LD	L,A		;INDEX INTO STEP RATE TABLE FOR DRIVE
    501   000279 7e              	LD	A,(HL)
-   502   00027a e603            	AND	00000011B	;EXTRACT LOWER 2 BITS FOR STEP RATE
-   503   00027c f610            	OR	SKCMD+HLOAD	;MERGE WITH SEEK COMAND
-   504   00027e cd6103          	CALL	TYP1CMD		;DO SEEK WITH SPECIFIED STEP RATE
-   505   000281 7e              	LD	A,(HL)
-   506   000282 e6fc            	AND	11111100B	;EXTRACT UPPER 6 BITS FOR SETTLE TIME
-   507   000284 2600            	LD	H,0
-   508   000286 6f              	LD	L,A
-   509   000287 cd9103          	CALL	WAIT		;4..256 MILLISECOND HEAD SETTLING DELAY
-   510   00028a c9              	RET
-   511                          ;
-   512                          ;
-   513                          ;
+   502                          ;	AND	00000011B	;EXTRACT LOWER 2 BITS FOR STEP RATE
+   503   00027a 00              	nop
+   504   00027b 00              	nop
+   505                          ;	OR	SKCMD+HLOAD	;MERGE WITH SEEK COMAND
+   506   00027c 3e11            	ld	a, SKCMD+HLOAD+1
+   507   00027e cd6103          	CALL	TYP1CMD		;DO SEEK WITH SPECIFIED STEP RATE
+   508   000281 7e              	LD	A,(HL)
+   509   000282 e6fc            	AND	11111100B	;EXTRACT UPPER 6 BITS FOR SETTLE TIME
+   510   000284 2600            	LD	H,0
+   511   000286 6f              	LD	L,A
+   512   000287 cd9103          	CALL	WAIT		;4..256 MILLISECOND HEAD SETTLING DELAY
+   513   00028a c9              	RET
    514                          ;
-   515                          VERIFY:
-   516   00028b 3ec0            	LD	A,RIDCMD
-   517   00028d cd5803          	CALL	TYP2CMD		;READ NEXT ID MARK TO VERIFY SEEK
-   518                          ;	AND	10011000B	;WD1772, bit 7 reset by TYP2CMD!
-   519   000290 e618            	AND	00011000B	;WD1772, bit 7 reset by TYP2CMD!
-   520   000292 c8              	RET	Z		;EXIT IF ID MARK READ OK
-   521                          
-   522   000293 3a2fff          	LD	A,(OUTCPY)
-   523   000296 ee80            	XOR	10000000B	;COMPLIMENT DENSITY BIT OF DRIVE TYPE
-   524   000298 322fff          	LD	(OUTCPY),A
-   525   00029b d330            	OUT	(LATCH),A
-   526   00029d 213200          	LD	HL,50
-   527   0002a0 cd9103          	CALL	WAIT		;ALLOW 50 MS DELAY AFTER CLOCK SWITCH
-   528   0002a3 3ec0            	LD	A,RIDCMD
-   529   0002a5 cd5803          	CALL	TYP2CMD		;TRY AGAIN IN NEW DENSITY
-   530                          ;	AND	10011000B
-   531   0002a8 e618            	AND	00011000B
-   532   0002aa c9              	RET			;A=0 IF AN ID MARK WAS FOUND
-   533                          ;
-   534                          ;
-   535                          ;
+   515                          ;
+   516                          ;
+   517                          ;
+   518                          VERIFY:
+   519   00028b 3ec0            	LD	A,RIDCMD
+   520   00028d cd5803          	CALL	TYP2CMD		;READ NEXT ID MARK TO VERIFY SEEK
+   521                          ;	AND	10011000B	;WD1772, bit 7 reset by TYP2CMD!
+   522   000290 e618            	AND	00011000B	;WD1772, bit 7 reset by TYP2CMD!
+   523   000292 c8              	RET	Z		;EXIT IF ID MARK READ OK
+   524                          
+   525   000293 3a2fff          	LD	A,(OUTCPY)
+   526   000296 ee80            	XOR	10000000B	;COMPLIMENT DENSITY BIT OF DRIVE TYPE
+   527   000298 322fff          	LD	(OUTCPY),A
+   528   00029b d330            	OUT	(LATCH),A
+   529   00029d 213200          	LD	HL,50
+   530   0002a0 cd9103          	CALL	WAIT		;ALLOW 50 MS DELAY AFTER CLOCK SWITCH
+   531   0002a3 3ec0            	LD	A,RIDCMD
+   532   0002a5 cd5803          	CALL	TYP2CMD		;TRY AGAIN IN NEW DENSITY
+   533                          ;	AND	10011000B
+   534   0002a8 e618            	AND	00011000B
+   535   0002aa c9              	RET			;A=0 IF AN ID MARK WAS FOUND
    536                          ;
    537                          ;
    538                          ;
-   539                          RWDISK:				;A=1797 TYPE 2 COMMAND BYTE
-   540   0002ab 2a6600          	LD	HL,(NMIVEC)
-   541   0002ae e5              	PUSH	HL
-   542   0002af 2a6800          	LD	HL,(NMIVEC+2)
-   543   0002b2 e5              	PUSH	HL		;SAVE 4 BYTES AT NMI VECTOR
-   544   0002b3 21eda2          	LD	HL,0A2EDH	;LOAD HL WITH 'INI' OPCODE
-   545   0002b6 cb6f            	BIT	5,A		;TEST IF READ OR WRITE BEING DONE
-   546   0002b8 2801            	JR	Z,RW2		;JUMP IF COMMAND IS A READ
-   547   0002ba 24              	INC	H		;ELSE TRANSFORM 'INI' INTO 'OUTI'
-   548   0002bb 226600          RW2:	LD	(NMIVEC),HL
-   549   0002be 216800          	LD	HL,NMIVEC+2
-   550   0002c1 36c9            	LD	(HL),0C9H	;STORE 'RET' OPCODE AFTER INI/OUTI
-   551   0002c3 f3              	DI
-   552   0002c4 3ec7            	LD	A,11000111B
-   553   0002c6 d383            	OUT	(CTC3),A	;ARM CTC3 FOR COUNTER MODE INTERRUPT
-   554   0002c8 af              	XOR	A
-   555   0002c9 d383            	OUT	(CTC3),A	;COUNT 256 PULSES FROM CTC1
-   556   0002cb fb              	EI
-   557   0002cc dd6e04          	LD	L,(IX+DSKPTR)	;HL=DISK READ/WRITE DATA POINTER
-   558   0002cf dd6605          	LD	H,(IX+DSKPTR+1)
-   559   0002d2 dd4606          	LD	B,(IX+DSKAUX)	;B=SECTOR LENGTH COUNT (LSB)
-   560   0002d5 0e43            	LD	C,DATREG	;C=DISK DATA PORT#
-   561   0002d7 dd7e07          	LD	A,(IX+DSKAUX+1)
-   562   0002da cb3f            	SRL	A
-   563   0002dc 280d            	JR	Z,RW256		;JUMP IF BLOCKSIZE <= 256 BYTES
-   564   0002de cb3f            	SRL	A
-   565   0002e0 2806            	JR	Z,RW512		;JUMP IF BLOCKSIZE <= 512 BYTES
-   566   0002e2 76              RW1024:	HALT
-   567   0002e3 20fd            	JR	NZ,$-1
-   568   0002e5 76              	HALT
-   569   0002e6 20fd            	JR	NZ,$-1
-   570   0002e8 76              RW512:	HALT
-   571   0002e9 20fd            	JR	NZ,$-1
-   572   0002eb 76              RW256:	HALT
-   573   0002ec 20fd            	JR	NZ,$-1
-   574   0002ee db40            RWBUSY:	IN	A,(STSREG)
-   575   0002f0 cb47            	BIT	0,A
-   576   0002f2 20fa            	JR	NZ,RWBUSY	;LOOP TILL 1797 BUSY BIT GOES AWAY
-   577   0002f4 47              	ld	b,a
-   578   0002f5 cdbe03          	call	STOPTMR
-   579   0002f8 78              	ld	a,b
-   580   0002f9 e1              RWEXIT:	POP	HL
-   581   0002fa 226800          	LD	(NMIVEC+2),HL
-   582   0002fd e1              	POP	HL
-   583   0002fe 226600          	LD	(NMIVEC),HL	;RESTORE CODE AT NMI
-   584                          ;	AND	11111101B	;MASK FOR DISK ERRORS
-   585   000301 e67d            	AND	01111101B	;MASK FOR DISK ERRORS
-   586   000303 c9              	RET			;RETURN WITH DISK ERROR FLAGS SET
-   587                          ;
-   588                          ;
-   589                          ;
+   539                          ;
+   540                          ;
+   541                          ;
+   542                          RWDISK:				;A=1797 TYPE 2 COMMAND BYTE
+   543   0002ab 2a6600          	LD	HL,(NMIVEC)
+   544   0002ae e5              	PUSH	HL
+   545   0002af 2a6800          	LD	HL,(NMIVEC+2)
+   546   0002b2 e5              	PUSH	HL		;SAVE 4 BYTES AT NMI VECTOR
+   547   0002b3 21eda2          	LD	HL,0A2EDH	;LOAD HL WITH 'INI' OPCODE
+   548   0002b6 cb6f            	BIT	5,A		;TEST IF READ OR WRITE BEING DONE
+   549   0002b8 2801            	JR	Z,RW2		;JUMP IF COMMAND IS A READ
+   550   0002ba 24              	INC	H		;ELSE TRANSFORM 'INI' INTO 'OUTI'
+   551   0002bb 226600          RW2:	LD	(NMIVEC),HL
+   552   0002be 216800          	LD	HL,NMIVEC+2
+   553   0002c1 36c9            	LD	(HL),0C9H	;STORE 'RET' OPCODE AFTER INI/OUTI
+   554   0002c3 f3              	DI
+   555   0002c4 3ec7            	LD	A,11000111B
+   556   0002c6 d383            	OUT	(CTC3),A	;ARM CTC3 FOR COUNTER MODE INTERRUPT
+   557   0002c8 af              	XOR	A
+   558   0002c9 d383            	OUT	(CTC3),A	;COUNT 256 PULSES FROM CTC1
+   559   0002cb fb              	EI
+   560   0002cc dd6e04          	LD	L,(IX+DSKPTR)	;HL=DISK READ/WRITE DATA POINTER
+   561   0002cf dd6605          	LD	H,(IX+DSKPTR+1)
+   562   0002d2 dd4606          	LD	B,(IX+DSKAUX)	;B=SECTOR LENGTH COUNT (LSB)
+   563   0002d5 0e43            	LD	C,DATREG	;C=DISK DATA PORT#
+   564   0002d7 dd7e07          	LD	A,(IX+DSKAUX+1)
+   565   0002da cb3f            	SRL	A
+   566   0002dc 280d            	JR	Z,RW256		;JUMP IF BLOCKSIZE <= 256 BYTES
+   567   0002de cb3f            	SRL	A
+   568   0002e0 2806            	JR	Z,RW512		;JUMP IF BLOCKSIZE <= 512 BYTES
+   569   0002e2 76              RW1024:	HALT
+   570   0002e3 20fd            	JR	NZ,$-1
+   571   0002e5 76              	HALT
+   572   0002e6 20fd            	JR	NZ,$-1
+   573   0002e8 76              RW512:	HALT
+   574   0002e9 20fd            	JR	NZ,$-1
+   575   0002eb 76              RW256:	HALT
+   576   0002ec 20fd            	JR	NZ,$-1
+   577   0002ee db40            RWBUSY:	IN	A,(STSREG)
+   578   0002f0 cb47            	BIT	0,A
+   579   0002f2 20fa            	JR	NZ,RWBUSY	;LOOP TILL 1797 BUSY BIT GOES AWAY
+   580   0002f4 47              	ld	b,a
+   581   0002f5 cdbe03          	call	STOPTMR
+   582   0002f8 78              	ld	a,b
+   583   0002f9 e1              RWEXIT:	POP	HL
+   584   0002fa 226800          	LD	(NMIVEC+2),HL
+   585   0002fd e1              	POP	HL
+   586   0002fe 226600          	LD	(NMIVEC),HL	;RESTORE CODE AT NMI
+   587                          ;	AND	11111101B	;MASK FOR DISK ERRORS
+   588   000301 e67d            	AND	01111101B	;MASK FOR DISK ERRORS
+   589   000303 c9              	RET			;RETURN WITH DISK ERROR FLAGS SET
    590                          ;
-   591                          RECOVER:
-   592   000304 47              	LD	B,A
-   593   000305 e6e7            	AND	11100111B	;MASK OFF ALL BUT RNF/CRC ERROR BITS
-   594   000307 2808            	JR	Z,RECOV1	;JUMP IF ONE OF THOSE TWO WERE SET
-   595                          
-   596   000309 f5              	PUSH	AF
-   597   00030a cd8403          	CALL	FORCE		;RESET ERROR FLAGS IN 179X STATUS REG
-   598   00030d f1              	POP	AF
-   599                          ;	AND	11100001B	;CLEAR BITS ASSOCIATED WITH LOST DATA
-   600   00030e e661            	AND	01100001B	;CLEAR BITS ASSOCIATED WITH LOST DATA
-   601   000310 c9              	RET			;RETURN WITH ACC=0 IF RETRY TO BE DONE
-   602                          ;
-   603   000311 cb60            RECOV1:	BIT	4,B
-   604   000313 2023            	JR	NZ,RECOV3	;JUMP IF RECORD-NOT-FOUND ERROR
+   591                          ;
+   592                          ;
+   593                          ;
+   594                          RECOVER:
+   595   000304 47              	LD	B,A
+   596   000305 e6e7            	AND	11100111B	;MASK OFF ALL BUT RNF/CRC ERROR BITS
+   597   000307 2808            	JR	Z,RECOV1	;JUMP IF ONE OF THOSE TWO WERE SET
+   598                          
+   599   000309 f5              	PUSH	AF
+   600   00030a cd8403          	CALL	FORCE		;RESET ERROR FLAGS IN 179X STATUS REG
+   601   00030d f1              	POP	AF
+   602                          ;	AND	11100001B	;CLEAR BITS ASSOCIATED WITH LOST DATA
+   603   00030e e661            	AND	01100001B	;CLEAR BITS ASSOCIATED WITH LOST DATA
+   604   000310 c9              	RET			;RETURN WITH ACC=0 IF RETRY TO BE DONE
    605                          ;
-   606                          ;	ARRIVE HERE IF BAD CRC ERROR
-   607                          ;
-   608   000315 3a33ff          RECOV2:	LD	A,(RWMAX)
-   609   000318 21c6ff          	LD	HL,RWTRY
-   610   00031b 96              	SUB	(HL)		;COMPUTE HOW MANY RETRYS HAVE BEEN DONE
-   611   00031c c8              	RET	Z		;EXIT IF FIRST RETRY
-   612                          
-   613   00031d 3a2dff          	LD	A,(TRACK)	;ELSE PREPARE TO WIGGLE BACK AND FORTH
-   614   000320 47              	LD	B,A		; TO AN ADJACENT TRACK TO RE-CALIBRATE
-   615   000321 b7              	OR	A		; AND REMOVE POSSIBLE MEDIA CONTAMINANT
-   616   000322 2004            	JR	NZ,RCOV2A
-   617   000324 0e01            	LD	C, 1		;STEP TO TRACK#1 IF ON TRACK# 0
-   618   000326 1802            	JR	RCOV2B
-   619                          ;
-   620   000328 3d              RCOV2A:	DEC	A		;STEP TO NEXT OUTER TRACK
-   621   000329 4f              	LD	C,A
-   622   00032a c5              RCOV2B:	PUSH	BC
-   623   00032b cd6b02          	CALL	STEP		;STEP HEAD TO ADJACENT TRACK
-   624   00032e d1              	POP	DE
-   625   00032f 43              	LD	B,E		;EXCHANGE CONTENTS OF B AND C
-   626   000330 4a              	LD	C,D
-   627   000331 cd6b02          	CALL	STEP		;STEP BACK TO ORIGINAL TRACK
-   628   000334 cd8b02          	call	VERIFY
-   629   000337 c9              	ret			;allow retry successful read id
-   630                          ;
-   631                          ;	ARRIVE HERE IF RECORD-NOT-FOUND ERROR
-   632                          ;
-   633   000338 cd8b02          RECOV3:	call	VERIFY		;read an id mark to verify position
-   634   00033b 2012            	JR	NZ,RCOV4A	;RECALIBRATE IF VERIFY FAILS
-   635                          
-   636   00033d db42            	IN	A,(SECREG)	;LOAD A WITH CURENT TRACK# UNDER HEAD
-   637   00033f ddbe02          	CP	(IX+DSKTRK)
-   638   000342 200d            	JR	NZ,RCOV4B	;JUMP IF NOT ON CORRECT TRACK
-   639                          ;
-   640                          ;	ARRIVE HERE IF ON CORRECT TRACK
-   641                          ;
-   642   000344 3a33ff          	ld	a,(RWMAX)
-   643   000347 21c6ff          	ld	hl,RWTRY
-   644   00034a 96              	sub	(hl)		;test if this is first retry after rnf error
-   645   00034b c8              	ret	z
-   646                          
-   647   00034c 3e10            	ld	a,00010000b
-   648   00034e c9              	ret			;indicate permanent rnf error
-   649                          ;
-   650                          ;	ARRIVE HERE IF HEAD POSITION IS INCORRECT
-   651                          ;
-   652   00034f 3eff            RCOV4A:	LD	A,255		;SET A TO FORCE RESTORE BEFORE SEEK
-   653   000351 322dff          RCOV4B:	LD	(TRACK),A
-   654   000354 cdef01          	CALL	SEEKTRK		;SEEK TRACK# SPECIFIED IN IOCB
-   655   000357 c9              	RET
-   656                          ;
-   657                          ;
-   658                          ;
+   606   000311 cb60            RECOV1:	BIT	4,B
+   607   000313 2023            	JR	NZ,RECOV3	;JUMP IF RECORD-NOT-FOUND ERROR
+   608                          ;
+   609                          ;	ARRIVE HERE IF BAD CRC ERROR
+   610                          ;
+   611   000315 3a33ff          RECOV2:	LD	A,(RWMAX)
+   612   000318 21c6ff          	LD	HL,RWTRY
+   613   00031b 96              	SUB	(HL)		;COMPUTE HOW MANY RETRYS HAVE BEEN DONE
+   614   00031c c8              	RET	Z		;EXIT IF FIRST RETRY
+   615                          
+   616   00031d 3a2dff          	LD	A,(TRACK)	;ELSE PREPARE TO WIGGLE BACK AND FORTH
+   617   000320 47              	LD	B,A		; TO AN ADJACENT TRACK TO RE-CALIBRATE
+   618   000321 b7              	OR	A		; AND REMOVE POSSIBLE MEDIA CONTAMINANT
+   619   000322 2004            	JR	NZ,RCOV2A
+   620   000324 0e01            	LD	C, 1		;STEP TO TRACK#1 IF ON TRACK# 0
+   621   000326 1802            	JR	RCOV2B
+   622                          ;
+   623   000328 3d              RCOV2A:	DEC	A		;STEP TO NEXT OUTER TRACK
+   624   000329 4f              	LD	C,A
+   625   00032a c5              RCOV2B:	PUSH	BC
+   626   00032b cd6b02          	CALL	STEP		;STEP HEAD TO ADJACENT TRACK
+   627   00032e d1              	POP	DE
+   628   00032f 43              	LD	B,E		;EXCHANGE CONTENTS OF B AND C
+   629   000330 4a              	LD	C,D
+   630   000331 cd6b02          	CALL	STEP		;STEP BACK TO ORIGINAL TRACK
+   631   000334 cd8b02          	call	VERIFY
+   632   000337 c9              	ret			;allow retry successful read id
+   633                          ;
+   634                          ;	ARRIVE HERE IF RECORD-NOT-FOUND ERROR
+   635                          ;
+   636   000338 cd8b02          RECOV3:	call	VERIFY		;read an id mark to verify position
+   637   00033b 2012            	JR	NZ,RCOV4A	;RECALIBRATE IF VERIFY FAILS
+   638                          
+   639   00033d db42            	IN	A,(SECREG)	;LOAD A WITH CURENT TRACK# UNDER HEAD
+   640   00033f ddbe02          	CP	(IX+DSKTRK)
+   641   000342 200d            	JR	NZ,RCOV4B	;JUMP IF NOT ON CORRECT TRACK
+   642                          ;
+   643                          ;	ARRIVE HERE IF ON CORRECT TRACK
+   644                          ;
+   645   000344 3a33ff          	ld	a,(RWMAX)
+   646   000347 21c6ff          	ld	hl,RWTRY
+   647   00034a 96              	sub	(hl)		;test if this is first retry after rnf error
+   648   00034b c8              	ret	z
+   649                          
+   650   00034c 3e10            	ld	a,00010000b
+   651   00034e c9              	ret			;indicate permanent rnf error
+   652                          ;
+   653                          ;	ARRIVE HERE IF HEAD POSITION IS INCORRECT
+   654                          ;
+   655   00034f 3eff            RCOV4A:	LD	A,255		;SET A TO FORCE RESTORE BEFORE SEEK
+   656   000351 322dff          RCOV4B:	LD	(TRACK),A
+   657   000354 cdef01          	CALL	SEEKTRK		;SEEK TRACK# SPECIFIED IN IOCB
+   658   000357 c9              	RET
    659                          ;
-   660                          ;	EXECUTE TYPE 2 COMMAND (READ/WRITE/READ ID) WITH TIMEOUT
+   660                          ;
    661                          ;
-   662                          TYP2CMD:
-   663   000358 cd7c03          	CALL	CMDOUT		;ISSUE COMMAND
-   664   00035b c5              	PUSH	BC
-   665   00035c 016a18          	LD	BC,6250		;500,000/80 FOR ONE HALF SECOND DELAY
-   666   00035f 1807            	JR	TPCMD2
-   667                          ;
-   668                          ;
-   669                          ;	EXECUTE TYPE 1 COMMAND (SEEK/STEP/RESTORE)
+   662                          ;
+   663                          ;	EXECUTE TYPE 2 COMMAND (READ/WRITE/READ ID) WITH TIMEOUT
+   664                          ;
+   665                          TYP2CMD:
+   666   000358 cd7c03          	CALL	CMDOUT		;ISSUE COMMAND
+   667   00035b c5              	PUSH	BC
+   668   00035c 016a18          	LD	BC,6250		;500,000/80 FOR ONE HALF SECOND DELAY
+   669   00035f 1807            	JR	TPCMD2
    670                          ;
-   671                          TYP1CMD:
-   672   000361 cd7c03          	CALL	CMDOUT
-   673   000364 c5              	PUSH	BC
-   674   000365 017c92          	LD	BC,37500	;3,000,000/80 FOR 3 SECONDS DELAY
-   675   000368 db40            TPCMD2:	IN	A,(STSREG)
-   676   00036a cb47            	BIT	0,A
-   677   00036c 280a            	JR	Z,TPCMD3	;EXIT IF BUSY BIT GOES AWAY
-   678                          
-   679   00036e cd7e03          	CALL	CMDT1		;DELAY 56 MICROSECONDS
-   680   000371 0b              	DEC	BC
-   681   000372 78              	LD	A,B
-   682   000373 b1              	OR	C
-   683   000374 20f2            	JR	NZ,TPCMD2	;LOOP TAKES 80 MICROSECONDS
-   684                          
-   685   000376 3e10            	LD	A,00010000B
-   686                          TPCMD3:
-   687   000378 cbbf            	res	7, a		;reset WD1797: drive not ready, WD1772: motor on!
-   688                          	;LD	B,A
-   689                          	;CALL	FORCE1
-   690                          	;LD	A,B
-   691   00037a c1              	POP	BC
-   692   00037b c9              	RET
-   693                          ;
-   694                          ;
-   695                          ;
-   696                          CMDOUT:
-   697   00037c d340            	OUT	(CMDREG),A	;OUTPUT DISK CONTROLLER COMMAND BYTE
-   698   00037e 3e0e            CMDT1:	LD	A,14
-   699   000380 3d              CMDT2:	DEC	A
-   700   000381 20fd            	JR	NZ,CMDT2	;DELAY 56 MICROSECONDS
-   701   000383 c9              	RET
-   702                          ;
-   703                          ;
-   704                          ;
+   671                          ;
+   672                          ;	EXECUTE TYPE 1 COMMAND (SEEK/STEP/RESTORE)
+   673                          ;
+   674                          TYP1CMD:
+   675   000361 cd7c03          	CALL	CMDOUT
+   676   000364 c5              	PUSH	BC
+   677   000365 017c92          	LD	BC,37500	;3,000,000/80 FOR 3 SECONDS DELAY
+   678   000368 db40            TPCMD2:	IN	A,(STSREG)
+   679   00036a cb47            	BIT	0,A
+   680   00036c 280a            	JR	Z,TPCMD3	;EXIT IF BUSY BIT GOES AWAY
+   681                          
+   682   00036e cd7e03          	CALL	CMDT1		;DELAY 56 MICROSECONDS
+   683   000371 0b              	DEC	BC
+   684   000372 78              	LD	A,B
+   685   000373 b1              	OR	C
+   686   000374 20f2            	JR	NZ,TPCMD2	;LOOP TAKES 80 MICROSECONDS
+   687                          
+   688   000376 3e10            	LD	A,00010000B
+   689                          TPCMD3:
+   690   000378 cbbf            	res	7, a		;reset WD1797: drive not ready, WD1772: motor on!
+   691                          	;LD	B,A
+   692                          	;CALL	FORCE1
+   693                          	;LD	A,B
+   694   00037a c1              	POP	BC
+   695   00037b c9              	RET
+   696                          ;
+   697                          ;
+   698                          ;
+   699                          CMDOUT:
+   700   00037c d340            	OUT	(CMDREG),A	;OUTPUT DISK CONTROLLER COMMAND BYTE
+   701   00037e 3e0e            CMDT1:	LD	A,14
+   702   000380 3d              CMDT2:	DEC	A
+   703   000381 20fd            	JR	NZ,CMDT2	;DELAY 56 MICROSECONDS
+   704   000383 c9              	RET
    705                          ;
-   706   000384 db41            FORCE:	IN	a, (TRKREG)
-   707   000386 d343            	OUT	(DATREG), a
-   708   000388 3e18            	LD	A,SKCMD+8	;disable spinup HLOAD
-   709   00038a 18d5            	jr	TYP1CMD		;CLEAR 179X AND LATCH READY/HLD/TK0 ETC
-   710                          ;	IN	A,(STSREG)	;READ STATUS REGISTER CONTENTS
-   711                          ;	RET
-   712                          ;
-   713                          ;
-   714                          ;
+   706                          ;
+   707                          ;
+   708                          ;
+   709   000384 db41            FORCE:	IN	a, (TRKREG)
+   710   000386 d343            	OUT	(DATREG), a
+   711   000388 3e18            	LD	A,SKCMD+8	;disable spinup HLOAD
+   712   00038a 18d5            	jr	TYP1CMD		;CLEAR 179X AND LATCH READY/HLD/TK0 ETC
+   713                          ;	IN	A,(STSREG)	;READ STATUS REGISTER CONTENTS
+   714                          ;	RET
    715                          ;
    716                          ;
-   717                          HLDWAIT:
-   718   00038c 2a32ff          	LD	HL,(HLDTIM)	;LOAD HL WITH HEAD LOAD DELAY
-   719   00038f 2600            	LD	H,0		;RANGE 1..256 MILLISECONDS
-   720                          
-   721   000391 af              WAIT:	XOR	A
-   722   000392 3d              WAIT2:	DEC	A
-   723   000393 20fd            	JR	NZ,WAIT2	;DELAY 1 MILLISECOND
-   724   000395 2b              	DEC	HL
-   725   000396 7c              	LD	A,H
-   726   000397 b5              	OR	L
-   727   000398 20f7            	JR	NZ,WAIT		;LOOP UNTIL HL=0
-   728   00039a c9              	RET
-   729                          ;
-   730                          ;
-   731                          ;
-   732                          ;	... CTC INTERRUPT CONTROL ROUTINES FOR DISK HANDLER ...
+   717                          ;
+   718                          ;
+   719                          ;
+   720                          HLDWAIT:
+   721   00038c 2a32ff          	LD	HL,(HLDTIM)	;LOAD HL WITH HEAD LOAD DELAY
+   722   00038f 2600            	LD	H,0		;RANGE 1..256 MILLISECONDS
+   723                          
+   724   000391 af              WAIT:	XOR	A
+   725   000392 3d              WAIT2:	DEC	A
+   726   000393 20fd            	JR	NZ,WAIT2	;DELAY 1 MILLISECOND
+   727   000395 2b              	DEC	HL
+   728   000396 7c              	LD	A,H
+   729   000397 b5              	OR	L
+   730   000398 20f7            	JR	NZ,WAIT		;LOOP UNTIL HL=0
+   731   00039a c9              	RET
+   732                          ;
    733                          ;
    734                          ;
-   735                          ;
-   736                          WATCHDOG:
-   737   00039b 3ed0            	LD	A,FINCMD
-   738   00039d d340            	OUT	(CMDREG),A	;ABORT DISK CONTROLLER OPERATION
-   739   00039f 3e01            	LD	A,00000001B
-   740   0003a1 d383            	OUT	(CTC3),A	;RESET INTERRUPT FROM CTC3
-   741   0003a3 21f902          	LD	HL,RWEXIT
-   742   0003a6 e3              	EX	(SP),HL		;TOSS RETURN ADDRESS AND PLANT FAKE ONE
-   743   0003a7 3e10            	LD	A,00010000B
-   744   0003a9 b7              	OR	A		;INDICATE RECORD-NOT-FOUND ERROR
-   745   0003aa fb              	EI
-   746   0003ab ed4d            	RETI			;INSURE CTC IRQ LOGIC GETS RESTORED
-   747                          ;
-   748                          ;
-   749                          ;
+   735                          ;	... CTC INTERRUPT CONTROL ROUTINES FOR DISK HANDLER ...
+   736                          ;
+   737                          ;
+   738                          ;
+   739                          WATCHDOG:
+   740   00039b 3ed0            	LD	A,FINCMD
+   741   00039d d340            	OUT	(CMDREG),A	;ABORT DISK CONTROLLER OPERATION
+   742   00039f 3e01            	LD	A,00000001B
+   743   0003a1 d383            	OUT	(CTC3),A	;RESET INTERRUPT FROM CTC3
+   744   0003a3 21f902          	LD	HL,RWEXIT
+   745   0003a6 e3              	EX	(SP),HL		;TOSS RETURN ADDRESS AND PLANT FAKE ONE
+   746   0003a7 3e10            	LD	A,00010000B
+   747   0003a9 b7              	OR	A		;INDICATE RECORD-NOT-FOUND ERROR
+   748   0003aa fb              	EI
+   749   0003ab ed4d            	RETI			;INSURE CTC IRQ LOGIC GETS RESTORED
    750                          ;
    751                          ;
-   752                          ;	... MILLISECOND TIMER INTERRUPT ROUTINES ...
+   752                          ;
    753                          ;
    754                          ;
-   755                          STARTMR:
-   756   0003ad f3              	DI
-   757   0003ae 3e87            	LD	A,10000111B
-   758   0003b0 d383            	OUT	(CTC3),A
-   759   0003b2 3efa            	LD	A,250
-   760   0003b4 d383            	OUT	(CTC3),A
-   761   0003b6 21c503          	LD	HL,TMRIRQ
-   762   0003b9 2216ff          	LD	(CTCVEC+6),HL
-   763   0003bc fb              	EI
-   764   0003bd c9              	RET
-   765                          ;
-   766                          ;
-   767                          ;
-   768                          STOPTMR:
-   769   0003be f3              	DI
-   770   0003bf 3e01            	LD	A,00000001B
-   771   0003c1 d383            	OUT	(CTC3),A
-   772   0003c3 fb              	EI
-   773   0003c4 c9              	RET
-   774                          ;
-   775                          ;
-   776                          ;
-   777                          TMRIRQ:
-   778   0003c5 e5              	PUSH	HL
-   779   0003c6 fb              	EI
-   780   0003c7 2ac7ff          	LD	HL,(TICKS)
-   781   0003ca 23              	INC	HL		;BUMP FREE RUNING MILLISECOND COUNTER
-   782   0003cb 22c7ff          	LD	(TICKS),HL
-   783   0003ce e1              	POP	HL
-   784   0003cf ed4d            	RETI
-   785                          ;
-   786                          ;
-   787   0003d1 00              	nop
-   788   0003d2 00              	nop
-   789   0003d3 00              	nop
-   790   0003d4 00              	nop
-   791   0003d5 00              	nop
-   792   0003d6 00              	nop
-   793   0003d7 00              	nop
-   794   0003d8 00              	nop
-   795   0003d9 00              	nop
-   796   0003da 00              	nop
-   797   0003db 00              	nop
-   798   0003dc 00              	nop
-   799   0003dd 00              	nop
-   800                          
-   801                          
+   755                          ;	... MILLISECOND TIMER INTERRUPT ROUTINES ...
+   756                          ;
+   757                          ;
+   758                          STARTMR:
+   759   0003ad f3              	DI
+   760   0003ae 3e87            	LD	A,10000111B
+   761   0003b0 d383            	OUT	(CTC3),A
+   762   0003b2 3efa            	LD	A,250
+   763   0003b4 d383            	OUT	(CTC3),A
+   764   0003b6 21c503          	LD	HL,TMRIRQ
+   765   0003b9 2216ff          	LD	(CTCVEC+6),HL
+   766   0003bc fb              	EI
+   767   0003bd c9              	RET
+   768                          ;
+   769                          ;
+   770                          ;
+   771                          STOPTMR:
+   772   0003be f3              	DI
+   773   0003bf 3e01            	LD	A,00000001B
+   774   0003c1 d383            	OUT	(CTC3),A
+   775   0003c3 fb              	EI
+   776   0003c4 c9              	RET
+   777                          ;
+   778                          ;
+   779                          ;
+   780                          TMRIRQ:
+   781   0003c5 e5              	PUSH	HL
+   782   0003c6 fb              	EI
+   783   0003c7 2ac7ff          	LD	HL,(TICKS)
+   784   0003ca 23              	INC	HL		;BUMP FREE RUNING MILLISECOND COUNTER
+   785   0003cb 22c7ff          	LD	(TICKS),HL
+   786   0003ce e1              	POP	HL
+   787   0003cf ed4d            	RETI
+   788                          ;
+   789                          ;
+   790   0003d1 00              	nop
+   791   0003d2 00              	nop
+   792   0003d3 00              	nop
+   793   0003d4 00              	nop
+   794   0003d5 00              	nop
+   795   0003d6 00              	nop
+   796   0003d7 00              	nop
+   797   0003d8 00              	nop
+   798   0003d9 00              	nop
+   799   0003da 00              	nop
+   800   0003db 00              	nop
+   801   0003dc 00              	nop
+   802   0003dd 00              	nop
+   803                          
+   804                          
 rolli-f000.asm:
     38                          		include	"minimon.mac"
 minimon.mac:
@@ -3062,12 +3065,12 @@ FORMAT.MAC:
     99   000d4e 3a2fff          	ld	a,(OUTCPY)
    100   000d51 e620            	and	00100000b
    101   000d53 3e80            	ld	a,RDCMD		;determine if reading side 0 or 1
-   102                          ;	jr	z,form51
-   103                          ;	set	1,a		;WD1772 no side-no in cmd
-   104   000d55 00              	nop
-   105   000d56 00              	nop
-   106   000d57 00              	nop
-   107   000d58 00              	nop
+   102   000d55 2802            	jr	z,form51
+   103   000d57 cbcf            	set	1,a		;WD1772 no side-no in cmd
+   104                          ;	nop
+   105                          ;	nop
+   106                          ;	nop
+   107                          ;	nop
    108   000d59 cd5803          form51:	call	TYP2CMD		;read sector discarding the data
    109   000d5c e698            	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
    110   000d5e 2814            	JR	Z,FORM6		;JUMP IF SECTOR READ OK

@@ -99,12 +99,8 @@ FORM5:	LD	A,(IX)
 	ld	a,(OUTCPY)
 	and	00100000b
 	ld	a,RDCMD		;determine if reading side 0 or 1
-;	jr	z,form51
-;	set	1,a		;WD1772 no side-no in cmd
-	nop
-	nop
-	nop
-	nop
+	jr	z,form51
+	set	1,a		;WD1772 no side-no in cmd (I leave it there, doesn't seem to matter)
 form51:	call	TYP2CMD		;read sector discarding the data
 	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
 	JR	Z,FORM6		;JUMP IF SECTOR READ OK

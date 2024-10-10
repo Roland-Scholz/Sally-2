@@ -31,7 +31,8 @@ CLK8.d  =>
     !CLK8
 
 FDCCLK =>
-    CLK8
+    !BS & CLK16A
+  # BS & CLK8
 
 !RAMCEN =>
     A15 & !MEMREQ
