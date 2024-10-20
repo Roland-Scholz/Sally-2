@@ -207,8 +207,27 @@ code8000:	ld	a, 1
 
 code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
-	
+
+;		call	sercr		
+;		ld	hl, 0ec00h
+;		ld	b, 022h
+;main1:		ld	a, (hl)
+;		inc	hl
+;		call	serhex
+;		call	serspace
+;		djnz	main1
+;		call	sercr
+		
+;		call	coninit
+
 main:
+;		call	conin
+;		ld	a, 'A'
+;		call	serout
+;		ld	c, a
+;		call	conout
+;		jp	main
+		
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
@@ -575,6 +594,8 @@ cmdwait:	ld	a, (CMDFLG)
 					
 ;		call	sercmd				;5-byte command frame
 
+
+		
 		ld	a, (CMDFLG)
 ;		call	serhex
                 cp	1		
@@ -661,7 +682,8 @@ rxblock:	ld	a, (pokeydiv)			;is fast?
 		ld	c, d				;checksum in c
 		ret
 
-rxblock1:	ld	bc, 0				;no, normal speed
+rxblock1:
+		ld	bc, 0				;no, normal speed
 		jp	0f707h
 
 ;
@@ -801,7 +823,7 @@ serdump1:	ld	a, (hl)
 		pop	af
 		pop	hl
 		ret
-		
+
 ;--------------------------------------------------
 ; RS232 <space>
 ;--------------------------------------------------

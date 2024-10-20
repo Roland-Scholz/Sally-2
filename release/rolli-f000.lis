@@ -1976,9 +1976,9 @@ ATARI.MAC:
     44   00079c ed52            	SBC	HL,DE
     45   00079e 280c            	JR	Z,MAIN		;JUMP IF 16K MEMORY SIZE MACHINE
     46                          
-    47   0007a0 210022          	LD	HL, 02200h	;was 0000h, now 0800h+26*256 track buffer
+    47   0007a0 210022          	LD	HL, 02200h	;was 0000h, now 0800h+26*256 track buffer = 2200h
     48   0007a3 224bff          	LD	(PBASE),HL	;ELSE SETUP FOR 48K PRINTER BUFFER
-    49   0007a6 21ffbf          	LD	HL,0BFFFH
+    49   0007a6 21ff9d          	LD	HL,09DFFH	;bfffh - 2200h = 9dffh
     50   0007a9 224dff          	LD	(PSIZE),HL
     51                          
     52   0007ac cdd108          MAIN:	CALL	SPOOLER		;KEEP BACKGROUND PRINTING GOING
@@ -3066,276 +3066,272 @@ FORMAT.MAC:
    100   000d51 e620            	and	00100000b
    101   000d53 3e80            	ld	a,RDCMD		;determine if reading side 0 or 1
    102   000d55 2802            	jr	z,form51
-   103   000d57 cbcf            	set	1,a		;WD1772 no side-no in cmd
-   104                          ;	nop
-   105                          ;	nop
-   106                          ;	nop
-   107                          ;	nop
-   108   000d59 cd5803          form51:	call	TYP2CMD		;read sector discarding the data
-   109   000d5c e698            	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
-   110   000d5e 2814            	JR	Z,FORM6		;JUMP IF SECTOR READ OK
-   111                          
-   112   000d60 e680            	AND	10000000B
-   113   000d62 2036            	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
-   114   000d64 e5              	PUSH	HL
-   115   000d65 c5              	PUSH	BC
-   116   000d66 01fdc2          	LD	BC,IOBUFF+LEN-3
-   117   000d69 b7              	OR	A
-   118   000d6a ed42            	SBC	HL,BC		;TEST IF CA-CA SECTOR LIST IS FULL
-   119   000d6c c1              	POP	BC
-   120   000d6d e1              	POP	HL
-   121   000d6e 3004            	JR	NC,FORM6	;SKIP IF NO MORE ROOM
-   122   000d70 73              	LD	(HL),E
-   123   000d71 23              	INC	HL
-   124   000d72 72              	LD	(HL),D
-   125   000d73 23              	INC	HL		;STORE BAD SECTOR NUMBER
-   126   000d74 13              FORM6:	INC	DE
-   127   000d75 10d0            	DJNZ	FORM5
-   128   000d77 ed53bfff        	LD	(SEQNUM),DE	;STORE UPDATED ERROR TRACE STUFF
-   129   000d7b 22c1ff          	LD	(SEQPTR),HL
-   130   000d7e 3a2fff          	ld	a,(OUTCPY)
-   131   000d81 e620            	and	00100000b
-   132   000d83 c2ff0c          	jp	nz,FORM3A	;go back and do side 0 if on side 1 now
-   133   000d86 3a2dff          	LD	A,(TRACK)
-   134   000d89 3c              	INC	A
-   135   000d8a 21beff          	ld	hl,tracks
-   136   000d8d be              	CP	(HL)
-   137   000d8e daf40c          	JP	C,FORM3		;FORMAT UP TO LAST TRACK ON DISK
-   138                          
-   139   000d91 2ac1ff          	LD	HL,(SEQPTR)
-   140   000d94 36ff            	LD	(HL),255	;STORE TERMINATOR ON CA-CA BUFFER
-   141   000d96 23              	INC	HL
-   142   000d97 36ff            	LD	(HL),255
-   143   000d99 af              	XOR	A		;INDICATE FORMAT COMPLETED
-   144   000d9a f5              FORMX:	PUSH	AF
-   145   000d9b 3eff            	LD	A,255
-   146   000d9d 322dff          	LD	(TRACK),A
-   147   000da0 d341            	OUT	(TRKREG),A	;FORCE DISK HANDLER TO RECALIBRATE
-   148   000da2 f1              	POP	AF
-   149   000da3 c9              	RET			;RETURN COMPLETION STATUS IN A
-   150                          ;
+   103   000d57 cbcf            	set	1,a		;WD1772 no side-no in cmd (I leave it there, doesn't seem to matter)
+   104   000d59 cd5803          form51:	call	TYP2CMD		;read sector discarding the data
+   105   000d5c e698            	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
+   106   000d5e 2814            	JR	Z,FORM6		;JUMP IF SECTOR READ OK
+   107                          
+   108   000d60 e680            	AND	10000000B
+   109   000d62 2036            	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
+   110   000d64 e5              	PUSH	HL
+   111   000d65 c5              	PUSH	BC
+   112   000d66 01fdc2          	LD	BC,IOBUFF+LEN-3
+   113   000d69 b7              	OR	A
+   114   000d6a ed42            	SBC	HL,BC		;TEST IF CA-CA SECTOR LIST IS FULL
+   115   000d6c c1              	POP	BC
+   116   000d6d e1              	POP	HL
+   117   000d6e 3004            	JR	NC,FORM6	;SKIP IF NO MORE ROOM
+   118   000d70 73              	LD	(HL),E
+   119   000d71 23              	INC	HL
+   120   000d72 72              	LD	(HL),D
+   121   000d73 23              	INC	HL		;STORE BAD SECTOR NUMBER
+   122   000d74 13              FORM6:	INC	DE
+   123   000d75 10d0            	DJNZ	FORM5
+   124   000d77 ed53bfff        	LD	(SEQNUM),DE	;STORE UPDATED ERROR TRACE STUFF
+   125   000d7b 22c1ff          	LD	(SEQPTR),HL
+   126   000d7e 3a2fff          	ld	a,(OUTCPY)
+   127   000d81 e620            	and	00100000b
+   128   000d83 c2ff0c          	jp	nz,FORM3A	;go back and do side 0 if on side 1 now
+   129   000d86 3a2dff          	LD	A,(TRACK)
+   130   000d89 3c              	INC	A
+   131   000d8a 21beff          	ld	hl,tracks
+   132   000d8d be              	CP	(HL)
+   133   000d8e daf40c          	JP	C,FORM3		;FORMAT UP TO LAST TRACK ON DISK
+   134                          
+   135   000d91 2ac1ff          	LD	HL,(SEQPTR)
+   136   000d94 36ff            	LD	(HL),255	;STORE TERMINATOR ON CA-CA BUFFER
+   137   000d96 23              	INC	HL
+   138   000d97 36ff            	LD	(HL),255
+   139   000d99 af              	XOR	A		;INDICATE FORMAT COMPLETED
+   140   000d9a f5              FORMX:	PUSH	AF
+   141   000d9b 3eff            	LD	A,255
+   142   000d9d 322dff          	LD	(TRACK),A
+   143   000da0 d341            	OUT	(TRKREG),A	;FORCE DISK HANDLER TO RECALIBRATE
+   144   000da2 f1              	POP	AF
+   145   000da3 c9              	RET			;RETURN COMPLETION STATUS IN A
+   146                          ;
+   147                          ;
+   148                          ;
+   149                          ;
+   150                          ;	... SUBROUTINE TO BUILD IMAGE OF FORMATTED TRACK ...
    151                          ;
-   152                          ;
-   153                          ;
-   154                          ;	... SUBROUTINE TO BUILD IMAGE OF FORMATTED TRACK ...
-   155                          ;
-   156                          ;	PARAMETERS ARE:  IX ....... (POINTER TO FORMAT PARAMETERS)
-   157                          ;			 IY ....... (TABLE OF SECTOR NUMBERS)
-   158                          ;			 TRKPTR ... (POINTER TO TRACK DATA BUFFER)
-   159                          ;			 TRACK .... (TRACK NUMBER)
-   160                          ;			 NSECTS ... (NUMBER OF SECTORS)
-   161                          ;			 sides .... (copy of 'nsides' param)
-   162                          ;
-   163                          BUILD:
-   164   000da4 3abaff          	LD	A,(NSECTS)
-   165   000da7 4f              	LD	C,A
-   166   000da8 dde5            	PUSH	IX
-   167   000daa e1              	POP	HL
-   168   000dab 46              	LD	B,(HL)		;LOAD B WITH # OF FIELDS IN PREAMBLE
-   169   000dac 23              	INC	HL
-   170   000dad ed5bc3ff        	LD	DE,(TRKPTR)
-   171   000db1 cd0b0e          BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
-   172   000db4 10fb            	DJNZ	BUILD1
-   173                          
-   174   000db6 46              	LD	B,(HL)		;LOAD B WITH NUMBER OF ITEMS IN SECTOR
-   175   000db7 23              	INC	HL
-   176   000db8 e5              	PUSH	HL
-   177   000db9 dde1            	POP	IX		;IX POINTS TO START OF SECTOR POOP
-   178   000dbb 3a2dff          BUILD3:	LD	A,(TRACK)
-   179   000dbe dd7707          	LD	(IX+7),A	;STORE TRACK# FOR TRACK BEING FORMATTED
-   180   000dc1 3a2fff          	ld	a,(OUTCPY)
-   181   000dc4 e620            	and	00100000b
-   182   000dc6 3e00            	ld	a,0
-   183   000dc8 2801            	jr	z,bild31	;jump if formatting side 0
-   184   000dca 3c              	inc	a
-   185   000dcb dd7709          bild31:	ld	(ix+9),a	;store side# in id
-   186   000dce fd7e00          	LD	A,(IY)
-   187   000dd1 fd23            	INC	IY
-   188   000dd3 dd770b          	LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
-   189                          
-   190   000dd6 dde5            	PUSH	IX
-   191   000dd8 e1              	POP	HL		;POINT HL TO SECTOR POOP
-   192   000dd9 c5              	PUSH	BC
-   193   000dda cd0b0e          BUILD4:	CALL	INSERT
-   194   000ddd 10fb            	DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
-   195                          
-   196   000ddf dd7e0d          	LD	A,(IX+13)
-   197   000de2 cdcd0a          	call	getsize		;compute sector size in bytes
-   198   000de5 3eff            BUILD6:	ld	a,0ffh
-   199   000de7 12              	ld	(de),a		;fill sector data with ff's
-   200   000de8 13              	INC	DE
-   201   000de9 0b              	DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
-   202   000dea 78              	LD	A,B
-   203   000deb b1              	OR	C
-   204   000dec 20f7            	JR	NZ,BUILD6
-   205                          
-   206   000dee 46              	LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
-   207   000def 23              	INC	HL
-   208   000df0 cd0b0e          BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
-   209   000df3 10fb            	DJNZ	BUILD7
-   210   000df5 c1              	POP	BC
-   211                          
-   212   000df6 0d              	DEC	C
-   213   000df7 20c2            	JR	NZ,BUILD3
-   214                          
-   215   000df9 2ac3ff          	LD	HL,(TRKPTR)
-   216   000dfc 01d827          	LD	BC,10200
-   217   000dff 09              	ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
-   218   000e00 ed52            	SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
-   219   000e02 44              	LD	B,H
-   220   000e03 4d              	LD	C,L
-   221   000e04 62              	LD	H,D
-   222   000e05 6b              	LD	L,E
-   223   000e06 13              	INC	DE
-   224   000e07 77              	LD	(HL),A
-   225   000e08 edb0            	LDIR			;FILL REST OF BUFFER
-   226   000e0a c9              	RET
-   227                          ;
-   228                          ;
-   229                          ;
-   230   000e0b c5              INSERT:	PUSH	BC
-   231   000e0c 46              	LD	B,(HL)
-   232   000e0d 23              	INC	HL
-   233   000e0e 7e              	LD	A,(HL)
-   234   000e0f 23              	INC	HL
-   235   000e10 12              INS2:	LD	(DE),A
-   236   000e11 13              	INC	DE
-   237   000e12 10fc            	DJNZ	INS2
-   238   000e14 c1              	POP	BC
-   239   000e15 c9              	RET
-   240                          ;
+   152                          ;	PARAMETERS ARE:  IX ....... (POINTER TO FORMAT PARAMETERS)
+   153                          ;			 IY ....... (TABLE OF SECTOR NUMBERS)
+   154                          ;			 TRKPTR ... (POINTER TO TRACK DATA BUFFER)
+   155                          ;			 TRACK .... (TRACK NUMBER)
+   156                          ;			 NSECTS ... (NUMBER OF SECTORS)
+   157                          ;			 sides .... (copy of 'nsides' param)
+   158                          ;
+   159                          BUILD:
+   160   000da4 3abaff          	LD	A,(NSECTS)
+   161   000da7 4f              	LD	C,A
+   162   000da8 dde5            	PUSH	IX
+   163   000daa e1              	POP	HL
+   164   000dab 46              	LD	B,(HL)		;LOAD B WITH # OF FIELDS IN PREAMBLE
+   165   000dac 23              	INC	HL
+   166   000dad ed5bc3ff        	LD	DE,(TRKPTR)
+   167   000db1 cd0b0e          BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
+   168   000db4 10fb            	DJNZ	BUILD1
+   169                          
+   170   000db6 46              	LD	B,(HL)		;LOAD B WITH NUMBER OF ITEMS IN SECTOR
+   171   000db7 23              	INC	HL
+   172   000db8 e5              	PUSH	HL
+   173   000db9 dde1            	POP	IX		;IX POINTS TO START OF SECTOR POOP
+   174   000dbb 3a2dff          BUILD3:	LD	A,(TRACK)
+   175   000dbe dd7707          	LD	(IX+7),A	;STORE TRACK# FOR TRACK BEING FORMATTED
+   176   000dc1 3a2fff          	ld	a,(OUTCPY)
+   177   000dc4 e620            	and	00100000b
+   178   000dc6 3e00            	ld	a,0
+   179   000dc8 2801            	jr	z,bild31	;jump if formatting side 0
+   180   000dca 3c              	inc	a
+   181   000dcb dd7709          bild31:	ld	(ix+9),a	;store side# in id
+   182   000dce fd7e00          	LD	A,(IY)
+   183   000dd1 fd23            	INC	IY
+   184   000dd3 dd770b          	LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
+   185                          
+   186   000dd6 dde5            	PUSH	IX
+   187   000dd8 e1              	POP	HL		;POINT HL TO SECTOR POOP
+   188   000dd9 c5              	PUSH	BC
+   189   000dda cd0b0e          BUILD4:	CALL	INSERT
+   190   000ddd 10fb            	DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
+   191                          
+   192   000ddf dd7e0d          	LD	A,(IX+13)
+   193   000de2 cdcd0a          	call	getsize		;compute sector size in bytes
+   194   000de5 3eff            BUILD6:	ld	a,0ffh
+   195   000de7 12              	ld	(de),a		;fill sector data with ff's
+   196   000de8 13              	INC	DE
+   197   000de9 0b              	DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
+   198   000dea 78              	LD	A,B
+   199   000deb b1              	OR	C
+   200   000dec 20f7            	JR	NZ,BUILD6
+   201                          
+   202   000dee 46              	LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
+   203   000def 23              	INC	HL
+   204   000df0 cd0b0e          BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
+   205   000df3 10fb            	DJNZ	BUILD7
+   206   000df5 c1              	POP	BC
+   207                          
+   208   000df6 0d              	DEC	C
+   209   000df7 20c2            	JR	NZ,BUILD3
+   210                          
+   211   000df9 2ac3ff          	LD	HL,(TRKPTR)
+   212   000dfc 01d827          	LD	BC,10200
+   213   000dff 09              	ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
+   214   000e00 ed52            	SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
+   215   000e02 44              	LD	B,H
+   216   000e03 4d              	LD	C,L
+   217   000e04 62              	LD	H,D
+   218   000e05 6b              	LD	L,E
+   219   000e06 13              	INC	DE
+   220   000e07 77              	LD	(HL),A
+   221   000e08 edb0            	LDIR			;FILL REST OF BUFFER
+   222   000e0a c9              	RET
+   223                          ;
+   224                          ;
+   225                          ;
+   226   000e0b c5              INSERT:	PUSH	BC
+   227   000e0c 46              	LD	B,(HL)
+   228   000e0d 23              	INC	HL
+   229   000e0e 7e              	LD	A,(HL)
+   230   000e0f 23              	INC	HL
+   231   000e10 12              INS2:	LD	(DE),A
+   232   000e11 13              	INC	DE
+   233   000e12 10fc            	DJNZ	INS2
+   234   000e14 c1              	POP	BC
+   235   000e15 c9              	RET
+   236                          ;
+   237                          ;
+   238                          ;
+   239                          ;
+   240                          ;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
    241                          ;
    242                          ;
-   243                          ;
-   244                          ;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
-   245                          ;
-   246                          ;
-   247   000e16 01              SD5N18:	DEFB	1
-   248   000e17 10ff            	DEFB	16,0FFH
-   249                          
-   250   000e19 0b              	DEFB	11
-   251   000e1a 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
-   252   000e1c 0300            	DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
-   253   000e1e 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
-   254   000e20 0100            	DEFB	1,00H		;TRACK
-   255   000e22 0100            	DEFB	1,00H		;SIDE
-   256   000e24 0100            	DEFB	1,00H		;SECTOR
-   257   000e26 0100            	DEFB	1,00H		;LENGTH
-   258   000e28 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   259   000e2a 0bff            	DEFB	11,0FFH		;GAP2
-   260   000e2c 0600            	DEFB	6,00H		;GAP2
-   261   000e2e 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
-   262                          
-   263   000e30 02              	DEFB	2
-   264   000e31 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   265   000e33 09ff            	DEFB	9,0FFH		;GAP 3
+   243   000e16 01              SD5N18:	DEFB	1
+   244   000e17 10ff            	DEFB	16,0FFH
+   245                          
+   246   000e19 0b              	DEFB	11
+   247   000e1a 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
+   248   000e1c 0300            	DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
+   249   000e1e 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
+   250   000e20 0100            	DEFB	1,00H		;TRACK
+   251   000e22 0100            	DEFB	1,00H		;SIDE
+   252   000e24 0100            	DEFB	1,00H		;SECTOR
+   253   000e26 0100            	DEFB	1,00H		;LENGTH
+   254   000e28 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   255   000e2a 0bff            	DEFB	11,0FFH		;GAP2
+   256   000e2c 0600            	DEFB	6,00H		;GAP2
+   257   000e2e 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
+   258                          
+   259   000e30 02              	DEFB	2
+   260   000e31 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   261   000e33 09ff            	DEFB	9,0FFH		;GAP 3
+   262                          ;
+   263                          ;
+   264                          ;
+   265                          ;
    266                          ;
-   267                          ;
-   268                          ;
-   269                          ;
-   270                          ;
-   271   000e35 01              DD5N18:	DEFB	1
-   272   000e36 204e            	DEFB	32,4EH		;GAP 1
-   273                          
-   274   000e38 0c              	DEFB	12
-   275   000e39 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
-   276   000e3b 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   277   000e3d 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
-   278   000e3f 0100            	DEFB	1,0		;TRACK#
-   279   000e41 0100            	DEFB	1,00000000B	;SIDE
-   280   000e43 0100            	DEFB	1,0		;SECTOR#
-   281   000e45 0101            	DEFB	1,00000001B	;LENGTH
-   282   000e47 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   283   000e49 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
-   284   000e4b 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
-   285   000e4d 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   286   000e4f 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
-   287                          
-   288   000e51 02              	DEFB	2
-   289   000e52 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   290   000e54 104e            	DEFB	16,4EH		;FIRST PART OF GAP 3
-   291                          ;
-   292                          ;
-   293                          ;
-   294   000e56 12100e0c0a080604SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
+   267   000e35 01              DD5N18:	DEFB	1
+   268   000e36 204e            	DEFB	32,4EH		;GAP 1
+   269                          
+   270   000e38 0c              	DEFB	12
+   271   000e39 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
+   272   000e3b 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   273   000e3d 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+   274   000e3f 0100            	DEFB	1,0		;TRACK#
+   275   000e41 0100            	DEFB	1,00000000B	;SIDE
+   276   000e43 0100            	DEFB	1,0		;SECTOR#
+   277   000e45 0101            	DEFB	1,00000001B	;LENGTH
+   278   000e47 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   279   000e49 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
+   280   000e4b 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
+   281   000e4d 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   282   000e4f 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+   283                          
+   284   000e51 02              	DEFB	2
+   285   000e52 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   286   000e54 104e            	DEFB	16,4EH		;FIRST PART OF GAP 3
+   287                          ;
+   288                          ;
+   289                          ;
+   290   000e56 12100e0c0a080604SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
                 02              
-   295   000e5f 110f0d0b09070503	DEFB	17,15,13,11,9,7,5,3,1
+   291   000e5f 110f0d0b09070503	DEFB	17,15,13,11,9,7,5,3,1
                 01              
-   296                          ;
-   297   000e68 01070d          SKEWDD:	DEFB	1,7,13
-   298   000e6b 060c12          	DEFB	6,12,18
-   299   000e6e 050b11          	DEFB	5,11,17
-   300   000e71 040a10          	DEFB	4,10,16
-   301   000e74 03090f          	DEFB	3,9,15
-   302   000e77 02080e          	DEFB	2,8,14
-   303                          ;
-   304                          ;
-   305                          ;
-   306   000e7a 04              SD8N26:	DEFB	4		;PREAMBLE FIELD
-   307   000e7b 28ff            	DEFB	40,0FFH		;GAP 4
-   308   000e7d 0600            	DEFB	6,00
-   309   000e7f 01fc            	DEFB	1,0FCH		;INDEX ADDRESS MARK
-   310   000e81 1aff            	DEFB	26,0FFH
-   311                          
-   312   000e83 0b              	DEFB	11
-   313   000e84 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
-   314   000e86 0300            	DEFB	3,00H		;
-   315   000e88 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
-   316   000e8a 0100            	DEFB	1,00H		;TRACK
-   317   000e8c 0100            	DEFB	1,00H		;SIDE
-   318   000e8e 0100            	DEFB	1,00H		;SECTOR
-   319   000e90 0100            	DEFB	1,00H		;LENGTH
-   320   000e92 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   321   000e94 0bff            	DEFB	11,0FFH		;GAP2
-   322   000e96 0600            	DEFB	6,00H		;GAP2
-   323   000e98 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
-   324                          
-   325   000e9a 02              	DEFB	2
-   326   000e9b 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   327   000e9d 1bff            	DEFB	27,0FFH		;GAP 3
-   328                          ;
-   329                          ;
-   330                          ;
-   331   000e9f 05              DD8N26:	DEFB	5
-   332   000ea0 504e            	DEFB	80,4EH		;POST-INDEX GAP
-   333   000ea2 0c00            	DEFB	12,00H		;INDEX SYNC
-   334   000ea4 03f6            	DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
-   335   000ea6 01fc            	DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
-   336   000ea8 324e            	DEFB	50,4EH		;GAP 1
-   337                          
-   338   000eaa 0c              	DEFB	12
-   339   000eab 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
-   340   000ead 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   341   000eaf 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
-   342   000eb1 0100            	DEFB	1,0		;TRACK#
-   343   000eb3 0100            	DEFB	1,00000000B	;SIDE
-   344   000eb5 0100            	DEFB	1,0		;SECTOR#
-   345   000eb7 0101            	DEFB	1,00000001B	;LENGTH
-   346   000eb9 01f7            	DEFB	1,0F7H		;GENERATE CRC
-   347   000ebb 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
-   348   000ebd 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
-   349   000ebf 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-   350   000ec1 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
-   351                          
-   352   000ec3 02              	DEFB	2
-   353   000ec4 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
-   354   000ec6 354e            	DEFB	53,4EH		;FIRST PART OF GAP 3
-   355                          ;
+   292                          ;
+   293   000e68 01070d          SKEWDD:	DEFB	1,7,13
+   294   000e6b 060c12          	DEFB	6,12,18
+   295   000e6e 050b11          	DEFB	5,11,17
+   296   000e71 040a10          	DEFB	4,10,16
+   297   000e74 03090f          	DEFB	3,9,15
+   298   000e77 02080e          	DEFB	2,8,14
+   299                          ;
+   300                          ;
+   301                          ;
+   302   000e7a 04              SD8N26:	DEFB	4		;PREAMBLE FIELD
+   303   000e7b 28ff            	DEFB	40,0FFH		;GAP 4
+   304   000e7d 0600            	DEFB	6,00
+   305   000e7f 01fc            	DEFB	1,0FCH		;INDEX ADDRESS MARK
+   306   000e81 1aff            	DEFB	26,0FFH
+   307                          
+   308   000e83 0b              	DEFB	11
+   309   000e84 0300            	DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
+   310   000e86 0300            	DEFB	3,00H		;
+   311   000e88 01fe            	DEFB	1,0FEH		;ID ADDRESS MARK
+   312   000e8a 0100            	DEFB	1,00H		;TRACK
+   313   000e8c 0100            	DEFB	1,00H		;SIDE
+   314   000e8e 0100            	DEFB	1,00H		;SECTOR
+   315   000e90 0100            	DEFB	1,00H		;LENGTH
+   316   000e92 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   317   000e94 0bff            	DEFB	11,0FFH		;GAP2
+   318   000e96 0600            	DEFB	6,00H		;GAP2
+   319   000e98 01fb            	DEFB	1,0FBH		;DATA ADDRESS MARK
+   320                          
+   321   000e9a 02              	DEFB	2
+   322   000e9b 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   323   000e9d 1bff            	DEFB	27,0FFH		;GAP 3
+   324                          ;
+   325                          ;
+   326                          ;
+   327   000e9f 05              DD8N26:	DEFB	5
+   328   000ea0 504e            	DEFB	80,4EH		;POST-INDEX GAP
+   329   000ea2 0c00            	DEFB	12,00H		;INDEX SYNC
+   330   000ea4 03f6            	DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
+   331   000ea6 01fc            	DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
+   332   000ea8 324e            	DEFB	50,4EH		;GAP 1
+   333                          
+   334   000eaa 0c              	DEFB	12
+   335   000eab 0c00            	DEFB	12,00H		;SECOND PART OF GAP 3
+   336   000ead 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   337   000eaf 01fe            	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+   338   000eb1 0100            	DEFB	1,0		;TRACK#
+   339   000eb3 0100            	DEFB	1,00000000B	;SIDE
+   340   000eb5 0100            	DEFB	1,0		;SECTOR#
+   341   000eb7 0101            	DEFB	1,00000001B	;LENGTH
+   342   000eb9 01f7            	DEFB	1,0F7H		;GENERATE CRC
+   343   000ebb 164e            	DEFB	22,4EH		;FIRST PART OF GAP 2
+   344   000ebd 0c00            	DEFB	12,00H		;SECOND PART OF GAP 2
+   345   000ebf 03f5            	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+   346   000ec1 01fb            	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+   347                          
+   348   000ec3 02              	DEFB	2
+   349   000ec4 01f7            	DEFB	1,0F7H		;GENERATE CRC BYTES
+   350   000ec6 354e            	DEFB	53,4EH		;FIRST PART OF GAP 3
+   351                          ;
+   352                          ;
+   353                          ;
+   354   000ec8 010e031005120714SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
+                09160b180d1a    
+   355   000ed6 020f041106130815	DEFB	2,15,4,17,6,19,8,21,10,23,12,25
+                0a170c19        
    356                          ;
    357                          ;
-   358   000ec8 010e031005120714SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
-                09160b180d1a    
-   359   000ed6 020f041106130815	DEFB	2,15,4,17,6,19,8,21,10,23,12,25
-                0a170c19        
+   358   000ee2 0112091a11081910SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
+                07180f0617      
+   359   000eef 0e05160d04150c03	DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
+                140b02130a      
    360                          ;
    361                          ;
-   362   000ee2 0112091a11081910SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
-                07180f0617      
-   363   000eef 0e05160d04150c03	DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
-                140b02130a      
-   364                          ;
-   365                          ;
-   366                          
+   362                          
 rolli-f000.asm:
     50                          
     51   000efc ffffffff        		DEFB	255,255,255,255	;HEAD POSITIONS FOR 4 DRIVES
