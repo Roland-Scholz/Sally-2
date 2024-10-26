@@ -19,5 +19,5 @@ Additionally we have added:
 
 ![Sally-2-front](pictures/Sally-2-front.png)
 ![Sally-2-back](pictures/Sally-2-back.png)
-![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
+![Sally-2-pcb](pictures/Sally-2-pcb.png)
 
