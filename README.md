@@ -6,17 +6,18 @@ Inspired by the repair of a Sally 1, which was found in the attic, the
 Atari-Bit-Byter-User-Club (www.abbuc.de) encouraged Marc and me to reproduce this lovely machine in a more compact way, 
 though keeping a sort of retro-style.
 
-We used 3 GAL 16V8 in order to reduce chip count and preplaced the WD1797 floppy-disc-controller by the more compact
+We used 3 16V8 GALs in order to reduce chip count and replaced the WD1797 floppy-disc-controller by the more compact
 WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used by 3 1/2" and 8"-drives, although most 
-can be overclocked to that speed. Only use WD1772-PH-02-02 version and at your own risk.
+can be overclocked to that speed. Only use WD1772PH-02-02 version and at your own risk.
+If you can get hold on an AJAX chip used in e.g. ATARI STE, use this one as it is rated for HD and even ED speed (16/32 Mhz).
 
 # Key features:
 
-- Operates as standalone CP/M system or versatile ATARI 8-bit interface (up to 4 floppies, Centronics, RS232)
+- Operates either as standalone CP/M system or versatile ATARI 8-bit interface (up to 4 floppies, Centronics, RS232)
 - Z80-CPU at 4Mhz
 - 128k static RAM (64k usable)
 - 8k EPROM
-- WD1772 FDC
+- WD1772 FDC (or AJAX FDC)
 - Z80-CTC timer/counter 
 
 Additionally we have added:
@@ -27,7 +28,7 @@ Additionally we have added:
 
 # ToDo:
 
-- another(better) case and Shugart connector at the back.
+- another (better) case and Shugart connector at the back.
 - PCB-layout for other case
 - improve 3 1/2" HD format
 - read/write 512-bytes (MS-DOS) sectors for my Atari FAT-16 DOS 
@@ -35,7 +36,7 @@ Additionally we have added:
 
 ![Sally-2-front](pictures/Sally-2-front.png)
 ![Sally-2-back](pictures/Sally-2-back.png)
-![Sally-2-pcb](pictures/Sally-2-pcb.png)
+![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
 ![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
 ![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
-![Atr8000-cpm](pictured/atr8000-cpm.png)
+![Atr8000-cpm](pictures/atr8000-cpm.png)
