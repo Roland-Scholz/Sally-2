@@ -1,3 +1,20 @@
 # Sally-2
 
-An ATR8000 clone by SWP and the Sally 1 by RSD 
+An ATR8000 (https://www.atarimagazines.com/v3n4/ATR8000.php) clone formally made by SWP and the Sally 1 by RSD
+
+Inspired by the repair of a Sally 1, which was found in the attic, the
+Atari-Bit-Byter-User-Club (www.abbuc.de) encouraged Marc and me to reproduce this lovely machine in a more compact way, 
+though keeping a sort of retro-style.
+
+We used 3 GAL 16V8 in order to reduce chip count and preplaced the WD1797 floppy-disc-controller by the more compact
+WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used by 3 1/2" and 8"-drives, although most 
+can be overclocked to that speed. Only use WD1772-PH-02-02 version and at your own risk.
+
+Aditionally we have added:
+
+- 60.000 baud high speed SIO (Pokey divisor 8)
+- Track buffer
+
+
+![FabianPCB](pictures/Sally-2-front.png)
+
