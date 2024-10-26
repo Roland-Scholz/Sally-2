@@ -14,7 +14,7 @@ Additionally we have added:
 
 - 60.000 baud high speed SIO (Pokey divisor 8)
 - Track buffer
-- HD-support for 3 1/2" disks. (Format is same as 8", 26 sectors/track, 77 tracks, 256 bytes per sector)
+- HD-support for 3 1/2" disks (ca. 1MB). (Format is same as 8", 2 sides, 77 tracks, 26 sectors/track, 256 bytes per sector)
 
 
 ![Sally-2-front](pictures/Sally-2-front.png)
