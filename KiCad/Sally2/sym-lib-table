@@ -1,0 +1,6 @@
+(sym_lib_table
+  (lib (name "sergej")(type "Legacy")(uri "C:/github/Sally-1/Sally-2/my_kicad_library-master/library/my_components.lib")(options "")(descr ""))
+  (lib (name "SIOSocket")(type "Legacy")(uri "C:/github/Sally-1/Sally-2/atari-sio-connector-master/SIOSocket-cache.lib")(options "")(descr ""))
+  (lib (name "AtariXL")(type "KiCad")(uri "C:/github/Sally-1/Sally-2/atari-sio-connector-master/Atari.kicad_sym")(options "")(descr ""))
+  (lib (name "STE")(type "Legacy")(uri "D:/kicad-conversions--atari-ste-motherboard--c300780-001-main/motherboard-cache.lib")(options "")(descr ""))
+)
