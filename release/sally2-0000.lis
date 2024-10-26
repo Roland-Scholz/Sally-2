@@ -1,4 +1,4 @@
-rolli-0000.asm:
+sally2-0000.asm:
      1                          RIDCMD		equ	11000000B	;READ ID COMMAND
      2                          RDCMD		equ	10000000B	;READ COMMAND
      3                          WRTCMD		equ	10100000B	;WRITE COMMAND
@@ -116,7 +116,7 @@ equs.mac:
     37                          LF		equ	00ah
     38                          ;
     39                          
-rolli-0000.asm:
+sally2-0000.asm:
     78                          		include "global.mac"
 global.mac:
      1                          ;********************************************************
@@ -280,7 +280,7 @@ global.mac:
    159                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
    160                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
    161                          
-rolli-0000.asm:
+sally2-0000.asm:
     79                          
     80                          ;--------------------------------------------------
     81                          ; Code executed after Reset

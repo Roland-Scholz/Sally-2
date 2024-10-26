@@ -1,4 +1,4 @@
-rolli-f000.asm:
+sally2-f000.asm:
      1                          serin		equ	03
      2                          serout		equ	serin+3
      3                          serhex		equ	serout+3
@@ -52,7 +52,7 @@ EQUS.MAC:
     37                          LF		equ	00ah
     38                          ;
     39                          
-rolli-f000.asm:
+sally2-f000.asm:
     14                          		INCLUDE	"GLOBAL.MAC"
 GLOBAL.MAC:
      1                          ;********************************************************
@@ -216,7 +216,7 @@ GLOBAL.MAC:
    159                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
    160                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
    161                          
-rolli-f000.asm:
+sally2-f000.asm:
     15                          
     16                          MONITOR		equ	$
     17   000000 c31b00          		jp	RESTART
@@ -1049,7 +1049,7 @@ DISKIO.MAC:
    806   0003dd 00              	nop
    807                          
    808                          
-rolli-f000.asm:
+sally2-f000.asm:
     38                          		include	"minimon.mac"
 minimon.mac:
      1                          ;
@@ -1288,7 +1288,7 @@ minimon.mac:
    234                          ;
    235                          ;
    236                          
-rolli-f000.asm:
+sally2-f000.asm:
     39                          		include	"PRINTER.MAC"
 PRINTER.MAC:
      1                          ;
@@ -1321,7 +1321,7 @@ PRINTER.MAC:
     28                          ;
     29                          ;
     30                          
-rolli-f000.asm:
+sally2-f000.asm:
     40   0004f3 95              		DEFB 95h                ; **** Exists on original ROM? ****
     41   0004f4 0000000000000000		dw	0, 0, 0, 0, 0, 0
                 00000000        
@@ -1659,7 +1659,7 @@ SERIAL.MAC:
    329                          ;
    330                          ;
    331                          
-rolli-f000.asm:
+sally2-f000.asm:
     44                          ;
     45                          ;		CODE PAST THIS POINT IS ONLY USED IN ATARI DISK MODE
     46                          ;
@@ -1931,7 +1931,7 @@ BITBANG.MAC:
    264   000761 00              	nop
    265                          
    266                          
-rolli-f000.asm:
+sally2-f000.asm:
     48                          		INCLUDE	"ATARI.MAC"
 ATARI.MAC:
      1                          ;
@@ -2965,7 +2965,7 @@ ATARI.MAC:
   1029                          ;
   1030                          ;
   1031                          
-rolli-f000.asm:
+sally2-f000.asm:
     49                          		INCLUDE	"FORMAT.MAC"
 FORMAT.MAC:
      1                          	;PAGE
@@ -3336,7 +3336,7 @@ FORMAT.MAC:
    360                          ;
    361                          ;
    362                          
-rolli-f000.asm:
+sally2-f000.asm:
     50                          
     51   000efc ffffffff        		DEFB	255,255,255,255	;HEAD POSITIONS FOR 4 DRIVES
     52   000f00 00000000        		DEFB	0,0,0,0		;DENSITY/TYPE/SELECT BITS FOR 4 DRIVES

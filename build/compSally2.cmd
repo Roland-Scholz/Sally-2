@@ -1,4 +1,5 @@
 @echo off
+set MODULE=sally2
 set TOOLS=C:\github\FABIAN
 PATH=%PATH%;%TOOLS%\tools;%TOOLS%\tools\z88dk\bin;
 
@@ -7,16 +8,14 @@ set ASM=z80asm
 rem ****************************************************
 rem * compile Rolli-1
 rem ****************************************************
-call :compile SALLY-F000 F000
+call :compile %MODULE%-f000 F000
+if not %ERRORLEVEL%==0 goto error
+call :compile %MODULE%-0000 0000
+if not %ERRORLEVEL%==0 goto error
+call :compile ddinit-0100 0100
 if not %ERRORLEVEL%==0 goto error
 
-call :compile SALLY-0000 0000
-if not %ERRORLEVEL%==0 goto error
-
-call :compile rollitest 0000
-if not %ERRORLEVEL%==0 goto error
-
-del /Q	..\release\sally*.*
+del /Q	..\release\*.*
 
 move ..\src\*.o ..\release	>nul 2>&1	
 move ..\src\*.hex ..\release	>nul 2>&1
@@ -24,8 +23,8 @@ move ..\src\*.lis ..\release	>nul 2>&1
 move ..\src\*.com ..\release	>nul 2>&1
 
 pushd	..\release
-copy	sally-0000.com /B + sally-f000.com /B sally.com /B
-bin2hex sally.com sally.hex -o 0000
+copy	%MODULE%-0000.com /B + %MODULE%-f000.com /B %MODULE%.com /B
+bin2hex %MODULE%.com %MODULE%.hex -o 0000
 popd
 
 pause
