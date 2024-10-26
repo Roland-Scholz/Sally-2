@@ -1,8 +1,9 @@
 # Sally-2
 
-An ATR8000 (https://www.atarimagazines.com/v3n4/ATR8000.php) clone formerly made by SWP and the Sally 1 by RSD
+An ATR8000 (https://www.atarimagazines.com/v3n4/ATR8000.php, http://atariki.krap.pl/index.php/ATR_8000) clone formerly made by SWP
+and the Sally 1 by RSD (Rainer Storz Datentechnik)
 
-Inspired by the repair of a Sally 1, which was found in the attic, the
+Inspired by the repair of a Sally 1, which had been found in the attic, the
 Atari-Bit-Byter-User-Club (www.abbuc.de) encouraged Marc and me to reproduce this lovely machine in a more compact way, 
 though keeping a sort of retro-style.
 
