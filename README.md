@@ -10,11 +10,14 @@ We used 3 GAL 16V8 in order to reduce chip count and preplaced the WD1797 floppy
 WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used by 3 1/2" and 8"-drives, although most 
 can be overclocked to that speed. Only use WD1772-PH-02-02 version and at your own risk.
 
-Aditionally we have added:
+Additionally we have added:
 
 - 60.000 baud high speed SIO (Pokey divisor 8)
 - Track buffer
+- HD-support for 3 1/2" disks. (Format is same as 8", 26 sectors/track, 77 tracks, 256 bytes per sector)
 
 
-![FabianPCB](pictures/Sally-2-front.png)
+![Sally-2-front](pictures/Sally-2-front.png)
+![Sally-2-back](pictures/Sally-2-back.png)
+![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
 
