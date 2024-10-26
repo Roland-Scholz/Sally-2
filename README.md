@@ -10,7 +10,7 @@ We used 3 GAL 16V8 in order to reduce chip count and preplaced the WD1797 floppy
 WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used by 3 1/2" and 8"-drives, although most 
 can be overclocked to that speed. Only use WD1772-PH-02-02 version and at your own risk.
 
-#Key feaures:
+# Key features:
 
 - Operates as standalone CP/M system or versatile ATARI 8-bit interface (up to 4 floppies, Centronics, RS232)
 - Z80-CPU at 4Mhz
@@ -25,7 +25,7 @@ Additionally we have added:
 - Track buffer
 - HD-support for 3 1/2" disks (ca. 1MB). (Format is same as 8", 2 sides, 77 tracks, 26 sectors/track, 256 bytes per sector)
 
-#ToDo:
+# ToDo:
 
 - another(better) case and Shugart connector at the back.
 - PCB-layout for other case
