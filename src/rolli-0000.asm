@@ -1,4 +1,3 @@
-
 RIDCMD		equ	11000000B	;READ ID COMMAND
 RDCMD		equ	10000000B	;READ COMMAND
 WRTCMD		equ	10100000B	;WRITE COMMAND
@@ -20,30 +19,21 @@ DSKPTR		equ	4		;READ/WRITE POINTER
 DSKAUX		equ	6		;AUXILLIARY PARAMETERS (2 BYTES)
 DSKSTS		equ	8		;OPERATION COMPLETION STATUS
 
-TSTRDY		EQU	0				;SELECT DRIVE AND TEST READY
-GETSEC		EQU	1				;READ SECTOR
-PUTSEC		EQU	2				;WRITE SECTOR
-GETID		EQU	3				;READ ID MARK
+TSTRDY		equ	0				;SELECT DRIVE AND TEST READY
+GETSEC		equ	1				;READ SECTOR
+PUTSEC		equ	2				;WRITE SECTOR
+GETID		equ	3				;READ ID MARK
 
 DISKV		equ	0f00fh
 
-putaddr		equ	0f493h
-puthex		equ	0f498h
-coninit		equ	0f5fch
-conin		equ	0f640h
-conout		equ	0f650h
-SELECT		equ	0f110h
-RESTORE		equ	0f23bh
-SEEKTRK		equ	0f1fch
-RWDISK		equ	0f2b6h
-RENEW		equ	0f018h
-WATCHDOG	equ	0f3a8h
-RECOVER		equ	0f30fh
-ACTIVON		equ	0f03ch
-
 CFRAME		equ	IOBUFF+LEN-5
-iobuflenhi	equ	(IOBUFF+LEN) / 256
+IOBUFLENHI	equ	(IOBUFF+LEN) / 256
 
+
+;--------------------------------------------------
+; Atari ROM routines that shouldn't change their
+; addresses
+;--------------------------------------------------
 DISKID		equ	0f82bh
 DISKTAB		equ	0f83dh
 DRVINDEX	equ	0fc28h
@@ -55,12 +45,28 @@ DISKWRITE	equ	0f948h
 XMITBUF		equ	0f684h
 RXBLOCK		equ	0f6d9h
 CMDWAIT		equ	0f7e2h
+CMDL4		equ	0f7f3h
+CMDL5		equ	0f809h
 EMULATOR	equ	0f762h
-SPIN		equ	0f15dh
-PUTPARAMS	equ	0fc23h
-GETPARAMS	equ	0fbe7h
 LOGON		equ	0f77eh
+STARTBIT	equ	0f715h
 
+SKEWSD		equ	0fe56h
+SKEW13		equ	0fec8h
+SKEWDD		equ	0fe68h
+SKEW17		equ	0fee2h
+
+;--------------------------------------------------
+; DISKIO ROM routines that may change their
+; addresses
+;--------------------------------------------------
+ACTIVON		equ	0f03ch
+DISK3		equ	0f0bfh
+SEL4		equ	0f157h
+
+;--------------------------------------------------
+; Track-Buffer 26*256 bytes
+;--------------------------------------------------
 TRKBUF		equ	00800h
 
 DEBUG		equ	0f9d4h
@@ -208,26 +214,6 @@ code8000:	ld	a, 1
 code0000:					 
 		ld      sp, 0c100h			;set stack to 0c100h
 
-;		call	sercr		
-;		ld	hl, 0ec00h
-;		ld	b, 022h
-;main1:		ld	a, (hl)
-;		inc	hl
-;		call	serhex
-;		call	serspace
-;		djnz	main1
-;		call	sercr
-		
-;		call	coninit
-
-main:
-;		call	conin
-;		ld	a, 'A'
-;		call	serout
-;		ld	c, a
-;		call	conout
-;		jp	main
-		
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
@@ -285,121 +271,63 @@ main:
 logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
 
 		ld	a, 0c3h				;'JP' instruction
-		ld	(SPIN), a		
-		ld	hl, spin
-		ld	(SPIN+1), hl
-		
-;		ld	hl, getparams
-;		ld	(GETPARAMS+1), hl
+		ld	(SEL4), a		
+		ld	hl, sel4
+		ld	(SEL4+1), hl
+
 		jp	LOGON+3
 
-
-getparams:	ld	a, 'N'
-		call	serout
-		ld	a, (CFRAME)
-		call	serout
-		call	sercr
-		jp	0fc28h
-
-
-
-
-putparams:	ld	a, 'O'
-		call	serout
-		push	hl
-		push	iy
-		pop	hl
-		push	bc
+;
+;
+;
+sel4:		bit	6, b				;8" found?
+		jr	z, sel4ex			;yes, do nothing
 		
-		ld	a, (CFRAME)
-		call	serout
-		call	serspace
-		ld	b, 12
-putparams2:	ld	a, (hl)
-		call	serhex
-		call	serspace
-		inc	hl
-		djnz	putparams2
-		pop	bc
-		pop	hl
-putparams1:	call	sercr
-		ldir
-		jp	0fc54h
-;
-;
-;
-spin:		bit	6, b
-		jr	z, spin1
-		
-		push	bc
+		push	bc				;save registers
 		push	de
 		push	hl
 		push	ix
 		
-		ld	a, b
-;		call	serhex
-		
+		ld	a, b				;switch HD on
 		res	6, a
 		out	(LATCH), a
 
 		push	ix				;load hl with ix 
-		pop	hl
+		pop	hl				
 		ld	de, dcb
 		ld	bc, 9
 		ldir					;copy dcb
 
-spin3:		ld	ix, dcb
+		ld	ix, dcb
 		ld	hl, id
 		ld	(dcb + DSKPTR), hl
 		ld	hl, 6
 		ld	(dcb + DSKAUX), hl
 		ld	a, RIDCMD
-		ld	(dcb + DSKOP), a
+;		ld	(dcb + DSKOP), a
 		ld	(CMDBYT), a
-		ld	a, 018h
-		ld	(0f0f6h), a
-		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
-		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
-		call	0f0c5h				;DISK3: READ 6 BYTE ID RECORD
-		ld	a, 028h
-		ld	(0f0f6h), a
-			
-;		ld	b, 6
-;		ld	hl, id
-;spin2:	ld	a, (hl)
-;		call	serhex
-;		inc	hl
-;		djnz	spin2
-;		call	sercr
-;		jp	spin3
+		ld	a, 018h				;substitute JR	Z,xx by JR xx
+		ld	(DISK3 + 031h), a
+		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+		ld	a, 028h				;reset JR Z,xx
+		ld	(DISK3 + 031h), a
 		
 		pop	ix
 		pop	hl
 		pop	de
 		pop	bc
 		
-		ld	a, (dcb + DSKSTS)
-;		call	serhex
+		ld	a, (dcb + DSKSTS)		;check disk status
 		or	a
-		jr	nz, spin1
-		res	6, b
-spin1:	
+		jr	nz, sel4ex			;not zero, no HD
+		res	6, b				;
+sel4ex:	
 		ld	a, b
-;		call	serhex
-;		call	sercr
 		ld	d, 0
-		jp	0f160h
-		
-id:		dw	0, 0, 0	
-
-;		ld	a, (IX+DSKSTS)
-;		call	serhex
-;		ld	a, (IX+DSKPTR+1)
-;		call	serhex
-;		ld	a, (IX+DSKPTR)
-;		call	serhex
-		jp	0f0384h
- 		
+		jp	SEL4+3
+		 		
 ;--------------------------------------------------
 ; diskwrite: write through sector
 ;--------------------------------------------------
@@ -422,31 +350,35 @@ diskwrite:
 diskwrite1:	jp	DISKV
 
 
-debug:		call	serout
-		ld	a, (ix + DSKDRV)
-		call	serhex
-		ld	a, 't'
-		call	serout
-		ld	a, (ix + DSKTRK)
-		call	serhex		
-		ld	a, 's'
-		call	serout
-		ld	a, (ix + DSKSEC)
-		call	serhex
-		
-		call	serspace
-		ld	a, (CFRAME+3)
-		call	serhex
-		ld	a, (CFRAME+2)
-		call	serhex
-		call	serspace
-		ld	a, (IY+NSECS+1)
-		call	serhex
-		ld	a, (iy+NTRKS)
-		call	serhex
-		
-		call	sercr
-		ret
+;--------------------------------------------------
+; Debug routine
+;--------------------------------------------------
+;debug:		call	serout
+;		ld	a, (ix + DSKDRV)
+;		call	serhex
+;		ld	a, 't'
+;		call	serout
+;		ld	a, (ix + DSKTRK)
+;		call	serhex		
+;		ld	a, 's'
+;		call	serout
+;		ld	a, (ix + DSKSEC)
+;		call	serhex
+;		
+;		call	serspace
+;		ld	a, (CFRAME+3)
+;		call	serhex
+;		ld	a, (CFRAME+2)
+;		call	serhex
+;		call	serspace
+;		ld	a, (IY+NSECS+1)
+;		call	serhex
+;		ld	a, (iy+NTRKS)
+;		call	serhex
+;		
+;		call	sercr
+;		ret
+
 ;--------------------------------------------------
 ; diskread: cache a track
 ;--------------------------------------------------
@@ -537,30 +469,6 @@ checktrack:	ld	hl, (drive)
 		sbc	hl, de
 		ret
 		
-drive:		db	255
-track:		db	255
-secptr:		dw	0		
-
-SKEWSD		equ	0fe56h
-SKEW13		equ	0fec8h
-SKEWDD		equ	0fe68h
-SKEW17		equ	0fee2h
-
-skewtab:	dw	SKEWSD
-		dw	SKEW13
-		dw	SKEWDD
-		dw	SKEW17
-;
-;		
-;
-dcb:		db	0				;DISK OPERATION CODE
-		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
-		db	0				;TRACK#
-		db	0				;SECTOR#
-		dw	0				;READ/WRITE POINTER
-		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
-		db	0				;OPERATION COMPLETION STATUS
-
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
@@ -579,10 +487,7 @@ getspeed:
 		ld	hl, IOBUFF+LEN-1
 		ld	(hl), SIOFAST
 		ld	de, 'C'		
-		call	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
-		ret
-		jp	togglebaud
-
+		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
 
 
 ;--------------------------------------------------
@@ -593,11 +498,8 @@ cmdwait:	ld	a, (CMDFLG)
                 ret	z				;EXIT IF NOTHING HAS HAPPENED
 					
 ;		call	sercmd				;5-byte command frame
-
-
 		
 		ld	a, (CMDFLG)
-;		call	serhex
                 cp	1		
 
 		di					;ELSE RESET INTERRUPT AND START AGAIN
@@ -605,10 +507,10 @@ cmdwait:	ld	a, (CMDFLG)
                 out	(CTC0),A		
                 ei		
 				
-                jp	z, 0f7f3h			;good cmd-frame
+                jp	z, CMDL4			;good cmd-frame
 	
 		call	togglebaud		
-		jp	0f809h
+		jp	CMDL5
 
 
 		
@@ -620,7 +522,7 @@ xmitbuf:
 		ld	a, (pokeydiv)			;is fast?
 		cp	SIONORMAL
 		jr	nz, xmitfast			;yes, jump
-		ld	bc, 0f715h
+		ld	bc, STARTBIT
 		jp	XMITBUF+4
 		
 xmitfast:		
@@ -638,7 +540,7 @@ xmitfast1:	ld	a, (hl)				;7
 		ld	e, a				;4
 		call	fastsend			;17 send byte in c
 		ld	a, h				;4
-		cp	iobuflenhi			;7
+		cp	IOBUFLENHI			;7
 		jr	c, xmitfast1			;12/7 loop if buffer end not reached	
 		
 		ld	a, 00000011B	
@@ -684,15 +586,7 @@ rxblock:	ld	a, (pokeydiv)			;is fast?
 
 rxblock1:
 		ld	bc, 0				;no, normal speed
-		jp	0f707h
-
-;
-; 32 bytes for disktab
-;
-disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
-		dw	0, 0, 0, 0, 0, 0, 0, 0
-
-pokeydiv:	db	SIONORMAL
+		jp	RXBLOCK+3
 
 ;--------------------------------------------------
 ; togglebaud
@@ -704,27 +598,6 @@ togglebaud:	ld	a, (pokeydiv)
 		ld	a, SIONORMAL
 togglebaud1:	ld	(pokeydiv), a
 		ret
-;		push	af
-;		ld	a, 'B'
-;		call	serout
-;		pop	af
-;		call	serhex
-;		jp	sercr
-
-
-
-		
-clear:		ld	hl, IOBUFF
-clear1:		xor	a
-		ld	(hl), a
-		inc	hl
-		ld	a, h
-		cp 	iobuflenhi
-		jr	nz, clear1
-		ret
-
-		
-
 
 ;--------------------------------------------------
 ; set 4ms watchdog
@@ -774,7 +647,7 @@ fastrecv2a:	ld	a, (hl)				;7
 		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
 		inc	hl				;6
 		ld	a, h				;4
-		cp	iobuflenhi			;7
+		cp	IOBUFLENHI			;7
 		ccf					;4
 		ret	c				;5 RETURN WITH CARRY SET IF BUFFER FILLED
 
@@ -784,12 +657,12 @@ fastrecv2a:	ld	a, (hl)				;7
 		jp	fastrecv1			;10
 
 	
-serdumpcpl:	push	hl
-                push	af
-                push	bc
-                push	de
-		ld	d, 255
-		jr	serdump1
+;serdumpcpl:	push	hl
+;               push	af
+;               push	bc
+;               push	de
+;		ld	d, 255
+;		jr	serdump1
 
 ;--------------------------------------------------
 ; RS232 sercmd
@@ -950,5 +823,35 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 		db	057h, 001h			;Bit7	ATARI RXD
 		db	030h, 050h			;DRIVE CONTROL reset FDC
 		db	030h, 040h			;DRIVE CONTROL 8Mhz
+
+;--------------------------------------------------
+; variables and data structure
+;--------------------------------------------------
+;
+; 32 bytes for disktab
+;
+disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
+		dw	0, 0, 0, 0, 0, 0, 0, 0
+
+pokeydiv:	db	SIONORMAL
+drive:		db	255
+track:		db	255
+secptr:		dw	0		
+
+skewtab:	dw	SKEWSD
+		dw	SKEW13
+		dw	SKEWDD
+		dw	SKEW17
+
+dcb:		db	0				;DISK OPERATION CODE
+		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
+		db	0				;TRACK#
+		db	0				;SECTOR#
+		dw	0				;READ/WRITE POINTER
+		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
+		db	0				;OPERATION COMPLETION STATUS
+
+id:		dw	0, 0, 0	
 		
-sallycode	equ	ASMPC
+sallycode	equ	ASMPC				;append Sally code here
+	
