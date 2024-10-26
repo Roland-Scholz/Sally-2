@@ -36,4 +36,6 @@ Additionally we have added:
 ![Sally-2-front](pictures/Sally-2-front.png)
 ![Sally-2-back](pictures/Sally-2-back.png)
 ![Sally-2-pcb](pictures/Sally-2-pcb.png)
-
+![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
+![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
+![Atr8000-cpm](pictured/atr8000-cpm.png)
