@@ -1,3 +1,5 @@
+NOHIGHSPEEDSIO	equ	0
+
 RIDCMD		equ	11000000B	;READ ID COMMAND
 RDCMD		equ	10000000B	;READ COMMAND
 WRTCMD		equ	10100000B	;WRITE COMMAND
@@ -61,6 +63,7 @@ SKEW17		equ	0fee2h
 ; addresses
 ;--------------------------------------------------
 ACTIVON		equ	0f03ch
+SHUTDOWN	equ	0f068h
 DISK3		equ	0f0bfh
 SEL4		equ	0f157h
 
@@ -217,6 +220,7 @@ code0000:
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
+		
 		ld	hl, 0ffffh			;reset drive / track buffer
 		ld	(drive), hl
 
@@ -242,7 +246,7 @@ code0000:
 		ld	(DISKID+2), hl
 		ld	(DISKID+4), hl
 		ld	(DISKID+6), hl
-				
+		
 		ld	a, SIONORMAL
 		ld	(pokeydiv), a		
 
@@ -265,18 +269,27 @@ code0000:
 		ld	hl, logon
 		ld	(LOGON+1), hl
 
+		
 		jp	EMULATOR
 
 
 logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
 
 		ld	a, 0c3h				;'JP' instruction
-		ld	(SEL4), a		
+		ld	(SEL4), a
 		ld	hl, sel4
 		ld	(SEL4+1), hl
-
+		ld	hl, shutdown
+		ld	(SHUTDOWN+1), hl
 		jp	LOGON+3
 
+
+shutdown:	call	0f228h
+		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
+		out	(CTC1), a
+		ld	a, 1
+		out	(CTC1), a
+		ret
 ;
 ;
 ;
@@ -485,7 +498,13 @@ getspeed:
 		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 
 		ld	hl, IOBUFF+LEN-1
+		
+		IF NOHIGHSPEEDSIO <> 1
 		ld	(hl), SIOFAST
+		ELSE
+		ld	(hl), SIONORMAL
+		ENDIF
+				
 		ld	de, 'C'		
 		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
 
