@@ -429,660 +429,656 @@ sally2-0000.asm:
    224   0000c7 21ffff          		ld	hl, 0ffffh			;reset drive / track buffer
    225   0000ca 220904          		ld	(drive), hl
    226                          
-   227                          ;		IF NOHIGHSPEEDSIO <> 1
-   228                          
-   229   0000cd 213ff8          		ld	hl, DISKTAB+2
-   230   0000d0 11eb03          		ld	de, disktab+3
-   231   0000d3 011500          		ld	bc, 3*7
-   232   0000d6 edb0            		ldir
-   233                          
-   234   0000d8 210800          		ld	hl, 8
-   235   0000db 22e803          		ld	(disktab),hl
-   236   0000de 3e3f            		ld	a, '?'
-   237   0000e0 32ea03          		ld	(disktab+2), a
-   238   0000e3 eb              		ex	de, hl
-   239                          
-   240   0000e4 3e55            		ld	a, getspeed & 255
-   241   0000e6 77              		ld	(hl), a
-   242   0000e7 23              		inc	hl
-   243   0000e8 3e02            		ld	a, getspeed / 256
-   244   0000ea 77              		ld	(hl), a
-   245                          
-   246   0000eb 21e803          		ld	hl, disktab
-   247   0000ee 222bf8          		ld	(DISKID), hl
-   248   0000f1 222df8          		ld	(DISKID+2), hl
-   249   0000f4 222ff8          		ld	(DISKID+4), hl
-   250   0000f7 2231f8          		ld	(DISKID+6), hl
-   251                          
-   252                          ;		ENDIF
-   253                          
-   254   0000fa 3e28            		ld	a, SIONORMAL
-   255   0000fc 320804          		ld	(pokeydiv), a
-   256                          
-   257   0000ff 3ec3            		ld	a, 0c3h				;'JP' instruction
-   258   000101 3284f6          		ld	(XMITBUF), a
-   259   000104 32d9f6          		ld	(RXBLOCK), a
-   260   000107 32e2f7          		ld	(CMDWAIT), a
-   261   00010a 327ef7          		ld	(LOGON), a
-   262                          
-   263   00010d 218002          		ld	hl, xmitbuf
-   264   000110 2285f6          		ld	(XMITBUF+1), hl
-   265   000113 21cb02          		ld	hl, rxblock
-   266   000116 22daf6          		ld	(RXBLOCK+1), hl
-   267   000119 216702          		ld	hl, cmdwait
-   268   00011c 22e3f7          		ld	(CMDWAIT+1), hl
-   269   00011f 21c301          		ld	hl, diskread
-   270   000122 22d5f9          		ld	(DISKREAD+1), hl
-   271   000125 21ab01          		ld	hl, diskwrite
-   272   000128 2249f9          		ld	(DISKWRITE+1), hl
-   273   00012b 213401          		ld	hl, logon
-   274   00012e 227ff7          		ld	(LOGON+1), hl
+   227   0000cd 213ff8          		ld	hl, DISKTAB+2
+   228   0000d0 11eb03          		ld	de, disktab+3
+   229   0000d3 011500          		ld	bc, 3*7
+   230   0000d6 edb0            		ldir
+   231                          
+   232   0000d8 210800          		ld	hl, 8
+   233   0000db 22e803          		ld	(disktab),hl
+   234   0000de 3e3f            		ld	a, '?'
+   235   0000e0 32ea03          		ld	(disktab+2), a
+   236   0000e3 eb              		ex	de, hl
+   237                          
+   238   0000e4 3e55            		ld	a, getspeed & 255
+   239   0000e6 77              		ld	(hl), a
+   240   0000e7 23              		inc	hl
+   241   0000e8 3e02            		ld	a, getspeed / 256
+   242   0000ea 77              		ld	(hl), a
+   243                          
+   244   0000eb 21e803          		ld	hl, disktab
+   245   0000ee 222bf8          		ld	(DISKID), hl
+   246   0000f1 222df8          		ld	(DISKID+2), hl
+   247   0000f4 222ff8          		ld	(DISKID+4), hl
+   248   0000f7 2231f8          		ld	(DISKID+6), hl
+   249                          
+   250   0000fa 3e28            		ld	a, SIONORMAL
+   251   0000fc 320804          		ld	(pokeydiv), a
+   252                          
+   253   0000ff 3ec3            		ld	a, 0c3h				;'JP' instruction
+   254   000101 3284f6          		ld	(XMITBUF), a
+   255   000104 32d9f6          		ld	(RXBLOCK), a
+   256   000107 32e2f7          		ld	(CMDWAIT), a
+   257   00010a 327ef7          		ld	(LOGON), a
+   258                          
+   259   00010d 218002          		ld	hl, xmitbuf
+   260   000110 2285f6          		ld	(XMITBUF+1), hl
+   261   000113 21cb02          		ld	hl, rxblock
+   262   000116 22daf6          		ld	(RXBLOCK+1), hl
+   263   000119 216702          		ld	hl, cmdwait
+   264   00011c 22e3f7          		ld	(CMDWAIT+1), hl
+   265   00011f 21c301          		ld	hl, diskread
+   266   000122 22d5f9          		ld	(DISKREAD+1), hl
+   267   000125 21ab01          		ld	hl, diskwrite
+   268   000128 2249f9          		ld	(DISKWRITE+1), hl
+   269   00012b 213401          		ld	hl, logon
+   270   00012e 227ff7          		ld	(LOGON+1), hl
+   271                          
+   272                          
+   273   000131 c362f7          		jp	EMULATOR
+   274                          
    275                          
-   276                          
-   277   000131 c362f7          		jp	EMULATOR
-   278                          
-   279                          
-   280   000134 3233ff          logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
-   281                          
-   282   000137 3ec3            		ld	a, 0c3h				;'JP' instruction
-   283   000139 3257f1          		ld	(SEL4), a
-   284   00013c 215701          		ld	hl, sel4
-   285   00013f 2258f1          		ld	(SEL4+1), hl
-   286   000142 214b01          		ld	hl, shutdown
-   287   000145 2269f0          		ld	(SHUTDOWN+1), hl
-   288   000148 c381f7          		jp	LOGON+3
-   289                          
-   290                          
-   291   00014b cd28f2          shutdown:	call	0f228h
-   292   00014e 3e07            		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
-   293   000150 d381            		out	(CTC1), a
-   294   000152 3e01            		ld	a, 1
-   295   000154 d381            		out	(CTC1), a
-   296   000156 c9              		ret
-   297                          ;
-   298                          ;
-   299                          ;
-   300   000157 cb70            sel4:		bit	6, b				;8" found?
-   301   000159 284a            		jr	z, sel4ex			;yes, do nothing
-   302                          
-   303   00015b c5              		push	bc				;save registers
-   304   00015c d5              		push	de
-   305   00015d e5              		push	hl
-   306   00015e dde5            		push	ix
+   276   000134 3233ff          logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
+   277                          
+   278   000137 3ec3            		ld	a, 0c3h				;'JP' instruction
+   279   000139 3257f1          		ld	(SEL4), a
+   280   00013c 215701          		ld	hl, sel4
+   281   00013f 2258f1          		ld	(SEL4+1), hl
+   282   000142 214b01          		ld	hl, shutdown
+   283   000145 2269f0          		ld	(SHUTDOWN+1), hl
+   284   000148 c381f7          		jp	LOGON+3
+   285                          
+   286                          
+   287   00014b cd28f2          shutdown:	call	0f228h
+   288   00014e 3e07            		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
+   289   000150 d381            		out	(CTC1), a
+   290   000152 3e01            		ld	a, 1
+   291   000154 d381            		out	(CTC1), a
+   292   000156 c9              		ret
+   293                          ;
+   294                          ;
+   295                          ;
+   296   000157 cb70            sel4:		bit	6, b				;8" found?
+   297   000159 284a            		jr	z, sel4ex			;yes, do nothing
+   298                          
+   299   00015b c5              		push	bc				;save registers
+   300   00015c d5              		push	de
+   301   00015d e5              		push	hl
+   302   00015e dde5            		push	ix
+   303                          
+   304   000160 78              		ld	a, b				;switch HD on
+   305   000161 cbb7            		res	6, a
+   306   000163 d330            		out	(LATCH), a
    307                          
-   308   000160 78              		ld	a, b				;switch HD on
-   309   000161 cbb7            		res	6, a
-   310   000163 d330            		out	(LATCH), a
-   311                          
-   312   000165 dde5            		push	ix				;load hl with ix
-   313   000167 e1              		pop	hl
-   314   000168 111504          		ld	de, dcb
-   315   00016b 010900          		ld	bc, 9
-   316   00016e edb0            		ldir					;copy dcb
-   317                          
-   318   000170 dd211504        		ld	ix, dcb
-   319   000174 211e04          		ld	hl, id
-   320   000177 221904          		ld	(dcb + DSKPTR), hl
-   321   00017a 210600          		ld	hl, 6
-   322   00017d 221b04          		ld	(dcb + DSKAUX), hl
-   323   000180 3ec0            		ld	a, RIDCMD
-   324                          ;		ld	(dcb + DSKOP), a
-   325   000182 32c5ff          		ld	(CMDBYT), a
-   326   000185 3e18            		ld	a, 018h				;substitute JR	Z,xx by JR xx
-   327   000187 32f0f0          		ld	(DISK3 + 031h), a
-   328   00018a cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
-   329   00018d cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
-   330   000190 cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
-   331   000193 3e28            		ld	a, 028h				;reset JR Z,xx
-   332   000195 32f0f0          		ld	(DISK3 + 031h), a
-   333                          
-   334   000198 dde1            		pop	ix
-   335   00019a e1              		pop	hl
-   336   00019b d1              		pop	de
-   337   00019c c1              		pop	bc
-   338                          
-   339   00019d 3a1d04          		ld	a, (dcb + DSKSTS)		;check disk status
-   340   0001a0 b7              		or	a
-   341   0001a1 2002            		jr	nz, sel4ex			;not zero, no HD
-   342   0001a3 cbb0            		res	6, b				;
-   343                          sel4ex:
-   344   0001a5 78              		ld	a, b
-   345   0001a6 1600            		ld	d, 0
-   346   0001a8 c35af1          		jp	SEL4+3
-   347                          
-   348                          ;--------------------------------------------------
-   349                          ; diskwrite: write through sector
-   350                          ;--------------------------------------------------
-   351                          diskwrite:
-   352                          ;		ld	a, 'W'
-   353                          ;		call	debug
-   354                          
-   355                          ;		jp	DISKV
-   356                          
-   357   0001ab cd4802          		call	checktrack
-   358   0001ae 2010            		jr	nz, diskwrite1
-   359                          
-   360   0001b0 cd3302          		call	compbufadr
-   361   0001b3 eb              		ex	de, hl
-   362   0001b4 dd6605          		ld	h, (ix + DSKPTR+1)
-   363   0001b7 dd6e04          		ld	l, (ix + DSKPTR)
-   364   0001ba ed4ba9ff        		ld	bc, (LOGSIZ)
-   365   0001be edb0            		ldir
-   366                          
-   367   0001c0 c30ff0          diskwrite1:	jp	DISKV
-   368                          
-   369                          
-   370                          ;--------------------------------------------------
-   371                          ; Debug routine
-   372                          ;--------------------------------------------------
-   373                          ;debug:		call	serout
-   374                          ;		ld	a, (ix + DSKDRV)
+   308   000165 dde5            		push	ix				;load hl with ix
+   309   000167 e1              		pop	hl
+   310   000168 111504          		ld	de, dcb
+   311   00016b 010900          		ld	bc, 9
+   312   00016e edb0            		ldir					;copy dcb
+   313                          
+   314   000170 dd211504        		ld	ix, dcb
+   315   000174 211e04          		ld	hl, id
+   316   000177 221904          		ld	(dcb + DSKPTR), hl
+   317   00017a 210600          		ld	hl, 6
+   318   00017d 221b04          		ld	(dcb + DSKAUX), hl
+   319   000180 3ec0            		ld	a, RIDCMD
+   320                          ;		ld	(dcb + DSKOP), a
+   321   000182 32c5ff          		ld	(CMDBYT), a
+   322   000185 3e18            		ld	a, 018h				;substitute JR	Z,xx by JR xx
+   323   000187 32f0f0          		ld	(DISK3 + 031h), a
+   324   00018a cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+   325   00018d cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+   326   000190 cdbff0          		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+   327   000193 3e28            		ld	a, 028h				;reset JR Z,xx
+   328   000195 32f0f0          		ld	(DISK3 + 031h), a
+   329                          
+   330   000198 dde1            		pop	ix
+   331   00019a e1              		pop	hl
+   332   00019b d1              		pop	de
+   333   00019c c1              		pop	bc
+   334                          
+   335   00019d 3a1d04          		ld	a, (dcb + DSKSTS)		;check disk status
+   336   0001a0 b7              		or	a
+   337   0001a1 2002            		jr	nz, sel4ex			;not zero, no HD
+   338   0001a3 cbb0            		res	6, b				;
+   339                          sel4ex:
+   340   0001a5 78              		ld	a, b
+   341   0001a6 1600            		ld	d, 0
+   342   0001a8 c35af1          		jp	SEL4+3
+   343                          
+   344                          ;--------------------------------------------------
+   345                          ; diskwrite: write through sector
+   346                          ;--------------------------------------------------
+   347                          diskwrite:
+   348                          ;		ld	a, 'W'
+   349                          ;		call	debug
+   350                          
+   351                          ;		jp	DISKV
+   352                          
+   353   0001ab cd4802          		call	checktrack
+   354   0001ae 2010            		jr	nz, diskwrite1
+   355                          
+   356   0001b0 cd3302          		call	compbufadr
+   357   0001b3 eb              		ex	de, hl
+   358   0001b4 dd6605          		ld	h, (ix + DSKPTR+1)
+   359   0001b7 dd6e04          		ld	l, (ix + DSKPTR)
+   360   0001ba ed4ba9ff        		ld	bc, (LOGSIZ)
+   361   0001be edb0            		ldir
+   362                          
+   363   0001c0 c30ff0          diskwrite1:	jp	DISKV
+   364                          
+   365                          
+   366                          ;--------------------------------------------------
+   367                          ; Debug routine
+   368                          ;--------------------------------------------------
+   369                          ;debug:		call	serout
+   370                          ;		ld	a, (ix + DSKDRV)
+   371                          ;		call	serhex
+   372                          ;		ld	a, 't'
+   373                          ;		call	serout
+   374                          ;		ld	a, (ix + DSKTRK)
    375                          ;		call	serhex
-   376                          ;		ld	a, 't'
+   376                          ;		ld	a, 's'
    377                          ;		call	serout
-   378                          ;		ld	a, (ix + DSKTRK)
+   378                          ;		ld	a, (ix + DSKSEC)
    379                          ;		call	serhex
-   380                          ;		ld	a, 's'
-   381                          ;		call	serout
-   382                          ;		ld	a, (ix + DSKSEC)
+   380                          ;
+   381                          ;		call	serspace
+   382                          ;		ld	a, (CFRAME+3)
    383                          ;		call	serhex
-   384                          ;
-   385                          ;		call	serspace
-   386                          ;		ld	a, (CFRAME+3)
-   387                          ;		call	serhex
-   388                          ;		ld	a, (CFRAME+2)
-   389                          ;		call	serhex
-   390                          ;		call	serspace
-   391                          ;		ld	a, (IY+NSECS+1)
-   392                          ;		call	serhex
-   393                          ;		ld	a, (iy+NTRKS)
-   394                          ;		call	serhex
-   395                          ;
-   396                          ;		call	sercr
-   397                          ;		ret
-   398                          
-   399                          ;--------------------------------------------------
-   400                          ; diskread: cache a track
-   401                          ;--------------------------------------------------
-   402                          diskread:
-   403                          ;		ld	a, 'R'
-   404                          ;		call	debug
-   405                          
-   406   0001c3 cd4802          		call	checktrack
-   407   0001c6 284c            		jr	z, match
-   408                          
-   409   0001c8 ed530904        		ld	(drive), de			;save new drive and track
-   410   0001cc dde5            		push	ix				;save ix
-   411                          
-   412   0001ce dde5            		push	ix				;load hl with ix
-   413   0001d0 e1              		pop	hl
-   414   0001d1 111504          		ld	de, dcb
-   415   0001d4 010900          		ld	bc, 9
-   416   0001d7 edb0            		ldir					;copy dcb
-   417                          
-   418   0001d9 0600            		ld	b, 0				;compute skew-list from media type
-   419   0001db fd4e05          		ld	c, (iy + MEDIA)
-   420   0001de 210d04          		ld	hl, skewtab
-   421   0001e1 09              		add	hl, bc
-   422   0001e2 7e              		ld	a, (hl)
-   423   0001e3 23              		inc	hl
-   424   0001e4 66              		ld	h, (hl)
-   425   0001e5 6f              		ld	l, a
-   426   0001e6 220b04          		ld	(secptr), hl
-   427                          
-   428   0001e9 dd211504        		ld	ix, dcb				;load ix with new dcb
-   429   0001ed fd4603          		ld	b, (iy + NSECS+1)
-   430                          
-   431   0001f0 2a0b04          readtrack:	ld	hl, (secptr)
-   432   0001f3 7e              		ld	a, (hl)
-   433   0001f4 321804          		ld	(dcb + DSKSEC), a
-   434   0001f7 23              		inc	hl
-   435   0001f8 220b04          		ld	(secptr), hl
+   384                          ;		ld	a, (CFRAME+2)
+   385                          ;		call	serhex
+   386                          ;		call	serspace
+   387                          ;		ld	a, (IY+NSECS+1)
+   388                          ;		call	serhex
+   389                          ;		ld	a, (iy+NTRKS)
+   390                          ;		call	serhex
+   391                          ;
+   392                          ;		call	sercr
+   393                          ;		ret
+   394                          
+   395                          ;--------------------------------------------------
+   396                          ; diskread: cache a track
+   397                          ;--------------------------------------------------
+   398                          diskread:
+   399                          ;		ld	a, 'R'
+   400                          ;		call	debug
+   401                          
+   402   0001c3 cd4802          		call	checktrack
+   403   0001c6 284c            		jr	z, match
+   404                          
+   405   0001c8 ed530904        		ld	(drive), de			;save new drive and track
+   406   0001cc dde5            		push	ix				;save ix
+   407                          
+   408   0001ce dde5            		push	ix				;load hl with ix
+   409   0001d0 e1              		pop	hl
+   410   0001d1 111504          		ld	de, dcb
+   411   0001d4 010900          		ld	bc, 9
+   412   0001d7 edb0            		ldir					;copy dcb
+   413                          
+   414   0001d9 0600            		ld	b, 0				;compute skew-list from media type
+   415   0001db fd4e05          		ld	c, (iy + MEDIA)
+   416   0001de 210d04          		ld	hl, skewtab
+   417   0001e1 09              		add	hl, bc
+   418   0001e2 7e              		ld	a, (hl)
+   419   0001e3 23              		inc	hl
+   420   0001e4 66              		ld	h, (hl)
+   421   0001e5 6f              		ld	l, a
+   422   0001e6 220b04          		ld	(secptr), hl
+   423                          
+   424   0001e9 dd211504        		ld	ix, dcb				;load ix with new dcb
+   425   0001ed fd4603          		ld	b, (iy + NSECS+1)
+   426                          
+   427   0001f0 2a0b04          readtrack:	ld	hl, (secptr)
+   428   0001f3 7e              		ld	a, (hl)
+   429   0001f4 321804          		ld	(dcb + DSKSEC), a
+   430   0001f7 23              		inc	hl
+   431   0001f8 220b04          		ld	(secptr), hl
+   432                          
+   433   0001fb c5              		push	bc
+   434   0001fc cd3302          		call	compbufadr
+   435   0001ff 221904          		ld	(dcb + DSKPTR), hl
    436                          
-   437   0001fb c5              		push	bc
-   438   0001fc cd3302          		call	compbufadr
-   439   0001ff 221904          		ld	(dcb + DSKPTR), hl
-   440                          
-   441   000202 cd0ff0          		call	DISKV
-   442                          
-   443   000205 c1              		pop	bc
-   444   000206 3a1d04          		ld	a, (dcb + DSKSTS)		;error occured?
-   445   000209 b7              		or	a
-   446   00020a 2804            		jr	z, readtrack6			;no
-   447   00020c dde1            		pop	ix				;yes, store in original dcb
-   448   00020e 1814            		jr	match2
-   449   000210 10de            readtrack6:	djnz	readtrack
-   450   000212 dde1            		pop	ix
-   451                          
-   452   000214 cd3302          match:		call	compbufadr
-   453   000217 dd5605          		ld	d, (ix + DSKPTR+1)
-   454   00021a dd5e04          		ld	e, (ix + DSKPTR)
-   455   00021d ed4ba9ff        		ld	bc, (LOGSIZ)
-   456   000221 edb0            		ldir
-   457                          
-   458   000223 af              		xor	a
-   459   000224 dd7708          match2:		ld	(ix + DSKSTS), a
-   460                          
-   461   000227 db43            		in	a, (DATREG)				;keeps motor spinning
-   462   000229 d341            		out	(TRKREG), a
-   463   00022b 3e10            		ld	a, SKCMD
-   464   00022d cdc403          		call	CMDOUT
+   437   000202 cd0ff0          		call	DISKV
+   438                          
+   439   000205 c1              		pop	bc
+   440   000206 3a1d04          		ld	a, (dcb + DSKSTS)		;error occured?
+   441   000209 b7              		or	a
+   442   00020a 2804            		jr	z, readtrack6			;no
+   443   00020c dde1            		pop	ix				;yes, store in original dcb
+   444   00020e 1814            		jr	match2
+   445   000210 10de            readtrack6:	djnz	readtrack
+   446   000212 dde1            		pop	ix
+   447                          
+   448   000214 cd3302          match:		call	compbufadr
+   449   000217 dd5605          		ld	d, (ix + DSKPTR+1)
+   450   00021a dd5e04          		ld	e, (ix + DSKPTR)
+   451   00021d ed4ba9ff        		ld	bc, (LOGSIZ)
+   452   000221 edb0            		ldir
+   453                          
+   454   000223 af              		xor	a
+   455   000224 dd7708          match2:		ld	(ix + DSKSTS), a
+   456                          
+   457   000227 db43            		in	a, (DATREG)				;keeps motor spinning
+   458   000229 d341            		out	(TRKREG), a
+   459   00022b 3e10            		ld	a, SKCMD
+   460   00022d cdc403          		call	CMDOUT
+   461                          
+   462   000230 c33cf0          		jp	ACTIVON
+   463                          
+   464                          
    465                          
-   466   000230 c33cf0          		jp	ACTIVON
-   467                          
-   468                          
-   469                          
-   470   000233 210008          compbufadr:	ld	hl, TRKBUF
-   471   000236 dd4603          		ld	b, (ix + DSKSEC)
-   472   000239 05              		dec	b
-   473   00023a 0e00            		ld	c, 0
-   474   00023c 3a1b04          		ld	a, (dcb + DSKAUX)
-   475   00023f b7              		or	a
-   476   000240 2804            		jr	z, compbufadr1
-   477   000242 cb38            		srl	b
-   478   000244 cb19            		rr	c
-   479   000246 09              compbufadr1:	add	hl, bc
-   480   000247 c9              		ret
-   481                          
-   482   000248 2a0904          checktrack:	ld	hl, (drive)
-   483   00024b dd5602          		ld	d, (ix + DSKTRK)		;high
-   484   00024e dd5e01          		ld	e, (ix + DSKDRV)		;low
-   485   000251 b7              		or	a				;clear carry
-   486   000252 ed52            		sbc	hl, de
-   487   000254 c9              		ret
-   488                          
-   489                          ;--------------------------------------------------
-   490                          ; get Pokeydivisor command '?'
-   491                          ;--------------------------------------------------
-   492                          getspeed:
-   493                          ;		ld	a, '?'
-   494                          ;		call	serout
-   495                          
-   496   000255 cd28fc          		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
-   497   000258 d8              		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
-   498                          
-   499                          ;		call	HASPARMS
-   500                          ;		ret	Z				;EXIT IF DISK PARAMS NOT KNOWN
+   466   000233 210008          compbufadr:	ld	hl, TRKBUF
+   467   000236 dd4603          		ld	b, (ix + DSKSEC)
+   468   000239 05              		dec	b
+   469   00023a 0e00            		ld	c, 0
+   470   00023c 3a1b04          		ld	a, (dcb + DSKAUX)
+   471   00023f b7              		or	a
+   472   000240 2804            		jr	z, compbufadr1
+   473   000242 cb38            		srl	b
+   474   000244 cb19            		rr	c
+   475   000246 09              compbufadr1:	add	hl, bc
+   476   000247 c9              		ret
+   477                          
+   478   000248 2a0904          checktrack:	ld	hl, (drive)
+   479   00024b dd5602          		ld	d, (ix + DSKTRK)		;high
+   480   00024e dd5e01          		ld	e, (ix + DSKDRV)		;low
+   481   000251 b7              		or	a				;clear carry
+   482   000252 ed52            		sbc	hl, de
+   483   000254 c9              		ret
+   484                          
+   485                          ;--------------------------------------------------
+   486                          ; get Pokeydivisor command '?'
+   487                          ;--------------------------------------------------
+   488                          getspeed:
+   489                          ;		ld	a, '?'
+   490                          ;		call	serout
+   491                          
+   492   000255 cd28fc          		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+   493   000258 d8              		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
+   494                          
+   495                          ;		call	HASPARMS
+   496                          ;		ret	Z				;EXIT IF DISK PARAMS NOT KNOWN
+   497                          
+   498   000259 cd4afc          		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+   499                          
+   500   00025c 21ffc2          		ld	hl, IOBUFF+LEN-1
    501                          
-   502   000259 cd4afc          		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
-   503                          
-   504   00025c 21ffc2          		ld	hl, IOBUFF+LEN-1
-   505                          
-   506                          		IF NOHIGHSPEEDSIO <> 1
-   507   00025f 3608            		ld	(hl), SIOFAST
-   508                          		ELSE
-   509                          		ld	(hl), SIONORMAL
-   510                          		ENDIF
+   502                          		IF NOHIGHSPEEDSIO <> 1
+   503   00025f 3608            		ld	(hl), SIOFAST
+   504                          		ELSE
+   505                          		ld	(hl), SIONORMAL
+   506                          		ENDIF
+   507                          
+   508   000261 114300          		ld	de, 'C'
+   509   000264 c36cf6          		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+   510                          
    511                          
-   512   000261 114300          		ld	de, 'C'
-   513   000264 c36cf6          		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
-   514                          
-   515                          
-   516                          ;--------------------------------------------------
-   517                          ; cmdwait
-   518                          ;--------------------------------------------------
-   519   000267 3a55ff          cmdwait:	ld	a, (CMDFLG)
-   520   00026a b7                              or	a				;SEE IF COMMAND FRAME HAS ARRIVED
-   521   00026b c8                              ret	z				;EXIT IF NOTHING HAS HAPPENED
-   522                          
-   523                          ;		call	sercmd				;5-byte command frame
-   524                          
-   525   00026c 3a55ff          		ld	a, (CMDFLG)
-   526   00026f fe01                            cp	1
-   527                          
-   528   000271 f3              		di					;ELSE RESET INTERRUPT AND START AGAIN
-   529   000272 3e03                            ld	a, 00000011B
-   530   000274 d380                            out	(CTC0),A
-   531   000276 fb                              ei
-   532                          
-   533   000277 caf3f7                          jp	z, CMDL4			;good cmd-frame
+   512                          ;--------------------------------------------------
+   513                          ; cmdwait
+   514                          ;--------------------------------------------------
+   515   000267 3a55ff          cmdwait:	ld	a, (CMDFLG)
+   516   00026a b7                              or	a				;SEE IF COMMAND FRAME HAS ARRIVED
+   517   00026b c8                              ret	z				;EXIT IF NOTHING HAS HAPPENED
+   518                          
+   519                          ;		call	sercmd				;5-byte command frame
+   520                          
+   521   00026c 3a55ff          		ld	a, (CMDFLG)
+   522   00026f fe01                            cp	1
+   523                          
+   524   000271 f3              		di					;ELSE RESET INTERRUPT AND START AGAIN
+   525   000272 3e03                            ld	a, 00000011B
+   526   000274 d380                            out	(CTC0),A
+   527   000276 fb                              ei
+   528                          
+   529   000277 caf3f7                          jp	z, CMDL4			;good cmd-frame
+   530                          
+   531   00027a cde202          		call	togglebaud
+   532   00027d c309f8          		jp	CMDL5
+   533                          
    534                          
-   535   00027a cde202          		call	togglebaud
-   536   00027d c309f8          		jp	CMDL5
-   537                          
-   538                          
-   539                          
-   540                          ;--------------------------------------------------
-   541                          ; xmitbuf
-   542                          ;--------------------------------------------------
-   543                          xmitbuf:
-   544   000280 f3              		di
-   545   000281 3a0804          		ld	a, (pokeydiv)			;is fast?
-   546   000284 fe28            		cp	SIONORMAL
-   547   000286 2006            		jr	nz, xmitfast			;yes, jump
-   548   000288 0115f7          		ld	bc, STARTBIT
-   549   00028b c388f6          		jp	XMITBUF+4
-   550                          
-   551                          xmitfast:
-   552   00028e 3e07            		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
-   553   000290 d381            		out	(CTC1), a
-   554   000292 3e01            		ld	a, 1
-   555   000294 d381            		out	(CTC1), a
-   556                          
-   557   000296 7e              xmitfast1:	ld	a, (hl)				;7
-   558   000297 23              		inc	hl				;6
-   559   000298 aa              		xor	d				;4
-   560   000299 4f              		ld	c, a				;4
-   561   00029a 83              		add	a, e				;4
-   562   00029b ce00            		adc	0				;7
-   563   00029d 5f              		ld	e, a				;4
-   564   00029e cdac02          		call	fastsend			;17 send byte in c
-   565   0002a1 7c              		ld	a, h				;4
-   566   0002a2 fec3            		cp	IOBUFLENHI			;7
-   567   0002a4 38f0            		jr	c, xmitfast1			;12/7 loop if buffer end not reached
-   568                          
-   569   0002a6 3e03            		ld	a, 00000011B
-   570   0002a8 d381            		out	(CTC1), a
-   571   0002aa fb              		ei
-   572   0002ab c9              		ret
-   573                          
-   574   0002ac af              fastsend:	xor	a
-   575   0002ad d350            		out	(ATROUT), a
-   576                          
-   577   0002af dde5            		push	ix				;15
-   578   0002b1 dde1            		pop	ix				;14
-   579   0002b3 79              		ld	a, c				;4
-   580   0002b4 0608            		ld	b, 8				;7
-   581   0002b6 03              		inc	bc				;6
-   582   0002b7 00              		nop					;4
-   583                          
-   584   0002b8 00              fastsend1:	nop					;4
-   585   0002b9 fe01            		cp	1				;7
-   586   0002bb d350            		out	(ATROUT), a			;11
-   587   0002bd 0f              		rrca					;4
-   588   0002be dde5            		push	ix				;15
-   589   0002c0 dde1            		pop	ix				;14
-   590   0002c2 10f4            		djnz	fastsend1			;13 / 8
-   591                          
-   592   0002c4 ed5f            		ld	a, r				;9
-   593   0002c6 3e01            		ld	a, 1				;7
-   594   0002c8 d350            		out	(ATROUT), a			;11
-   595   0002ca c9              		ret					;10
-   596                          
-   597                          ;--------------------------------------------------
-   598                          ; rxblock
-   599                          ;--------------------------------------------------
-   600   0002cb 3a0804          rxblock:	ld	a, (pokeydiv)			;is fast?
-   601   0002ce fe28            		cp	SIONORMAL
-   602   0002d0 cadc02          		jp	z, rxblock1
-   603                          
-   604   0002d3 cdf602          		call	fastrecv			;yes, fast speed
-   605   0002d6 3e03            		ld	a, 00000011B			;reset timer
-   606   0002d8 d383            		out	(CTC3), a
-   607   0002da 4a              		ld	c, d				;checksum in c
-   608   0002db c9              		ret
+   535                          
+   536                          ;--------------------------------------------------
+   537                          ; xmitbuf
+   538                          ;--------------------------------------------------
+   539                          xmitbuf:
+   540   000280 f3              		di
+   541   000281 3a0804          		ld	a, (pokeydiv)			;is fast?
+   542   000284 fe28            		cp	SIONORMAL
+   543   000286 2006            		jr	nz, xmitfast			;yes, jump
+   544   000288 0115f7          		ld	bc, STARTBIT
+   545   00028b c388f6          		jp	XMITBUF+4
+   546                          
+   547                          xmitfast:
+   548   00028e 3e07            		ld	a, 00000111B			;CTC1 4uS pulses (4Mhz / 1*16)
+   549   000290 d381            		out	(CTC1), a
+   550   000292 3e01            		ld	a, 1
+   551   000294 d381            		out	(CTC1), a
+   552                          
+   553   000296 7e              xmitfast1:	ld	a, (hl)				;7
+   554   000297 23              		inc	hl				;6
+   555   000298 aa              		xor	d				;4
+   556   000299 4f              		ld	c, a				;4
+   557   00029a 83              		add	a, e				;4
+   558   00029b ce00            		adc	0				;7
+   559   00029d 5f              		ld	e, a				;4
+   560   00029e cdac02          		call	fastsend			;17 send byte in c
+   561   0002a1 7c              		ld	a, h				;4
+   562   0002a2 fec3            		cp	IOBUFLENHI			;7
+   563   0002a4 38f0            		jr	c, xmitfast1			;12/7 loop if buffer end not reached
+   564                          
+   565   0002a6 3e03            		ld	a, 00000011B
+   566   0002a8 d381            		out	(CTC1), a
+   567   0002aa fb              		ei
+   568   0002ab c9              		ret
+   569                          
+   570   0002ac af              fastsend:	xor	a
+   571   0002ad d350            		out	(ATROUT), a
+   572                          
+   573   0002af dde5            		push	ix				;15
+   574   0002b1 dde1            		pop	ix				;14
+   575   0002b3 79              		ld	a, c				;4
+   576   0002b4 0608            		ld	b, 8				;7
+   577   0002b6 03              		inc	bc				;6
+   578   0002b7 00              		nop					;4
+   579                          
+   580   0002b8 00              fastsend1:	nop					;4
+   581   0002b9 fe01            		cp	1				;7
+   582   0002bb d350            		out	(ATROUT), a			;11
+   583   0002bd 0f              		rrca					;4
+   584   0002be dde5            		push	ix				;15
+   585   0002c0 dde1            		pop	ix				;14
+   586   0002c2 10f4            		djnz	fastsend1			;13 / 8
+   587                          
+   588   0002c4 ed5f            		ld	a, r				;9
+   589   0002c6 3e01            		ld	a, 1				;7
+   590   0002c8 d350            		out	(ATROUT), a			;11
+   591   0002ca c9              		ret					;10
+   592                          
+   593                          ;--------------------------------------------------
+   594                          ; rxblock
+   595                          ;--------------------------------------------------
+   596   0002cb 3a0804          rxblock:	ld	a, (pokeydiv)			;is fast?
+   597   0002ce fe28            		cp	SIONORMAL
+   598   0002d0 cadc02          		jp	z, rxblock1
+   599                          
+   600   0002d3 cdf602          		call	fastrecv			;yes, fast speed
+   601   0002d6 3e03            		ld	a, 00000011B			;reset timer
+   602   0002d8 d383            		out	(CTC3), a
+   603   0002da 4a              		ld	c, d				;checksum in c
+   604   0002db c9              		ret
+   605                          
+   606                          rxblock1:
+   607   0002dc 010000          		ld	bc, 0				;no, normal speed
+   608   0002df c3dcf6          		jp	RXBLOCK+3
    609                          
-   610                          rxblock1:
-   611   0002dc 010000          		ld	bc, 0				;no, normal speed
-   612   0002df c3dcf6          		jp	RXBLOCK+3
-   613                          
-   614                          ;--------------------------------------------------
-   615                          ; togglebaud
-   616                          ;--------------------------------------------------
-   617   0002e2 3a0804          togglebaud:	ld	a, (pokeydiv)
-   618   0002e5 fe28            		cp	SIONORMAL
-   619   0002e7 3e08            		ld	a, SIOFAST
-   620   0002e9 2802            		jr	z, togglebaud1
-   621   0002eb 3e28            		ld	a, SIONORMAL
-   622   0002ed 320804          togglebaud1:	ld	(pokeydiv), a
-   623   0002f0 c9              		ret
-   624                          
-   625                          ;--------------------------------------------------
-   626                          ; set 4ms watchdog
-   627                          ;--------------------------------------------------
-   628   0002f1 f1              irq4ms:		pop	af				;pop irq-addr
-   629   0002f2 b7              		or	a				;clear carry
-   630   0002f3 fb              irq4ms1:	ei
-   631   0002f4 ed4d            		reti
-   632                          
-   633                          ;--------------------------------------------------
-   634                          ; SIO receive 57600 baud
-   635                          ;--------------------------------------------------
-   636                          fastrecv:
-   637   0002f6 f3              		di
-   638   0002f7 01f102          		ld	bc, irq4ms
-   639   0002fa ed4316ff        		ld	(CTCVEC+6),bc			;SET VECTOR TO irq4ms ROUTINE
-   640   0002fe 018300          		ld	bc, CTC3			;clear b, load c with CTC3
-   641   000301 11a700          		ld	de, 10100111B			;clear d, load e with a7h
-   642   000304 ed59            		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
-   643   000306 ed49            		out	(c), c
-   644   000308 fb              		ei
-   645                          
-   646   000309 db70            fastrecv1:	in	a, (ATARI)			;11
-   647   00030b 17              		rla					;4
-   648   00030c da0903          		jp	c, fastrecv1			;10	NEW BYTE IS COMING IF START BIT LOW
-   649                          							;14-25 / 7
-   650   00030f 7a              		ld	a, d				;4
-   651   000310 80              		add	a, b				;4
-   652   000311 ce00            		adc	a, 0				;7 ACCUMULATE CHECKSUM ATARI STYLE
-   653   000313 57              		ld	d, a				;4
-   654                          
-   655   000314 067f            		ld	b, 07fh				;7
-   656   000316 c31b03          		jp	fastrecv2a			;10 = 50
-   657                          ;
-   658                          ; SERIAL->PARALLEL CONVERSION AT 17,36 MICROSECONDS PER BIT
-   659                          ;
-   660   000319 f5              fastrecv2:	push	af				;11
-   661   00031a f1              		pop	af				;10
-   662   00031b 7e              fastrecv2a:	ld	a, (hl)				;7
-   663   00031c 7e              		ld	a, (hl)				;7
-   664                          
-   665   00031d db70            		in	a, (ATARI)			;11 CYCLES
-   666   00031f 17              		rla					; 4 CYCLES
-   667   000320 cb18            		rr	b				; 8 CYCLES
-   668   000322 38f5            		jr	c, fastrecv2			;12/7 = 70 / 65 cycles
-   669                          
-   670   000324 70              		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
-   671   000325 23              		inc	hl				;6
-   672   000326 7c              		ld	a, h				;4
-   673   000327 fec3            		cp	IOBUFLENHI			;7
-   674   000329 3f              		ccf					;4
-   675   00032a d8              		ret	c				;5 RETURN WITH CARRY SET IF BUFFER FILLED
-   676                          
-   677   00032b ed59            		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
-   678   00032d ed49            		out	(c), c				;12 COUNT MOD 256
-   679                          
-   680   00032f c30903          		jp	fastrecv1			;10
-   681                          
-   682                          
-   683                          ;serdumpcpl:	push	hl
-   684                          ;               push	af
-   685                          ;               push	bc
-   686                          ;               push	de
-   687                          ;		ld	d, 255
-   688                          ;		jr	serdump1
-   689                          
-   690                          ;--------------------------------------------------
-   691                          ; RS232 sercmd
-   692                          ;--------------------------------------------------
-   693   000332 e5              sercmd:		push	hl
-   694   000333 21fbc2          		ld	hl, CFRAME
-   695   000336 cd5c03          		call	sercr
-   696   000339 1801            		jr	serdump2
-   697                          
-   698                          ;--------------------------------------------------
-   699                          ; RS232 dump
-   700                          ;--------------------------------------------------
-   701   00033b e5              serdump:	push	hl
-   702   00033c f5              serdump2:	push	af
-   703   00033d c5              		push	bc
-   704   00033e d5              		push	de
-   705                          
-   706   00033f 1600            		ld	d, 0
-   707                          
-   708   000341 7e              serdump1:	ld	a, (hl)
-   709   000342 aa              		xor 	d
-   710   000343 cd6e03          		call	serhex
-   711   000346 cd5403          		call	serspace
-   712   000349 23              		inc	hl
-   713   00034a 7c              		ld	a, h
-   714   00034b fec3            		cp	a, 0c3h
-   715   00034d 38f2            		jr	c, serdump1
-   716                          
-   717   00034f d1              		pop	de
-   718   000350 c1              		pop	bc
-   719   000351 f1              		pop	af
-   720   000352 e1              		pop	hl
-   721   000353 c9              		ret
-   722                          
-   723                          ;--------------------------------------------------
-   724                          ; RS232 <space>
-   725                          ;--------------------------------------------------
-   726   000354 f5              serspace:	push	af
-   727   000355 3e20            		ld	a, ' '
-   728   000357 cd8703          		call	serout
-   729   00035a f1              		pop	af
-   730   00035b c9              		ret
-   731                          
-   732                          ;--------------------------------------------------
-   733                          ; RS232 <CR>
-   734                          ;--------------------------------------------------
-   735   00035c f5              sercr:		push	af
-   736   00035d 3e0d            		ld	a, '\r'
-   737   00035f cd8703          		call	serout
-   738   000362 f1              		pop	af
-   739   000363 c9              		ret
-   740                          
-   741                          ;--------------------------------------------------
-   742                          ; RS232 output HL in hex
-   743                          ;--------------------------------------------------
-   744   000364 7c              seraddr:	ld	a, h
-   745   000365 cd6e03          		call	serhex
-   746   000368 7d              		ld	a, l
-   747   000369 cd6e03          		call	serhex
-   748   00036c 18e6            		jr	serspace
-   749                          ;--------------------------------------------------
-   750                          ; RS232 output A in hex
-   751                          ;--------------------------------------------------
-   752   00036e f5              serhex:		push	af
-   753   00036f f5              		push	af
-   754   000370 0f              		rrca
-   755   000371 0f              		rrca
-   756   000372 0f              		rrca
-   757   000373 0f              		rrca
-   758   000374 cd7d03          		call	sernib
-   759   000377 f1              		pop	af
-   760   000378 cd7d03          		call	sernib
-   761   00037b f1              		pop	af
-   762   00037c c9              		ret
-   763                          
-   764   00037d e60f            sernib:		and	0fh
-   765   00037f c630            		add	'0'
-   766   000381 fe3a            		cp	'9' + 1
-   767   000383 3802            		jr	c, sernib1
-   768   000385 c607            		add	7
-   769                          sernib1:
-   770                          ;--------------------------------------------------
-   771                          ; RS232 out	208 T-States
-   772                          ;--------------------------------------------------
-   773                          serout:
-   774   000387 f5              		push	af
-   775   000388 c5              		push	bc
-   776   000389 47              		ld	b, a
-   777   00038a af              		xor	a
-   778   00038b f3              		di
-   779   00038c d351            		out	(SEROUT), a			;startbit
-   780   00038e cdbe03          		call	time19600			;17
-   781                          
-   782   000391 78              		ld	a, b
-   783   000392 0608            		ld	b, 8				;7
-   784   000394 d351            serout1:	out	(SEROUT), a			;11
-   785   000396 cdbe03          		call	time19600			;17
-   786   000399 0f              		rrca					;4
-   787   00039a 10f8            		djnz	serout1				;8
-   788   00039c fb              		ei
-   789   00039d 3e01            		ld	a, 1				;7
-   790   00039f d351            		out	(SEROUT), a			;11
-   791   0003a1 cdbe03          		call	time19600			;17
+   610                          ;--------------------------------------------------
+   611                          ; togglebaud
+   612                          ;--------------------------------------------------
+   613   0002e2 3a0804          togglebaud:	ld	a, (pokeydiv)
+   614   0002e5 fe28            		cp	SIONORMAL
+   615   0002e7 3e08            		ld	a, SIOFAST
+   616   0002e9 2802            		jr	z, togglebaud1
+   617   0002eb 3e28            		ld	a, SIONORMAL
+   618   0002ed 320804          togglebaud1:	ld	(pokeydiv), a
+   619   0002f0 c9              		ret
+   620                          
+   621                          ;--------------------------------------------------
+   622                          ; set 4ms watchdog
+   623                          ;--------------------------------------------------
+   624   0002f1 f1              irq4ms:		pop	af				;pop irq-addr
+   625   0002f2 b7              		or	a				;clear carry
+   626   0002f3 fb              irq4ms1:	ei
+   627   0002f4 ed4d            		reti
+   628                          
+   629                          ;--------------------------------------------------
+   630                          ; SIO receive 57600 baud
+   631                          ;--------------------------------------------------
+   632                          fastrecv:
+   633   0002f6 f3              		di
+   634   0002f7 01f102          		ld	bc, irq4ms
+   635   0002fa ed4316ff        		ld	(CTCVEC+6),bc			;SET VECTOR TO irq4ms ROUTINE
+   636   0002fe 018300          		ld	bc, CTC3			;clear b, load c with CTC3
+   637   000301 11a700          		ld	de, 10100111B			;clear d, load e with a7h
+   638   000304 ed59            		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+   639   000306 ed49            		out	(c), c
+   640   000308 fb              		ei
+   641                          
+   642   000309 db70            fastrecv1:	in	a, (ATARI)			;11
+   643   00030b 17              		rla					;4
+   644   00030c da0903          		jp	c, fastrecv1			;10	NEW BYTE IS COMING IF START BIT LOW
+   645                          							;14-25 / 7
+   646   00030f 7a              		ld	a, d				;4
+   647   000310 80              		add	a, b				;4
+   648   000311 ce00            		adc	a, 0				;7 ACCUMULATE CHECKSUM ATARI STYLE
+   649   000313 57              		ld	d, a				;4
+   650                          
+   651   000314 067f            		ld	b, 07fh				;7
+   652   000316 c31b03          		jp	fastrecv2a			;10 = 50
+   653                          ;
+   654                          ; SERIAL->PARALLEL CONVERSION AT 17,36 MICROSECONDS PER BIT
+   655                          ;
+   656   000319 f5              fastrecv2:	push	af				;11
+   657   00031a f1              		pop	af				;10
+   658   00031b 7e              fastrecv2a:	ld	a, (hl)				;7
+   659   00031c 7e              		ld	a, (hl)				;7
+   660                          
+   661   00031d db70            		in	a, (ATARI)			;11 CYCLES
+   662   00031f 17              		rla					; 4 CYCLES
+   663   000320 cb18            		rr	b				; 8 CYCLES
+   664   000322 38f5            		jr	c, fastrecv2			;12/7 = 70 / 65 cycles
+   665                          
+   666   000324 70              		ld	(hl), b				;7 THEN STORE IN MEMORY BUFFER @HL
+   667   000325 23              		inc	hl				;6
+   668   000326 7c              		ld	a, h				;4
+   669   000327 fec3            		cp	IOBUFLENHI			;7
+   670   000329 3f              		ccf					;4
+   671   00032a d8              		ret	c				;5 RETURN WITH CARRY SET IF BUFFER FILLED
+   672                          
+   673   00032b ed59            		out	(c), e				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+   674   00032d ed49            		out	(c), c				;12 COUNT MOD 256
+   675                          
+   676   00032f c30903          		jp	fastrecv1			;10
+   677                          
+   678                          
+   679                          ;serdumpcpl:	push	hl
+   680                          ;               push	af
+   681                          ;               push	bc
+   682                          ;               push	de
+   683                          ;		ld	d, 255
+   684                          ;		jr	serdump1
+   685                          
+   686                          ;--------------------------------------------------
+   687                          ; RS232 sercmd
+   688                          ;--------------------------------------------------
+   689   000332 e5              sercmd:		push	hl
+   690   000333 21fbc2          		ld	hl, CFRAME
+   691   000336 cd5c03          		call	sercr
+   692   000339 1801            		jr	serdump2
+   693                          
+   694                          ;--------------------------------------------------
+   695                          ; RS232 dump
+   696                          ;--------------------------------------------------
+   697   00033b e5              serdump:	push	hl
+   698   00033c f5              serdump2:	push	af
+   699   00033d c5              		push	bc
+   700   00033e d5              		push	de
+   701                          
+   702   00033f 1600            		ld	d, 0
+   703                          
+   704   000341 7e              serdump1:	ld	a, (hl)
+   705   000342 aa              		xor 	d
+   706   000343 cd6e03          		call	serhex
+   707   000346 cd5403          		call	serspace
+   708   000349 23              		inc	hl
+   709   00034a 7c              		ld	a, h
+   710   00034b fec3            		cp	a, 0c3h
+   711   00034d 38f2            		jr	c, serdump1
+   712                          
+   713   00034f d1              		pop	de
+   714   000350 c1              		pop	bc
+   715   000351 f1              		pop	af
+   716   000352 e1              		pop	hl
+   717   000353 c9              		ret
+   718                          
+   719                          ;--------------------------------------------------
+   720                          ; RS232 <space>
+   721                          ;--------------------------------------------------
+   722   000354 f5              serspace:	push	af
+   723   000355 3e20            		ld	a, ' '
+   724   000357 cd8703          		call	serout
+   725   00035a f1              		pop	af
+   726   00035b c9              		ret
+   727                          
+   728                          ;--------------------------------------------------
+   729                          ; RS232 <CR>
+   730                          ;--------------------------------------------------
+   731   00035c f5              sercr:		push	af
+   732   00035d 3e0d            		ld	a, '\r'
+   733   00035f cd8703          		call	serout
+   734   000362 f1              		pop	af
+   735   000363 c9              		ret
+   736                          
+   737                          ;--------------------------------------------------
+   738                          ; RS232 output HL in hex
+   739                          ;--------------------------------------------------
+   740   000364 7c              seraddr:	ld	a, h
+   741   000365 cd6e03          		call	serhex
+   742   000368 7d              		ld	a, l
+   743   000369 cd6e03          		call	serhex
+   744   00036c 18e6            		jr	serspace
+   745                          ;--------------------------------------------------
+   746                          ; RS232 output A in hex
+   747                          ;--------------------------------------------------
+   748   00036e f5              serhex:		push	af
+   749   00036f f5              		push	af
+   750   000370 0f              		rrca
+   751   000371 0f              		rrca
+   752   000372 0f              		rrca
+   753   000373 0f              		rrca
+   754   000374 cd7d03          		call	sernib
+   755   000377 f1              		pop	af
+   756   000378 cd7d03          		call	sernib
+   757   00037b f1              		pop	af
+   758   00037c c9              		ret
+   759                          
+   760   00037d e60f            sernib:		and	0fh
+   761   00037f c630            		add	'0'
+   762   000381 fe3a            		cp	'9' + 1
+   763   000383 3802            		jr	c, sernib1
+   764   000385 c607            		add	7
+   765                          sernib1:
+   766                          ;--------------------------------------------------
+   767                          ; RS232 out	208 T-States
+   768                          ;--------------------------------------------------
+   769                          serout:
+   770   000387 f5              		push	af
+   771   000388 c5              		push	bc
+   772   000389 47              		ld	b, a
+   773   00038a af              		xor	a
+   774   00038b f3              		di
+   775   00038c d351            		out	(SEROUT), a			;startbit
+   776   00038e cdbe03          		call	time19600			;17
+   777                          
+   778   000391 78              		ld	a, b
+   779   000392 0608            		ld	b, 8				;7
+   780   000394 d351            serout1:	out	(SEROUT), a			;11
+   781   000396 cdbe03          		call	time19600			;17
+   782   000399 0f              		rrca					;4
+   783   00039a 10f8            		djnz	serout1				;8
+   784   00039c fb              		ei
+   785   00039d 3e01            		ld	a, 1				;7
+   786   00039f d351            		out	(SEROUT), a			;11
+   787   0003a1 cdbe03          		call	time19600			;17
+   788                          
+   789   0003a4 c1              		pop	bc
+   790   0003a5 f1              		pop	af
+   791   0003a6 c9              		ret
    792                          
-   793   0003a4 c1              		pop	bc
-   794   0003a5 f1              		pop	af
-   795   0003a6 c9              		ret
-   796                          
-   797                          
-   798                          ;--------------------------------------------------
-   799                          ; RS232 in	208 T-States
-   800                          ;--------------------------------------------------
-   801   0003a7 c5              serin:		push	bc
-   802   0003a8 db50            serin2:		in	a, (SERIN)
-   803   0003aa 07              		rlca
-   804   0003ab 38fb            		jr	c, serin2
-   805                          
-   806   0003ad e3              		ex	(sp), hl			;19, 4.75uS
-   807   0003ae e3              		ex	(sp), hl			;19  9uS
-   808                          
-   809   0003af 0680            		ld	b, 80h
-   810   0003b1 cdbe03          serin1:		call	time19600
-   811   0003b4 db50            		in	a, (SERIN)
-   812   0003b6 07              		rlca
-   813   0003b7 cb18            		rr	b
-   814   0003b9 30f6            		jr	nc, serin1
+   793                          
+   794                          ;--------------------------------------------------
+   795                          ; RS232 in	208 T-States
+   796                          ;--------------------------------------------------
+   797   0003a7 c5              serin:		push	bc
+   798   0003a8 db50            serin2:		in	a, (SERIN)
+   799   0003aa 07              		rlca
+   800   0003ab 38fb            		jr	c, serin2
+   801                          
+   802   0003ad e3              		ex	(sp), hl			;19, 4.75uS
+   803   0003ae e3              		ex	(sp), hl			;19  9uS
+   804                          
+   805   0003af 0680            		ld	b, 80h
+   806   0003b1 cdbe03          serin1:		call	time19600
+   807   0003b4 db50            		in	a, (SERIN)
+   808   0003b6 07              		rlca
+   809   0003b7 cb18            		rr	b
+   810   0003b9 30f6            		jr	nc, serin1
+   811                          
+   812   0003bb 78              		ld	a, b
+   813   0003bc c1              		pop	bc
+   814   0003bd c9              		ret
    815                          
-   816   0003bb 78              		ld	a, b
-   817   0003bc c1              		pop	bc
-   818   0003bd c9              		ret
-   819                          
-   820   0003be 0e09            time19600:	ld	c, 9				;4
-   821   0003c0 0d              time19600a:	dec	c				;4
-   822   0003c1 20fd            		jr	nz, time19600a			;12/7
-   823   0003c3 c9              		ret					;10
-   824                          
-   825                          CMDOUT:
-   826   0003c4 d340            		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
-   827   0003c6 3e0e            CMDT1:		LD	A,14
-   828   0003c8 3d              CMDT2:		DEC	A
-   829   0003c9 20fd            		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
-   830   0003cb db40            CMDT3:		in	a, (STSREG)
-   831   0003cd cb47            		bit	0, a
-   832   0003cf 20fa            		jr	nz, CMDT3
-   833   0003d1 c9              		RET
-   834                          
-   835                          ;--------------------------------------------------
-   836                          ; 11 times port:value
-   837                          ;--------------------------------------------------
-   838   0003d2 5001            portval:	db	050h, 001h			;Bit0	set ATARI DATA
-   839   0003d4 5101            		db	051h, 001h			;Bit1	set RS232 TX
-   840   0003d6 8003            		db	080h, 003h			;CTC	Channel 0 reset
-   841   0003d8 8010            		db 	080h, 010h			;CTC	Channel 0 interrupt vector
-   842   0003da 8107            		db	081h, 007h			;CTC	Channel 1 reset + set time constant
-   843   0003dc 8101            		db	081h, 001h			;CTC	Channel 1 time contant
-   844   0003de 8203            		db	082h, 003h			;CTC	Channel 2 reset
-   845   0003e0 8303            		db	083h, 003h			;CTC	Channel 3 reset
-   846   0003e2 5701            		db	057h, 001h			;Bit7	ATARI RXD
-   847   0003e4 3050            		db	030h, 050h			;DRIVE CONTROL reset FDC
-   848   0003e6 3040            		db	030h, 040h			;DRIVE CONTROL 8Mhz
-   849                          
-   850                          ;--------------------------------------------------
-   851                          ; variables and data structure
-   852                          ;--------------------------------------------------
-   853                          ;
-   854                          ; 32 bytes for disktab
-   855                          ;
-   856   0003e8 0000000000000000disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
+   816   0003be 0e09            time19600:	ld	c, 9				;4
+   817   0003c0 0d              time19600a:	dec	c				;4
+   818   0003c1 20fd            		jr	nz, time19600a			;12/7
+   819   0003c3 c9              		ret					;10
+   820                          
+   821                          CMDOUT:
+   822   0003c4 d340            		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
+   823   0003c6 3e0e            CMDT1:		LD	A,14
+   824   0003c8 3d              CMDT2:		DEC	A
+   825   0003c9 20fd            		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
+   826   0003cb db40            CMDT3:		in	a, (STSREG)
+   827   0003cd cb47            		bit	0, a
+   828   0003cf 20fa            		jr	nz, CMDT3
+   829   0003d1 c9              		RET
+   830                          
+   831                          ;--------------------------------------------------
+   832                          ; 11 times port:value
+   833                          ;--------------------------------------------------
+   834   0003d2 5001            portval:	db	050h, 001h			;Bit0	set ATARI DATA
+   835   0003d4 5101            		db	051h, 001h			;Bit1	set RS232 TX
+   836   0003d6 8003            		db	080h, 003h			;CTC	Channel 0 reset
+   837   0003d8 8010            		db 	080h, 010h			;CTC	Channel 0 interrupt vector
+   838   0003da 8107            		db	081h, 007h			;CTC	Channel 1 reset + set time constant
+   839   0003dc 8101            		db	081h, 001h			;CTC	Channel 1 time contant
+   840   0003de 8203            		db	082h, 003h			;CTC	Channel 2 reset
+   841   0003e0 8303            		db	083h, 003h			;CTC	Channel 3 reset
+   842   0003e2 5701            		db	057h, 001h			;Bit7	ATARI RXD
+   843   0003e4 3050            		db	030h, 050h			;DRIVE CONTROL reset FDC
+   844   0003e6 3040            		db	030h, 040h			;DRIVE CONTROL 8Mhz
+   845                          
+   846                          ;--------------------------------------------------
+   847                          ; variables and data structure
+   848                          ;--------------------------------------------------
+   849                          ;
+   850                          ; 32 bytes for disktab
+   851                          ;
+   852   0003e8 0000000000000000disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
                 0000000000000000
-   857   0003f8 0000000000000000		dw	0, 0, 0, 0, 0, 0, 0, 0
+   853   0003f8 0000000000000000		dw	0, 0, 0, 0, 0, 0, 0, 0
                 0000000000000000
-   858                          
-   859   000408 28              pokeydiv:	db	SIONORMAL
-   860   000409 ff              drive:		db	255
-   861   00040a ff              track:		db	255
-   862   00040b 0000            secptr:		dw	0
-   863                          
-   864   00040d 56fe            skewtab:	dw	SKEWSD
-   865   00040f c8fe            		dw	SKEW13
-   866   000411 68fe            		dw	SKEWDD
-   867   000413 e2fe            		dw	SKEW17
-   868                          
-   869   000415 00              dcb:		db	0				;DISK OPERATION CODE
-   870   000416 00              		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
-   871   000417 00              		db	0				;TRACK#
-   872   000418 00              		db	0				;SECTOR#
-   873   000419 0000            		dw	0				;READ/WRITE POINTER
-   874   00041b 0000            		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
-   875   00041d 00              		db	0				;OPERATION COMPLETION STATUS
+   854                          
+   855   000408 28              pokeydiv:	db	SIONORMAL
+   856   000409 ff              drive:		db	255
+   857   00040a ff              track:		db	255
+   858   00040b 0000            secptr:		dw	0
+   859                          
+   860   00040d 56fe            skewtab:	dw	SKEWSD
+   861   00040f c8fe            		dw	SKEW13
+   862   000411 68fe            		dw	SKEWDD
+   863   000413 e2fe            		dw	SKEW17
+   864                          
+   865   000415 00              dcb:		db	0				;DISK OPERATION CODE
+   866   000416 00              		db	0				;DRIVE# (WITH SIDE# IN BIT 7)
+   867   000417 00              		db	0				;TRACK#
+   868   000418 00              		db	0				;SECTOR#
+   869   000419 0000            		dw	0				;READ/WRITE POINTER
+   870   00041b 0000            		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
+   871   00041d 00              		db	0				;OPERATION COMPLETION STATUS
+   872                          
+   873   00041e 000000000000    id:		dw	0, 0, 0
+   874                          
+   875                          sallycode	equ	ASMPC				;append Sally code here
    876                          
-   877   00041e 000000000000    id:		dw	0, 0, 0
-   878                          
-   879                          sallycode	equ	ASMPC				;append Sally code here
-   880                          
-   881                          
+   877                          

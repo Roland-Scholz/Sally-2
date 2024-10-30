@@ -1061,7 +1061,7 @@ minimon.mac:
      7   0003e2 cdfc05          	CALL	CONINIT		;INITIALIZE SERIAL CONSOLE PORT
      8   0003e5 cdc904          	CALL	PNEXT
      9   0003e8 0d0a            	DEFB	CR,LF
-    10   0003ea 526f6c6c6931    	DEFB	"Rolli1"
+    10   0003ea 53616c6c7932    	DEFB	"Sally2"
     11   0003f0 00              	DEFB	NULL
     12   0003f1 21f103          PROMPT:	LD	HL,PROMPT
     13   0003f4 e5              	PUSH	HL		;PUT RETURN ADDRESS ON STACK
