@@ -194,28 +194,29 @@ GLOBAL.MAC:
    137                          ;
    138                          SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
    139                          DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
-   140                          ;
+   140                          MSDOS	EQU	4		;512-byte sectors
    141                          ;
-   142                          ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
-   143                          ;
-   144                          PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
-   145                          ;
+   142                          ;
+   143                          ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
+   144                          ;
+   145                          PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
    146                          ;
-   147                          ;	EQUATES FOR BITS IN 'CMDSTS' BYTE
-   148                          ;
-   149                          BADCMD	EQU	0		;BAD COMMAND FRAME BIT
-   150                          BADDAT	EQU	1		;BAD DATA FRAME BIT
-   151                          BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
-   152                          WRPROT	EQU	3		;WRITE PROTECTED BIT
-   153                          ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
-   154                          SEC256	EQU	5		;LONG/SHORT SECTOR BIT
-   155                          ;
+   147                          ;
+   148                          ;	EQUATES FOR BITS IN 'CMDSTS' BYTE
+   149                          ;
+   150                          BADCMD	EQU	0		;BAD COMMAND FRAME BIT
+   151                          BADDAT	EQU	1		;BAD DATA FRAME BIT
+   152                          BADRW	EQU	2		;BAD READ/WRITE OPERATION BIT
+   153                          WRPROT	EQU	3		;WRITE PROTECTED BIT
+   154                          ACTIVE	EQU	4		;DRIVE READY INDICATOR BIT
+   155                          SEC256	EQU	5		;LONG/SHORT SECTOR BIT
    156                          ;
-   157                          ;	EQUATES FOR BITS IN 'FLAGS' BYTE
-   158                          ;
-   159                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
-   160                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
-   161                          
+   157                          ;
+   158                          ;	EQUATES FOR BITS IN 'FLAGS' BYTE
+   159                          ;
+   160                          FIRST	EQU	0		;FIRST ACCESS FLAG (0=NOT ACCESSED)
+   161                          CONFIG	EQU	1		;DRIVE CONFIGURED BIT (0=UNCONFIGED)
+   162                          
 sally2-f000.asm:
     15                          
     16                          MONITOR		equ	$

@@ -36,6 +36,9 @@ IOBUFLENHI	equ	(IOBUFF+LEN) / 256
 ; Atari ROM routines that shouldn't change their
 ; addresses
 ;--------------------------------------------------
+SECTRAN		equ	0fa10h
+RECVBUFF	equ	0f6b9h
+SENDCHAR	equ	0fc56h
 DISKID		equ	0f82bh
 DISKTAB		equ	0f83dh
 DRVINDEX	equ	0fc28h
@@ -52,6 +55,8 @@ CMDL5		equ	0f809h
 EMULATOR	equ	0f762h
 LOGON		equ	0f77eh
 STARTBIT	equ	0f715h
+DISKWRT1	equ	0f918h					;hook for setDirectSector write
+DISKRD1		equ	0f993h					;hook for read direct sector
 
 SKEWSD		equ	0fe56h
 SKEW13		equ	0fec8h
@@ -87,16 +92,17 @@ SIOFAST		equ	8
 ;
 reset:		di      				;disable interrupt
 		xor     a				;set a to zero
+;		ld	b, a
 restime:	dec     a				;do 256 times nothing
 		jr      nz, restime			;loop 
-							 
+;		djnz	restime
+		
 		ld      hl, portval			;init 11 ports with values at 0a3h
 		ld      b, 0bh              	
 portinit:	ld      c, (hl)             	
 		inc     hl                 	
 		outi   			 		 
 		jr      nz, portinit			; loop
-		
 		
 		ld      hl,0f000h          		;test ram @F000-FFFF
 		ld      a, 01h             		;write 1,2,4,8,16,32,64,128 
@@ -138,7 +144,7 @@ ramfill:	ld      (de),a
 		ld      a, 0ffh				;load interrupt-vector register
 		ld      i, a				;with 0ffh
 		im      2				;enable interrupt mode 2 (vectored)	
-				
+		
 ;--------------------------------------------------      
 ; step 5 times in and then out to trk00                  
 ; set bit 6 for each online floppy in ff5eh              
@@ -240,6 +246,13 @@ code0000:
 		inc	hl
 		ld	a, getspeed / 256
 		ld	(hl), a
+		inc	hl
+		
+;		ld	a, setsector & 255
+;		ld	(hl), a
+;		inc	hl
+;		ld	a, setsector / 256
+;		ld	(hl), a
 		
 		ld	hl, disktab
 		ld	(DISKID), hl
@@ -249,12 +262,16 @@ code0000:
 		
 		ld	a, SIONORMAL
 		ld	(pokeydiv), a		
-
+		xor	a
+		ld	(hispeed), a
+		ld	(direct), a
 		ld	a, 0c3h				;'JP' instruction
 		ld	(XMITBUF), a
 		ld	(RXBLOCK), a
 		ld	(CMDWAIT), a
 		ld	(LOGON), a
+		ld	(DISKWRT1), a
+		ld	(DISKRD1), a
 		
 		ld	hl, xmitbuf
 		ld	(XMITBUF+1), hl
@@ -268,11 +285,102 @@ code0000:
 		ld	(DISKWRITE+1), hl
 		ld	hl, logon
 		ld	(LOGON+1), hl
-
+		ld	hl, diskwrt1
+		ld	(DISKWRT1+1), hl
+		ld	hl, diskrd1
+		ld	(DISKRD1+1), hl
 		
+;--------------------------------------------------
+; test code
+;--------------------------------------------------
+;		ld	a, 0c3h				;'JP' instruction
+;		ld	(SEL4), a
+;		ld	hl, sel4
+;		ld	(SEL4+1), hl
+;
+;		ld	a, 255
+;		ld	(CTCVEC+2), a
+;		
+;		ld	b, 3
+;		ld	a, ' '
+;stars:		call	serout
+;;		djnz	stars	
+;
+;		ld	ix, testdcb
+;		call	sercr
+;		call	DISKV
+;		call	dumpdcb
+;		
+;		ld	a, GETID
+;		ld	(testdcb), a
+;		call	DISKV
+;		call	dumpdcb
+;		call	dumprid
+;	
+;		ld	hl, 512
+;		ld	(testdcb+DSKAUX), hl 
+;		ld	a, GETSEC
+;		ld	(testdcb), a
+;		
+;		ld	a, '*'
+;		call	serout
+;
+;		ld	c, 1
+;secloop1:	ld	b, 18
+;		ld	hl, sectab
+;secloop:	ld	a, (hl)
+;		ld	(testdcb + DSKSEC),a
+;		inc	hl
+;		push	bc
+;		push	hl
+;		call	DISKV
+;		pop	hl
+;		pop	bc
+;		djnz	secloop
+;		dec	c
+;		jr	nz, secloop1
+;		
+;		ld	a, '-'
+;		call	serout
+;		
+;loop:		jr	loop
+;;		
+;;		
+
+;		
+;dumprid:	
+;		ld	hl, (testdcb + DSKPTR)
+;		call	sercr
+;		ld	b, 6	
+;dumprid1:	ld	a, (hl)
+;		inc	hl
+;		call	serhex
+;		call	serspace
+;		djnz	dumprid1
+;		ret
+;
+;dummy:		xor	a
+;		call	serhex
+;		ret
+;		
+;testdcb:	db	TSTRDY				;DISK OPERATION CODE
+;		db	1				;DRIVE# (WITH SIDE# IN BIT 7)
+;		db	0				;TRACK#
+;		db	1				;SECTOR#
+;		dw	08000h				;READ/WRITE POINTER
+;		dw	0				;AUXILLIARY PARAMETERS (2 BYTES)
+;		db	0				;OPERATION COMPLETION STATUS
+;		
+;sectab:		
+;		db	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+;		db	1, 3, 5, 7, 9, 11, 13, 15, 17, 2, 4, 6, 8, 10, 12, 14, 16, 18
+;		db	1, 4, 7, 10, 13, 16, 2, 5, 8, 11, 14, 17, 3, 6, 9, 12, 15, 18
+;		db	1, 5, 9, 13, 17, 3, 7, 11, 15, 2, 6, 10, 14, 18, 4, 8, 12, 16
+;--------------------------------------------------
+; end of test code
+;--------------------------------------------------		
 		jp	EMULATOR
-
-
+	
 logon:		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
 
 		ld	a, 0c3h				;'JP' instruction
@@ -295,7 +403,7 @@ shutdown:	call	0f228h
 ;
 sel4:		bit	6, b				;8" found?
 		jr	z, sel4ex			;yes, do nothing
-		
+
 		push	bc				;save registers
 		push	de
 		push	hl
@@ -314,16 +422,16 @@ sel4:		bit	6, b				;8" found?
 		ld	ix, dcb
 		ld	hl, id
 		ld	(dcb + DSKPTR), hl
-		ld	hl, 6
-		ld	(dcb + DSKAUX), hl
 		ld	a, RIDCMD
-;		ld	(dcb + DSKOP), a
 		ld	(CMDBYT), a
 		ld	a, 018h				;substitute JR	Z,xx by JR xx
 		ld	(DISK3 + 031h), a
-		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
-		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
-		call	DISK3				;DISK3: READ 6 BYTE ID RECORD
+		ld	b, 6
+sel4a:		push	bc
+		call	DISK3+6				;DISK3: READ 6 BYTE ID RECORD
+		pop	bc
+		djnz	sel4a
+		
 		ld	a, 028h				;reset JR Z,xx
 		ld	(DISK3 + 031h), a
 		
@@ -340,7 +448,101 @@ sel4ex:
 		ld	a, b
 		ld	d, 0
 		jp	SEL4+3
-		 		
+
+;--------------------------------------------------
+; hook for read directSector if aux1/2 = 0
+;--------------------------------------------------
+diskrd1:
+		ld	hl, (CFRAME + 2)		;load DAUX1/2, test if zero
+		ld	a, l
+		or	h
+		jr	z, diskrd1a
+diskrd1ex:	call	SECTRAN				;call SECTRAN
+		jp	DISKRD1+3
+		
+diskrd1a:		
+		ld	hl, (dsector)
+		ld	de, 18
+		or	a
+diskrd1b:	sbc	hl, de
+		jr	c, diskrd1c
+		inc	b
+		jr	diskrd1b
+diskrd1c:	ld	a, l
+		add	19
+		ld	(DKIOCB+DSKSEC), a
+		ld	a, b
+		rrca
+		ld	b, a
+		and	07fh
+		ld	(DKIOCB+DSKTRK), a
+		
+		ld	a, b
+		and	080h
+		ld	b, a
+		ld	hl, DKIOCB+DSKDRV
+		ld	a, (hl)
+		and	07fh
+		or	b
+		ld	(hl), a
+		
+		call	serhex
+		call	serspace
+		ld	a, 'S'
+		call	serout
+		ld	a, (DKIOCB+DSKSEC)
+		call	serhex
+		call	serspace
+		ld	a, 'T'
+		call	serout
+		ld	a, (DKIOCB+DSKTRK)
+		call	serhex
+		call	sercr
+				
+		ld	hl, 512
+		ld	(DKIOCB+DSKAUX), hl
+		ld	hl, IOBUFF
+		ld	(DKIOCB+DSKPTR), hl
+		ld	A,GETSEC
+		ld	(DKIOCB+DSKOP), a
+		ld	ix, DKIOCB
+		push	HL
+		call	diskread			;CALL DISK I/O HANDLER
+		pop	HL
+				
+		ld	a, (DKIOCB+DSKSTS)
+		call	0f9e3h				;call SETSTAT
+		ld	d, 0				;no invert
+		jp	0f66ch				;call SENDBUFF
+				
+;--------------------------------------------------
+; hook for setDirectSector if aux1/2 = 0
+;--------------------------------------------------
+diskwrt1:	push	hl
+		ld	(LOGSIZ),HL			;SAVE DATA BLOCK LENGTH	
+		
+		ld	hl, (CFRAME + 2)		;load DAUX1/2
+		ld	a, l
+		or	h
+		jr	nz, diskwrt1ex
+		
+		call	SENDACK
+		ld	b, 64
+		djnz	$
+
+		ld	hl, (IOBUFF)			;save 2-byte sector number (0-xxxx)
+		ld	(dsector), hl
+		
+;		ld	hl, direct			;mark direct
+;		inc	(hl)
+
+		pop	hl
+		ld	a, 'C'
+		jp	SENDCHAR
+		
+diskwrt1ex:	pop	hl
+		jp	DISKWRT1+3
+		
 ;--------------------------------------------------
 ; diskwrite: write through sector
 ;--------------------------------------------------
@@ -361,7 +563,6 @@ diskwrite:
 		ldir		
 		
 diskwrite1:	jp	DISKV
-
 
 ;--------------------------------------------------
 ; Debug routine
@@ -392,6 +593,25 @@ diskwrite1:	jp	DISKV
 ;		call	sercr
 ;		ret
 
+dumpdcb:	push	af
+		push	bc
+		push	hl
+		
+		push	ix
+		pop	hl
+		call	sercr
+		ld	b, 9	
+dumpdcb1:	ld	a, (hl)
+		inc	hl
+		call	serhex
+		call	serspace
+		djnz	dumpdcb1
+		call	sercr
+		
+		pop	hl
+		pop	bc
+		pop	af
+		ret
 ;--------------------------------------------------
 ; diskread: cache a track
 ;--------------------------------------------------
@@ -401,7 +621,7 @@ diskread:
 		
 		call	checktrack		
 		jr	z, match
-	
+		
 		ld	(drive), de			;save new drive and track		
 		push	ix				;save ix
 		
@@ -410,8 +630,32 @@ diskread:
 		ld	de, dcb
 		ld	bc, 9
 		ldir					;copy dcb
+
+		ld	ix, dcb				;load ix with new dcb
+		
+		ld	a, (dcb + DSKAUX+1)		;get sector length high-byte
+		cp	2
+		jr	nz, readtrack2			;no MS-DOS disk
+
+		ld	hl, TRKBUF
+		ld	bc, 18 * 256 + 1
+readtrack3:	ld	(dcb + DSKPTR), hl
+		ld	(ix + DSKSEC), c
+		push	hl
+		push	bc
+		call	DISKV
+		pop	bc
+		pop	hl
+		ld	a, (dcb + DSKSTS)		;error occured?
+		or	a
+		jr	nz, readtrack4			;yes
+		ld	de, 512
+		add	hl, de
+		inc	c
+		djnz	readtrack3
+		jr	readtrack5
 	
-		ld	b, 0				;compute skew-list from media type
+readtrack2:	ld	b, 0				;compute skew-list from media type
 		ld	c, (iy + MEDIA)		
 		ld	hl, skewtab
 		add	hl, bc
@@ -419,11 +663,10 @@ diskread:
 		inc	hl
 		ld	h, (hl)
 		ld	l, a
-		ld	(secptr), hl
-
-		ld	ix, dcb				;load ix with new dcb		
 		ld	b, (iy + NSECS+1)
-		
+
+readtrack1:	ld	(secptr), hl
+
 readtrack:	ld	hl, (secptr)
 		ld	a, (hl)
 		ld	(dcb + DSKSEC), a
@@ -433,44 +676,50 @@ readtrack:	ld	hl, (secptr)
 		push	bc
 		call	compbufadr
 		ld	(dcb + DSKPTR), hl
-				
 		call	DISKV
-		
 		pop	bc
+
 		ld	a, (dcb + DSKSTS)		;error occured?
 		or	a
 		jr	z, readtrack6			;no	
-		pop	ix				;yes, store in original dcb
+readtrack4:	pop	ix				;yes, store in original dcb
 		jr	match2
 readtrack6:	djnz	readtrack
-		pop	ix
+readtrack5:	pop	ix
 		
 match:		call	compbufadr
 		ld	d, (ix + DSKPTR+1)
 		ld	e, (ix + DSKPTR)
 		ld	bc, (LOGSIZ)		
-		ldir
+		ld	a, (dcb + DSKAUX+1)		;get sector length high-byte
+		cp	2
+		jr	nz, match1
+		ld	bc, 512
+match1:		ldir
 		
 		xor	a
 match2:		ld	(ix + DSKSTS), a
 
-		in	a, (DATREG)				;keeps motor spinning
-		out	(TRKREG), a
-		ld	a, SKCMD
+		ld	a, FINCMD			;keeps motor spinning
 		call	CMDOUT
-		
+
 		jp	ACTIVON
 
-
-
+;--------------------------------------------------
+; hl = TRKBUF + DSKSEC * (128/256/512)
+;--------------------------------------------------
 compbufadr:	ld	hl, TRKBUF
 		ld	b, (ix + DSKSEC)
 		dec	b
 		ld	c, 0
-		ld	a, (dcb + DSKAUX)
+		ld	a, (dcb + DSKAUX + 1)		;load seclen highbyte
 		or	a
-		jr	z, compbufadr1
-		srl	b
+		jr	z, compbufadr2			;if zero, assume 128 bytes length
+		cp	1
+		jr	z, compbufadr1			;if 1, assume 256 bytes 
+		sla	b				;512 bytes
+		jr	compbufadr1
+compbufadr2:	srl	b				;128 bytes
 		rr	c
 compbufadr1:	add	hl, bc
 		ret
@@ -500,7 +749,9 @@ getspeed:
 		ld	hl, IOBUFF+LEN-1
 		
 		IF NOHIGHSPEEDSIO <> 1
-		ld	(hl), SIOFAST
+		ld	a, SIOFAST
+		ld	(hl), a
+		ld	(hispeed), a
 		ELSE
 		ld	(hl), SIONORMAL
 		ENDIF
@@ -521,10 +772,10 @@ cmdwait:	ld	a, (CMDFLG)
 		ld	a, (CMDFLG)
                 cp	1		
 
-		di					;ELSE RESET INTERRUPT AND START AGAIN
+;		di					;ELSE RESET INTERRUPT AND START AGAIN
                 ld	a, 00000011B		
                 out	(CTC0),A		
-                ei		
+;		ei		
 				
                 jp	z, CMDL4			;good cmd-frame
 	
@@ -610,7 +861,11 @@ rxblock1:
 ;--------------------------------------------------
 ; togglebaud
 ;--------------------------------------------------		
-togglebaud:	ld	a, (pokeydiv)
+togglebaud:	ld	a, (hispeed)
+		or	a
+		ret	z
+		
+		ld	a, (pokeydiv)
 		cp	SIONORMAL
 		ld	a, SIOFAST
 		jr	z, togglebaud1
@@ -825,7 +1080,7 @@ CMDT2:		DEC	A
 		JR	NZ,CMDT2			;DELAY 56 MICROSECONDS
 CMDT3:		in	a, (STSREG)
 		bit	0, a
-		jr	nz, CMDT3
+		jr	nz, CMDT1
 		RET
 
 ;--------------------------------------------------
@@ -848,11 +1103,21 @@ portval:	db	050h, 001h			;Bit0	set ATARI DATA
 ;--------------------------------------------------
 ;
 ; 32 bytes for disktab
+; 7 commands copied in from DISKTAB, 3x7=21
+; 2 commands added '?' and 0xDD (setDirectSector)
 ;
 disktab:	dw	0, 0, 0, 0, 0, 0, 0, 0
 		dw	0, 0, 0, 0, 0, 0, 0, 0
 
+;
+; direct MSDOS sector for each drive
+;
+dsector:	db	0, 0
+direct:		db	0
+		
 pokeydiv:	db	SIONORMAL
+hispeed:	db	0
+
 drive:		db	255
 track:		db	255
 secptr:		dw	0		
