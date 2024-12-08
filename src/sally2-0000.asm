@@ -772,10 +772,10 @@ cmdwait:	ld	a, (CMDFLG)
 		ld	a, (CMDFLG)
                 cp	1		
 
-;		di					;ELSE RESET INTERRUPT AND START AGAIN
+		di					;ELSE RESET INTERRUPT AND START AGAIN
                 ld	a, 00000011B		
                 out	(CTC0),A		
-;		ei		
+		ei		
 				
                 jp	z, CMDL4			;good cmd-frame
 	
@@ -861,9 +861,9 @@ rxblock1:
 ;--------------------------------------------------
 ; togglebaud
 ;--------------------------------------------------		
-togglebaud:	ld	a, (hispeed)
-		or	a
-		ret	z
+togglebaud:	;ld	a, (hispeed)
+		;or	a
+		;ret	z
 		
 		ld	a, (pokeydiv)
 		cp	SIONORMAL
