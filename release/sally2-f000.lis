@@ -1704,7 +1704,7 @@ BITBANG.MAC:
     36                          ;
     37                          XMITBUF:
     38   000684 f3              	DI
-    39   000685 011507          	LD	BC,STARBIT
+    39   000685 011907          	LD	BC,STARBIT
     40   000688 ed4312ff        	LD	(CTCVEC+2),BC	;SET UP INITIAL INTERRUPT VECTOR
     41   00068c 0608            	LD	B,8
     42   00068e 3e87            	LD	A,10000111B
@@ -1784,159 +1784,156 @@ BITBANG.MAC:
    116                          ;
    117                          ;
    118                          RXBLOCK:
-   119                          ;	LD	DE,2730		;SET ABORT COUNTER FOR 32 MILLISECONDS
-   120   0006d9 010000          	LD	BC,0		;CLEAR B/C FOR CHECKSUM DERRIVATION
-   121   0006dc 1829            	JR	RXB35		;GO START LOOPING FOR START BIT
+   119   0006d9 11aa0a          	LD	DE,2730		;SET ABORT COUNTER FOR 32 MILLISECONDS
+   120   0006dc 010000          	LD	BC,0		;CLEAR B/C FOR CHECKSUM DERRIVATION
+   121   0006df 1823            	JR	RXB35		;GO START LOOPING FOR START BIT
    122                          ;
-   123   0006de 79              RXB1:	LD	A,C
-   124   0006df 80              	ADD	A,B
-   125   0006e0 ce00            	ADC	A,0		;ACCUMULATE CHECKSUM ATARI STYLE
-   126   0006e2 4f              	LD	C,A
-   127   0006e3 e3              	EX	(SP),HL
-   128   0006e4 e3              	EX	(SP),HL
-   129   0006e5 e3              	EX	(SP),HL
-   130   0006e6 e3              	EX	(SP),HL
-   131   0006e7 0608            	LD	B,8
+   123   0006e1 79              RXB1:	LD	A,C
+   124   0006e2 80              	ADD	A,B
+   125   0006e3 ce00            	ADC	A,0		;ACCUMULATE CHECKSUM ATARI STYLE
+   126   0006e5 4f              	LD	C,A
+   127   0006e6 e3              	EX	(SP),HL
+   128   0006e7 e3              	EX	(SP),HL
+   129   0006e8 e3              	EX	(SP),HL
+   130   0006e9 e3              	EX	(SP),HL
+   131   0006ea 0608            	LD	B,8
    132                          ;
    133                          ;	SERIAL->PARALLEL CONVERSION AT 52 MICROSECONDS PER BIT
    134                          ;
-   135   0006e9 3e0b            RXB2:	LD	A,11		;  7 CYCLES
-   136   0006eb 3e0b            	LD	A,11		;  7 CYCLES
-   137   0006ed 00              	NOP			;  4 CYCLES
-   138   0006ee 3d              RXB3:	DEC	A		; 44 CYCLES  (11*4)
-   139   0006ef c2ee06          	JP	NZ,RXB3		;110 CYCLES  (11*10)
-   140   0006f2 db70            	IN	A,(ATARI)	; 11 CYCLES
-   141   0006f4 17              	RLA			;  4 CYCLES
-   142   0006f5 cb1a            	RR	D		;  8 CYCLES
-   143   0006f7 10f0            	DJNZ	RXB2		; 13 CYCLES  (8 ON FINAL BIT)
+   135   0006ec 3e0b            RXB2:	LD	A,11		;  7 CYCLES
+   136   0006ee 3e0b            	LD	A,11		;  7 CYCLES
+   137   0006f0 00              	NOP			;  4 CYCLES
+   138   0006f1 3d              RXB3:	DEC	A		; 44 CYCLES  (11*4)
+   139   0006f2 c2f106          	JP	NZ,RXB3		;110 CYCLES  (11*10)
+   140   0006f5 db70            	IN	A,(ATARI)	; 11 CYCLES
+   141   0006f7 17              	RLA			;  4 CYCLES
+   142   0006f8 cb1a            	RR	D		;  8 CYCLES
+   143   0006fa 10f0            	DJNZ	RXB2		; 13 CYCLES  (8 ON FINAL BIT)
    144                          
-   145   0006f9 42              	LD	B,D		;SAVE COPY OF LAST DATA BYTE IN B
-   146   0006fa 72              	LD	(HL),D		;THEN STORE IN MEMORY BUFFER @HL
-   147   0006fb 23              	INC	HL
-   148   0006fc 7c              	LD	A,H
+   145   0006fc 42              	LD	B,D		;SAVE COPY OF LAST DATA BYTE IN B
+   146   0006fd 72              	LD	(HL),D		;THEN STORE IN MEMORY BUFFER @HL
+   147   0006fe 23              	INC	HL
+   148   0006ff 7c              	LD	A,H
    149                          iobuflenhi	equ	(IOBUFF+LEN) / 256
-   150   0006fd fec3            	CP	iobuflenhi
-   151   0006ff 3f              	CCF
-   152   000700 d8              	RET	C		;RETURN WITH CARRY SET IF BUFFER FILLED
+   150   000700 fec3            	CP	iobuflenhi
+   151   000702 3f              	CCF
+   152   000703 d8              	RET	C		;RETURN WITH CARRY SET IF BUFFER FILLED
    153                          
-   154   000701 3e08            	ld	a, 8
-   155   000703 3d              rxb3a:	dec	a
-   156   000704 c20307          	jp	nz, rxb3a
+   154                          ;	ld	a, 8
+   155                          ;rxb3a:	dec	a
+   156                          ;	jp	nz, rxb3a
    157                          
    158                          RXB35:
-   159   000707 11a101          	LD	DE,417		;5 MILLISECONDS @ 12 MICROSECONDS/LOOP
-   160                          ;RXB35a:	in	a, (ATARI)
-   161                          ;	rla
-   162                          ;	jr	nc, RXB35a
-   163                          	;LD	A,01000111B
-   164                          	;OUT	(CTC0),A	;PUT CTC0 IN COUNTER MODE
-   165                          	;XOR	A
-   166                          	;OUT	(CTC0),A	;COUNT DATA HIGH->LOW EDGES MOD 256
-   167                          RXB4:	;IN	A,(CTC0)
-   168                          	;OR	A
-   169                          	;JR	NZ,RXB1		;NEW BYTE IS COMING IF START BIT LOW
-   170   00070a db70            	IN	A, (ATARI)
-   171   00070c 17              	RLA
-   172   00070d 30cf            	JR	NC, RXB1
-   173   00070f 1b              	DEC	DE
-   174   000710 7a              	LD	A,D
-   175   000711 b3              	OR	E
-   176   000712 20f6            	JR	NZ,RXB4		;ELSE LOOP TILL TIMER RUNS OUT
-   177                          
-   178   000714 c9              	RET			;RETURN WITH CARRY CLEAR IF TIMED OUT
+   159   000704 11a101          	LD	DE,417		;5 MILLISECONDS @ 12 MICROSECONDS/LOOP
+   160   000707 3e47            	LD	A,01000111B
+   161   000709 d380            	OUT	(CTC0),A	;PUT CTC0 IN COUNTER MODE
+   162   00070b af              	XOR	A
+   163   00070c d380            	OUT	(CTC0),A	;COUNT DATA HIGH->LOW EDGES MOD 256
+   164   00070e db80            RXB4:	IN	A,(CTC0)
+   165   000710 b7              	OR	A
+   166   000711 20ce            	JR	NZ,RXB1		;NEW BYTE IS COMING IF START BIT LOW
+   167                          ;	IN	A, (ATARI)
+   168                          ;	RLA
+   169                          ;	JR	NC, RXB1
+   170   000713 1b              	DEC	DE
+   171   000714 7a              	LD	A,D
+   172   000715 b3              	OR	E
+   173   000716 20f6            	JR	NZ,RXB4		;ELSE LOOP TILL TIMER RUNS OUT
+   174                          
+   175   000718 c9              	RET			;RETURN WITH CARRY CLEAR IF TIMED OUT
+   176                          ;
+   177                          ;
+   178                          ;
    179                          ;
-   180                          ;
+   180                          ;	**** PAGE BOUNDARY SENSITIVE CODE STARTS HERE ****
    181                          ;
-   182                          ;
-   183                          ;	**** PAGE BOUNDARY SENSITIVE CODE STARTS HERE ****
+   182                          SERPAGE	EQU	$
+   183                          ;
    184                          ;
-   185                          SERPAGE	EQU	$
+   185                          ;	... DAMN FAST TRASMIT INTERRUPTS ...
    186                          ;
-   187                          ;
-   188                          ;	... DAMN FAST TRASMIT INTERRUPTS ...
-   189                          ;
-   190                          ;	HL ... POINTS TO DATA BLOCK TO BE SENT
-   191                          ;	 D ... HOLDS DATA POLARITY MASK
-   192                          ;	 E ... USED TO ACCUMULATE CHECKSUM
-   193                          ;	 B ... USED FOR DJNZ TO COUNT BITS
-   194                          ;	 C ... USED FOR PARALLEL-SERIAL OUTPUT
-   195                          ;
-   196                          ;
-   197                          STARBIT:
-   198   000715 af              	XOR	A
-   199   000716 d350            	OUT	(ATROUT),A	;SEND START BIT
-   200   000718 fb              	EI
-   201   000719 7e              	LD	A,(HL)		;LOAD A WITH TRANSMIT DATA BYTE
-   202   00071a 23              	INC	HL		; AND INCREMENT BUFFER POINTER
-   203   00071b aa              	XOR	D		;DO DATA POLARITY THING
-   204   00071c 4f              	LD	C,A		;THEN STUFF IN C FOR SHIFTING OUT
-   205   00071d 83              	ADD	A,E
-   206   00071e ce00            	ADC	A,0
-   207   000720 5f              	LD	E,A		;ACCUMULATE CHECKSUM IN E
-   208   000721 3e28            	LD	A,DATBIT & 255
-   209   000723 3212ff          	LD	(CTCVEC+2),A	;FIX BAUDRATE INTERRUPT VECTOR
-   210   000726 ed4d            	RETI			;RETURN TO IDLE LOOP
-   211                          ;
-   212                          ;
-   213                          ;
-   214                          DATBIT:
-   215   000728 79              	LD	A,C
-   216   000729 d350            	OUT	(ATROUT),A	;SEND DATA BIT (LSB)
-   217   00072b fb              	EI
-   218   00072c cb19            	RR	C		;SHIFT DATA FOR NEXT BIT
-   219   00072e 1005            	DJNZ	DATB2		;DECREMENT AND SKIP IF NOT LAST BIT
-   220                          
-   221   000730 3e37            	LD	A,STOPB1 & 255
-   222   000732 3212ff          	LD	(CTCVEC+2),A	;THEN FIX VECTOR TO SEND STOP BIT
-   223   000735 ed4d            DATB2:	RETI			;RETURN TO IDLE LOOP
-   224                          ;
-   225                          ;
-   226                          ;
-   227                          STOPB1:
-   228   000737 3e01            	LD	A,1
-   229   000739 d350            	OUT	(ATROUT),A	;SEND STOP BIT
-   230   00073b fb              	EI
-   231   00073c 7c              	LD	A,H
-   232   00073d fec3            	CP	iobuflenhi
-   233   00073f 3009            	JR	NC,STOP1A	;JUMP IF BUFFER END REACHED
-   234                          
-   235   000741 0608            	LD	B,8		;LOAD BITCOUNT FOR NEXT RECEIVE BYTE
-   236   000743 3e15            	LD	A,STARBIT & 255
-   237   000745 3212ff          	LD	(CTCVEC+2),A
-   238   000748 ed4d            	RETI			;SET TO SEND SECOND STOP BIT
-   239                          ;
-   240   00074a 3e51            STOP1A:	LD	A,ENDBIT & 255
-   241   00074c 3212ff          	LD	(CTCVEC+2),A	;SET TO END TRANSMISSION
-   242   00074f ed4d            	RETI
-   243                          ;
-   244                          ;
-   245                          ;
-   246                          ;	IF	(HIGH SERPAGE) NE (HIGH $)
-   247                          ;	.ERROR /PAGE ERROR ON ATARI SIO/
-   248                          ;	ENDIF
-   249                          ;
-   250                          ;
-   251                          ;
-   252                          ENDBIT:
-   253   000751 3e03            	LD	A,00000011B	;STOP INTERRUPTS FROM BAUDRATE CTC
-   254   000753 d381            	OUT	(CTC1),A	; BUT KEEP ON COUNTING TO CLOCK U26
-   255   000755 fb              	EI
-   256   000756 3eff            	LD	A,255
-   257   000758 3212ff          	LD	(CTCVEC+2),A	;SET VECTOR BACK TO STANDARD PLACE
-   258   00075b e1              	POP	HL		;DISCARD IRQ RETURN ADDRESS AND RETURN
-   259   00075c ed4d            	RETI			; TO SECOND ADDRESS ON STACK
+   187                          ;	HL ... POINTS TO DATA BLOCK TO BE SENT
+   188                          ;	 D ... HOLDS DATA POLARITY MASK
+   189                          ;	 E ... USED TO ACCUMULATE CHECKSUM
+   190                          ;	 B ... USED FOR DJNZ TO COUNT BITS
+   191                          ;	 C ... USED FOR PARALLEL-SERIAL OUTPUT
+   192                          ;
+   193                          ;
+   194                          STARBIT:
+   195   000719 af              	XOR	A
+   196   00071a d350            	OUT	(ATROUT),A	;SEND START BIT
+   197   00071c fb              	EI
+   198   00071d 7e              	LD	A,(HL)		;LOAD A WITH TRANSMIT DATA BYTE
+   199   00071e 23              	INC	HL		; AND INCREMENT BUFFER POINTER
+   200   00071f aa              	XOR	D		;DO DATA POLARITY THING
+   201   000720 4f              	LD	C,A		;THEN STUFF IN C FOR SHIFTING OUT
+   202   000721 83              	ADD	A,E
+   203   000722 ce00            	ADC	A,0
+   204   000724 5f              	LD	E,A		;ACCUMULATE CHECKSUM IN E
+   205   000725 3e2c            	LD	A,DATBIT & 255
+   206   000727 3212ff          	LD	(CTCVEC+2),A	;FIX BAUDRATE INTERRUPT VECTOR
+   207   00072a ed4d            	RETI			;RETURN TO IDLE LOOP
+   208                          ;
+   209                          ;
+   210                          ;
+   211                          DATBIT:
+   212   00072c 79              	LD	A,C
+   213   00072d d350            	OUT	(ATROUT),A	;SEND DATA BIT (LSB)
+   214   00072f fb              	EI
+   215   000730 cb19            	RR	C		;SHIFT DATA FOR NEXT BIT
+   216   000732 1005            	DJNZ	DATB2		;DECREMENT AND SKIP IF NOT LAST BIT
+   217                          
+   218   000734 3e3b            	LD	A,STOPB1 & 255
+   219   000736 3212ff          	LD	(CTCVEC+2),A	;THEN FIX VECTOR TO SEND STOP BIT
+   220   000739 ed4d            DATB2:	RETI			;RETURN TO IDLE LOOP
+   221                          ;
+   222                          ;
+   223                          ;
+   224                          STOPB1:
+   225   00073b 3e01            	LD	A,1
+   226   00073d d350            	OUT	(ATROUT),A	;SEND STOP BIT
+   227   00073f fb              	EI
+   228   000740 7c              	LD	A,H
+   229   000741 fec3            	CP	iobuflenhi
+   230   000743 3009            	JR	NC,STOP1A	;JUMP IF BUFFER END REACHED
+   231                          
+   232   000745 0608            	LD	B,8		;LOAD BITCOUNT FOR NEXT RECEIVE BYTE
+   233   000747 3e19            	LD	A,STARBIT & 255
+   234   000749 3212ff          	LD	(CTCVEC+2),A
+   235   00074c ed4d            	RETI			;SET TO SEND SECOND STOP BIT
+   236                          ;
+   237   00074e 3e55            STOP1A:	LD	A,ENDBIT & 255
+   238   000750 3212ff          	LD	(CTCVEC+2),A	;SET TO END TRANSMISSION
+   239   000753 ed4d            	RETI
+   240                          ;
+   241                          ;
+   242                          ;
+   243                          ;	IF	(HIGH SERPAGE) NE (HIGH $)
+   244                          ;	.ERROR /PAGE ERROR ON ATARI SIO/
+   245                          ;	ENDIF
+   246                          ;
+   247                          ;
+   248                          ;
+   249                          ENDBIT:
+   250   000755 3e03            	LD	A,00000011B	;STOP INTERRUPTS FROM BAUDRATE CTC
+   251   000757 d381            	OUT	(CTC1),A	; BUT KEEP ON COUNTING TO CLOCK U26
+   252   000759 fb              	EI
+   253   00075a 3eff            	LD	A,255
+   254   00075c 3212ff          	LD	(CTCVEC+2),A	;SET VECTOR BACK TO STANDARD PLACE
+   255   00075f e1              	POP	HL		;DISCARD IRQ RETURN ADDRESS AND RETURN
+   256   000760 ed4d            	RETI			; TO SECOND ADDRESS ON STACK
+   257                          ;
+   258                          ;
+   259                          ;	**** END PAGE BOUNDARY RESTRICTIONS ****
    260                          ;
    261                          ;
-   262                          ;	**** END PAGE BOUNDARY RESTRICTIONS ****
-   263                          ;
-   264                          ;
-   265   00075e 00              	nop
-   266   00075f 00              	nop
-   267   000760 00              	nop
-   268   000761 00              	nop
-   269                          
-   270                          
-   271                          
+   262                          ;	nop
+   263                          ;	nop
+   264                          ;	nop
+   265                          ;	nop
+   266                          
+   267                          
+   268                          
 sally2-f000.asm:
     48                          		INCLUDE	"ATARI.MAC"
 ATARI.MAC:
