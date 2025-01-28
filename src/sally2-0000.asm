@@ -561,6 +561,9 @@ diskwrt1d:	ld	hl, IOBUFF
 		jr	diskwrt1c
 		
 diskwrt1b:	ld	(hl), 2				;direct = 2
+
+		ld	hl, 512				;LOGSIZ 512 bytes in this case
+		ld	(LOGSIZ), hl
 		
 		ld	hl, IOBUFF
 		ld	de, IOBUFF+0100h
@@ -582,18 +585,24 @@ diskwrt1b:	ld	(hl), 2				;direct = 2
 ;--------------------------------------------------
 diskwrite:	
 ;		ld	a, 'W';
-;		call	debug
+;		call	serout
 		
 ;		jp	DISKV
 		
 		call	checktrack		
 		jr	nz, diskwrite1
 		
+;		ld	hl, (LOGSIZ)
+;		call	seraddr
+		
 		call	compbufadr
+;		call	seraddr
+		
 		ex	de, hl
 		ld	h, (ix + DSKPTR+1)
 		ld	l, (ix + DSKPTR)
-		ld	bc, (LOGSIZ)		
+		ld	bc, (LOGSIZ)
+
 		ldir		
 		
 diskwrite1:	jp	DISKV
@@ -731,6 +740,8 @@ readtrack:	ld	hl, (secptr)
 		or	a
 		jr	z, readtrack6			;no	
 readtrack4:	;call	dumpdcb
+		ld	hl, 0ffffh
+		ld	(drive), hl
 		pop	ix				;yes, store in original dcb
 		jr	match2
 readtrack6:	djnz	readtrack
