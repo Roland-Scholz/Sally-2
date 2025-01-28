@@ -850,7 +850,7 @@ cmdwait:	ld	a, (CMDFLG)
                 or	a				;SEE IF COMMAND FRAME HAS ARRIVED
                 ret	z				;EXIT IF NOTHING HAS HAPPENED
 					
-		call	sercmd				;5-byte command frame
+		;call	sercmd				;5-byte command frame
 		
 		ld	a, (CMDFLG)
                 cp	1		
