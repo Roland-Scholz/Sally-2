@@ -56,12 +56,14 @@ module shape() {
         translate([ledx+3*15, ledy+15, 0])
             led();
         
+        translate([25, 10+10, 0])
+            led5();
     }
     
 //    translate([edge, zmax-4*thick-edge, -thick])
 //        cube([xmax-2*edge-4*thick, 3, 3]);
 
-    translate([edge, 2, -thick])
+    translate([edge, 32, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
     translate([edge, 7, -thick])
@@ -72,6 +74,11 @@ module shape() {
 module led() {
     linear_extrude(thick)
         circle(1.6); 
+}
+
+module led5() {
+    linear_extrude(thick)
+        circle(2.6); 
 }
 
 module floppy() {
