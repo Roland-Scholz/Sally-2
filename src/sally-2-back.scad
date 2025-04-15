@@ -1,7 +1,7 @@
 $fn = 20;
 
 thick = 2;
-tf = 0.95;
+tf = 1.2;
 
 xmax = 250;
 ymax = 180+thick;
@@ -12,7 +12,7 @@ dev_bot = 21;
 
 edge=5;
 
-//rotate([180,0,0])
+rotate([180,0,0])
     shape();
 
 module shape() {
@@ -25,10 +25,13 @@ module shape() {
         translate([dev_x+17.5+32, dev_bot, 0])
             sio();
         
-        translate([dev_x+17.5+32+32+12, dev_bot, 0])
-            serpar();
+        translate([dev_x+17.5+31+32+12, dev_bot, 0])
+            par();
+        
+        translate([dev_x+17.5+31+32+12+53+2, dev_bot, 0])
+            ser();
 
-        translate([dev_x+17.5+32+32+12+86+3, dev_bot, 0])
+        translate([dev_x+17.5+32+32+12+86+2, dev_bot, 0])
             barrel();
         
         translate([dev_x+17.5+32+32+12+86+3+9+5, dev_bot, 0])
@@ -54,11 +57,15 @@ module usb() {
 }
 
 module barrel() {
-    cube([9, 11, thick]);
+    cube([9.5, 11.5, thick]);
 }
 
-module serpar() {
-    cube([86, 12.5, thick]);
+module par() {
+    cube([53, 12.5, thick]);
+}
+
+module ser() {
+    cube([31, 12.5, thick]);
 }
 
 module sio() {
@@ -68,7 +75,7 @@ module sio() {
 module base_shape() {
     
     rotate([0,0,0])
-    linear_extrude(thick * tf)
+    linear_extrude(1.6)
         base_shape_2d(thick * tf);
 
 }

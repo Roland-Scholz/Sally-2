@@ -7,12 +7,12 @@ xmax = 250;
 ymax = 180+thick;
 zmax = 39*2;
 
-ledx = 141;
+ledx = 142;
 ledy = 12;
 
 edge=5;
 
-//rotate([180,0,0])
+rotate([180,0,0])
     shape();
 
 module shape() {
@@ -32,7 +32,7 @@ module shape() {
         translate([93.5, 10, 0])
             switch();
         
-        translate([216, 26, 0])
+        translate([216, 26.5, 0])
             reset();
         
         translate([14, 35, 0])
@@ -58,42 +58,42 @@ module shape() {
         
     }
     
-    translate([edge, zmax-4*thick-edge, -thick])
+//    translate([edge, zmax-4*thick-edge, -thick])
+//        cube([xmax-2*edge-4*thick, 3, 3]);
+
+    translate([edge, 2, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
-    translate([edge, 32, -thick])
-        cube([xmax-2*edge-4*thick, 3, 3]);
-
-    translate([edge, 5, -thick])
+    translate([edge, 7, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
 }
 
 module led() {
-    linear_extrude(thick*tf)
+    linear_extrude(thick)
         circle(1.6); 
 }
 
 module floppy() {
-    linear_extrude(thick*tf)
+    linear_extrude(thick)
         square([102 + 0.1, 26 + 0.1]);
 }
 
 module reset() {
-    linear_extrude(thick*tf)
+    linear_extrude(thick)
         circle(5.5); 
 }
 
 module switch() {
-    linear_extrude(thick*tf)
+    linear_extrude(thick)
         square([15 + 0.3, 21 + 0.3]);
 }
 
 module base_shape() {
     
     rotate([0,0,0])
-    linear_extrude(thick * 0.95)
-        base_shape_2d(thick * 0.95);
+    linear_extrude(1.6)
+        base_shape_2d(thick * tf);
 
 }
 
