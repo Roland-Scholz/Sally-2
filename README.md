@@ -35,19 +35,24 @@ Additionally we have added:
 - read/write 512-bytes (MS-DOS) sectors for my Atari FAT-16 DOS 
 - add SD-card?
 
+![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
+![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
+Original Sally 1 repaired (5 ICs were out of order) and tested with a 40Trk single sides drive.
+
 ![Sally-2-front](pictures/Sally-2-front.png)
 ![Sally-2-back](pictures/Sally-2-back.png)
 ![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
-![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
-![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
+First version of Sally 2 PCB and a case
+
 ![Atr8000-cpm](pictures/atr8000-cpm.png)
+ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, which is apart from the messages identical to the ATR8000) 
 
 # further progress as of April 2025:
 
 - Marc has completed a new manually routed PCB and 3 supporting PCBs for swicthes and connectors
 - ATARI can read/write 3 1/2 HD disks formtted like 8"-disks (26sec x 77 trks x 2 sides = ca. 1MB)
   The challange was to allow for HD even for 300 rpm drives, instead of 360rom used by 8" and 5 1/4" drives.
-- A full blown FAT-12 DOS for the ATARI is close to be finished, dome more testing and minor features required
+- A full blown FAT-12 DOS for the ATARI is close to be finished, some more testing and minor additional features required/appreciated
 - ABBUC now owns a Bumbu X1-carbon 3D printer, which has immediately been used to dress Sally-2 appropirately.
 
 ![Sally-2-pcb-mk2](/pictures/Sally-2-pcb-mk2.png)
