@@ -41,3 +41,20 @@ Additionally we have added:
 ![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
 ![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
 ![Atr8000-cpm](pictures/atr8000-cpm.png)
+
+# further progress as of April 2025:
+
+- Marc has completed a new manually routed PCB and 3 supporting PCBs for swicthes and connectors
+- ATARI can read/write 3 1/2 HD disks formtted like 8"-disks (26sec x 77 trks x 2 sides = ca. 1MB)
+  The challange was to allow for HD even for 300 rpm drives, instead of 360rom used by 8" and 5 1/4" drives.
+- A full blown FAT-12 DOS for the ATARI is close to be finished, dome more testing and minor features required
+- ABBUC now owns a Bumbu X1-carbon 3D printer, which has immediately been used dress Sally-2 appropiriately.
+
+![Sally-2-pcb-mk2](/pictures/Sally-2-pcb-mk2.png)
+![Sally-2-pcb-front](/pictures/Sally-2-pcb-front.jpg)
+![Sally-2-case-a](/pictures/Sally-2-case-a.jpg)
+![Sally-2-case-b](/pictures/Sally-2-case-b.jpg)
+
+
+
+
