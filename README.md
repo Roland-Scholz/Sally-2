@@ -23,7 +23,7 @@ If you can get hold on an AJAX chip used in e.g. ATARI STE, use this one as it i
 
 Additionally we have added:
 
-- 60.000 baud high speed SIO (Pokey divisor 8)
+- 60.000 baud high speed SIO (Pokey divisor 8, drive responds to the "Get Speed Byte" command '?')
 - Track buffer
 - HD-support for 3 1/2" disks (ca. 1MB). (Format is same as 8", 2 sides, 77 tracks, 26 sectors/track, 256 bytes per sector)
 
@@ -48,7 +48,7 @@ Additionally we have added:
 - ATARI can read/write 3 1/2 HD disks formtted like 8"-disks (26sec x 77 trks x 2 sides = ca. 1MB)
   The challange was to allow for HD even for 300 rpm drives, instead of 360rom used by 8" and 5 1/4" drives.
 - A full blown FAT-12 DOS for the ATARI is close to be finished, dome more testing and minor features required
-- ABBUC now owns a Bumbu X1-carbon 3D printer, which has immediately been used dress Sally-2 appropiriately.
+- ABBUC now owns a Bumbu X1-carbon 3D printer, which has immediately been used to dress Sally-2 appropirately.
 
 ![Sally-2-pcb-mk2](/pictures/Sally-2-pcb-mk2.png)
 ![Sally-2-pcb-front](/pictures/Sally-2-pcb-front.jpg)
