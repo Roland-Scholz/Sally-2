@@ -28,13 +28,13 @@ difference() {
     
     //bumper
     
-    translate([25, 20, 0])
+    translate([35, 27.5, 0])
         cylinder(1, 1, 1);
-    translate([xmax-25, 20,0])
+    translate([xmax-35, 27.5,0])
         cylinder(1, 1, 1);
-    translate([25, ymax-15, 0])
+    translate([35, ymax-27.5, 0])
         cylinder(1, 1, 1);
-    translate([xmax-25, ymax-15, 0])
+    translate([xmax-35, ymax-27.5, 0])
         cylinder(1, 1, 1);
     
 }
@@ -60,7 +60,7 @@ module shell_bottom() {
         //clips left right
         translate([thick/2,3*thick,zmax-thick-1])
             cube([thick/2,ymax-6*thick, 3]);
-        translate([xmax-thick*1.5,3*thick,zmax-thick-1])
+        translate([xmax-thick,3*thick,zmax-thick-1])
             cube([thick/2,ymax-6*thick, 3]);
 
 
@@ -161,7 +161,7 @@ module screw(r) {
     difference() {
         cylinder(zmax,r*1.2,r*1.2);
         translate([0,0,-1]);
-            cylinder(zmax+2,r/2+0.05,r/2+0.05);
+            cylinder(zmax+2,r/2+0.2,r/2+0.2);
 //        cylinder(5,6,6);
     }
 }
@@ -169,7 +169,7 @@ module screw(r) {
 module foot(r, h) {    
     difference() {
         cylinder(h,r*2,r*1.3);
-            cylinder(h,r/2+0.1,r/2+0.1);
+            cylinder(h,r/2+0.2,r/2+0.2);
 //        cylinder(5,6,6);
     }
 }

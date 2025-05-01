@@ -63,7 +63,7 @@ module ataritext() {
 module base_shape_a() {
         rotate([90,0,0]) 
             linear_extrude(20)
-                base_shape_2d_a(0.4);
+                base_shape_2d_a(1.0);
 }
 
 module base_shape_2d_a(th) {

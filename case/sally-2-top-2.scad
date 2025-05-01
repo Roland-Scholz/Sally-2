@@ -16,20 +16,21 @@ difference(){
 }
 
 module atarilogo() {
-    translate([0,35,0])
+    translate([0,32.5,0])
         base_shape_a();
 }
 
 module ataritext() {
     linear_extrude(0.4)
         mirror([1,0,0])
-        text("ATARI ", 16, "SF Atarian              System:style=Regular");
+        text("ATARI ", 12, "SF Atarian System:style=Regular");
 
-    translate([-45, 0, 0])
+    translate([-38, 0, 0])
     linear_extrude(0.4)
         mirror([1,0,0])
-    text("SALLY-2 ", 12, "SF Atarian System:style=Regular");
+    text("SALLY 2 ", 10, "SF Atarian System:style=Regular");
 }
+
 
 module base_shape_a() {
         rotate([90,0,0]) 
