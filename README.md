@@ -56,7 +56,7 @@ ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, wh
 - ABBUC now owns a Bumbu X1-carbon 3D printer, which has immediately been used to dress Sally-2 appropirately.
 
 ![Sally-2-pcb-mk2](/pictures/Sally-2-pcb-mk2.png)
-![Sally-2-pcb-front](/pictures/Sally-2-pcb-front.jpg)
+![Sally-2-pcb-front](/pictures/Sally-2-pcb-front.JPG)
 ![Sally-2-case-a](/pictures/Sally-2-case-a.jpg)
 ![Sally-2-case-b](/pictures/Sally-2-case-b.jpg)
 
