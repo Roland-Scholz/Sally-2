@@ -59,6 +59,8 @@ ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, wh
 ![Sally-2-pcb-front](/pictures/Sally-2-pcb-front.JPG)
 ![Sally-2-case-a](/pictures/Sally-2-case-a.jpg)
 ![Sally-2-case-b](/pictures/Sally-2-case-b.jpg)
+![Sally-2-case-front-black](/pictures/Sally-2-front-black.jpg)
+
 
 
 
