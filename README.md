@@ -61,8 +61,12 @@ ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, wh
 ![Sally-2-case-a](/pictures/Sally-2-case-a.jpg)
 ![Sally-2-case-b](/pictures/Sally-2-case-b.jpg)
 ![Sally-2-case-front-black](/pictures/Sally-2-front-black.jpg)
+First try, all-in-one print, label and case
 ![sally-2-abbuc-a](/pictures/sally-2-abbuc-a.jpg)
 ![sally-2-abbuc-b](/pictures/sally-2-abbuc-b.jpg)
+Second try, separate label in higher quality, also changed beige to white
+![sally-cpm](/pictures/sally-cpm.png)
+![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
 
 
 
