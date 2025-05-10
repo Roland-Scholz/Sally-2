@@ -21,14 +21,16 @@ module atarilogo() {
 }
 
 module ataritext() {
-    linear_extrude(0.4)
+    linear_extrude(0.2)
         mirror([1,0,0])
-        text("ATARI ", 12, "SF Atarian System:style=Regular");
+        text("ABBUC", 10, "SF Atarian System:style=Regular");
 
-    translate([-38, 0, 0])
-    linear_extrude(0.4)
+    translate([-40, 1, 0])
+    linear_extrude(0.2)
         mirror([1,0,0])
-    text("SALLY 2 ", 10, "SF Atarian System:style=Regular");
+    text("Sally 2 ", 8
+    , "Brush Script MT:style=Italic"  );
+ 
 }
 
 

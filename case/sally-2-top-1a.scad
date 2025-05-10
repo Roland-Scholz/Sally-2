@@ -1,7 +1,7 @@
 use <C:/Users/rolan/Downloads/Atarian/SF Atarian System.ttf>
 
 thick = 2;
-xmax = 250-1;
+xmax = 250;
 ymax = 180+thick;
 zmax = 39;
 
@@ -9,12 +9,15 @@ edge=5;
 
 //translate([230,15,0])
 //    ataritext();
-
+rotate([90, 0, 0])
+    cube([70, 0.6, 20]);
+//ataritext();
+/*
 difference(){
     atarilogo();
 //    translate([230,17,0])
 //        ataritext();
-}
+}*/
 
 module atarilogo() {
     translate([0,32.5,0])
@@ -35,7 +38,7 @@ module ataritext() {
 module base_shape_a() {
         rotate([90,0,0]) 
             linear_extrude(20)
-                base_shape_2d_a(0.8);
+                base_shape_2d_a(1.0);
 }
 
 

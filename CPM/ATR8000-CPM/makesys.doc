@@ -1,0 +1,47 @@
+Installing a Customized Version of CP/M
+---------------------------------------
+
+   This is your master CP/M system disk. 
+It  should  be kept in a safe place  and 
+only  be  used to make  copies.  If  you 
+would  like  to make a working  copy  of 
+CP/M from this master, please follow the 
+steps  outlined below.  
+
+1) Run  the  DDINIT program and  make  a 
+   supply of initialized diskettes. Read 
+   about  this  function in the  ATR8000 
+   manual  if  you are  unfamiliar  with
+   disk formatting.
+2) Put this disk  back in drive  A:  and 
+   run the CONFIG program.  This program 
+   will ask a series of questions  about 
+   your  system and create a  customized 
+   CP/M to your specifications.
+3) When CONFIG asks you to insert a disk 
+   to write the system onto,  remove the    
+   master disk from drive A:, put in one 
+   of  the  disks  made in step  #1  and 
+   press return. 
+4) Wait  until the  program asks if  you 
+   would  like to repeat step  #3.  Then 
+   press the reset button on the ATR8000 
+   and re-boot CP/M using the newly made 
+   disk.
+5) Use  PIP to copy  the files from  the 
+   master CP/M disk onto your new  empty 
+   system disk.  If you have two drives, 
+   this is done by putting the master in
+   drive  B:  and typing  the  following 
+   command.
+
+   B:PIP A:=B:*.*[V]
+
+   If you have configured the system for 
+   only  one  disk drive,  this  command 
+   will  still  work  but  you  will  be 
+   prompted to change diskettes in drive 
+   A:  whenever  PIP switches  back  and 
+   forth  between  the master disk  (B:) 
+   and the copy disk (A:).
+

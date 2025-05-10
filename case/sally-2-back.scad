@@ -15,6 +15,7 @@ edge=5;
 rotate([180,0,0])
     shape();
 
+
 module shape() {
     difference(){
         base_shape();
@@ -36,6 +37,9 @@ module shape() {
         
         translate([dev_x+17.5+32+32+12+86+3+9+5, dev_bot, 0])
             usb();
+
+        translate([60+63, 63,0])
+            floppy();
         
     }
     
@@ -87,3 +91,17 @@ module base_shape_2d(th) {
     
     polygon([[0, zmax-edge-2*th], [0, edge], [edge,0], [xmax-edge-2*th, 0], [xmax-2*th, edge], [xmax-2*th, zmax-edge-2*th],[xmax-edge-2*th, zmax-2*th], [edge, zmax-2*th]  ]);
 }
+
+module floppy() {
+    rotate([0,0,180])
+    translate([0,0,-thick]) {
+    cube([60, 11, 2*thick]);
+    
+    translate([60+10.5, 5, 0])
+        cylinder(2*thick, 2, 2);
+    
+    translate([-9.5, 5, 0])
+        cylinder(2*thick, 2, 2);
+    }
+}
+

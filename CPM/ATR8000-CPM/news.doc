@@ -1,0 +1,136 @@
+NEW CP/M PACKAGE RELEASED FOR THE ATR8000
+-----------------------------------------
+
+   SWP  Microcomputer Products Inc.  will be distributing a  much 
+enhanced  version  of CP/M 80 for the ATR8000  computer  sometime 
+after  late  April or early May 1984.  This package will  include 
+many new features requested by SWP customers since the last  CP/M 
+release in March 1982. Anyone who has purchased  CP/M from SWP in
+the past may obtain a copy of the new software for $25. 
+
+   The  new  software includes changes to the existing CP/M  bios 
+and utility programs as well as some completely new programs  and 
+facilities.  A summary of the changes or additions to each of the 
+major CP/M building blocks is given below.
+
+--- BIOS ---
+
+   The  main changes in the bios have been in the area of  double 
+sided  disk formats.  The old bios could not distinguish  between 
+single  and  double sided disks.  This caused a lot of  headaches 
+when trying to copy files between the two types of media, and led 
+to  the rather exasperating restriction that you had to  make  an 
+intermediate  single density copy of the files you were   moving. 
+The new bios now allows you to operate on a single sided diskette 
+in  a  drive that is configured for double sided  operation.  The 
+double  sided  disk format has also been changed,  from  the  old 
+style where the lower 1/2 of the tracks were on side 0, to a more 
+universal format where the even numbered tracks are on side 0 and 
+the  odd  tracks  on side 1 (the  so-called  "interleaved"  track 
+format). This format is superior because it reduces the amount of 
+head  movement needed in most disk operations and thus speeds  up 
+the average access time. The old sytle DS formats have been added 
+to the DISKDEF program so you will have no trouble copying  files 
+from older DS disks.  A number of other lesser modifications have 
+been made to the bios, and these are listed below.
+
+1)If  you type a ^C with a non-system disk in drive A:,  the bios 
+  will issue a disk error instead of trying to load garbage  into 
+  memory in place of CP/M.
+2)Provisions have been made to allow the execution of an auto-run 
+  program after booting CP/M for the first time.
+3)More space has been made available for disk data structures. It 
+  is  now  posible to have 4 DS/DD 8 inch drives without  running 
+  out of memory in the bios.
+4)The  disk configuration mechanism has been  simplified.  It  is 
+  only  necessary  to  set  the NTRACKS byte for  each  drive  to 
+  configure for double sided, quad density etc.
+5)The  physical  disk  handler in the bios has been  expanded  to 
+  allow  the inclusion of user defined disk i/o code for  special 
+  applications.  This  mechanism  is used by the new  version  of 
+  DISKDEF described below.
+6)The  bios error messages for NOT READY and WRITE PROTECTED have 
+  been  replaced  by numbered error codes similar those  used  by 
+  the  other types of disk errors (as described in the  ATR  CP/M 
+  manual on   page 27). 
+
+
+--- DISKDEF ---
+
+   The  DISKDEF program has been expanded to allow operation with 
+a  number  of disk formats previously unusable  by  the  ATR8000, 
+particularly in the area of double sided formats. A wide range of 
+different  DS/DD  formats are now possible  including Kaypro  IV, 
+Epson  QX10,  Morrow  and all the old  ATR8000  formats.  Another 
+bizarre format that can now be read is the Superbrain,  which has 
+inverted  data similar to Atari disks.  The DISKDEF program  will 
+continue to be expanded both by SWP and outside contributors.  If 
+you  have  a  CP/M disk format that you would like added  to  the 
+list,  please send a sample disk with some files on it (long text 
+files  are  good) to SWP's technical  support  department,  along 
+with  a note describing as much as possible about the format  and 
+the machine that created it.  We will attempt to keep an  updated 
+version of DISKDEF available at all times.
+
+--- DDINIT ---
+
+   The  disk initialization program has been modified so that the 
+option to format single or double sided is now one of the prompts 
+issued when the program is run. Previously it was not possible to 
+format  double sided unless you had first created a double  sided 
+CP/M  system. Some new features have also been added for  special 
+less frequently used applications.  These features are invoked by 
+typing  a slash and an option character after the command to  run 
+DDINIT.  There  are currently three such options  available.  The 
+/Q  option allows you to format 80 track double  sided  diskettes 
+(sometimes  called  quad density),  the /D option allows  you  to 
+format  40  track disks in an 80 track drive  by  double  steping 
+between  tracks,  and  the /0 option makes the  formatter  create 
+disks  with the starting sector number being zero (instead of one 
+as in the standard IBM format).
+
+
+--- DDSYSGEN ---
+
+   DDSYSGEN  has been expanded to include the functions  provided 
+by the CP/M utility program MOVCPM. This allows you to generate a 
+CP/M system with an arbitrary memory size from 20K up to 60K. The
+relocation  feature is envoked by typing DDSYSGEN 0XX <cr>  where 
+XX is the page address of where the CCP begins in memory. This is 
+D4  hex for a 60K system and one less than D4 for each 256  bytes 
+less  than  60K.  For example DDSYSGEN 0D0 <cr> generates  a  59K 
+system, and DDSYSGEN 034 <cr> would create a 20K system. The free 
+space created by generating a less than 60K CP/M will occupy  the 
+area  just below the monitor at F000 hex and extending down below 
+there for the amount specified.  In a 59K system this would  mean 
+that the area from EC00 to EFFF would be unused by CP/M. When the 
+sysgen  program is run in the 'MOVCPM' mode just  described,  the 
+normal  main menu is bypassed and the program goes immediately to 
+the  symbolic patch function after generating the relocated  CP/M 
+system  image in memory.  At this point you can either write  the 
+system onto a disk in drive A: or else exit DDSYSGEN and save the 
+memory image onto a file by typing SAVE 69 CPMxx.COM. A few minor 
+features of the user interface in DDSYSGEN have been altered, but 
+these  are  trivial  enough  that the  program  should  still  be 
+operable by someone familiar with the old version of DDSYSGEN.
+
+
+--- CONFIG ---
+
+   This  is a newly written utility program for the ART8000  that 
+provides a painless,  user friendly way to create customized CP/M 
+system  boot disks.  CONFIG is the program that allows you to set 
+the printer type,  the serial port baudrate,  the number and type 
+of disk drives,  the size of the TPA etc.  without having to know 
+anything  about  the  inner  workings of the  parameters  in  the 
+ATR8000 bios.  Simply run CONFIG and answer the questions and  it 
+will construct a customized CP/M for you. Upon completion, CONFIG 
+automatically  loads the DDSYSGEN program so that the new  system 
+can be written onto a boot disk. This program will only work with 
+the new version of CP/M from SWP, so please do not attempt to use 
+it with the previous bios and/or utility programs.
+
+
+
+
+

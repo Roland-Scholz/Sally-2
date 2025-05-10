@@ -63,7 +63,7 @@ module ataritext() {
 module base_shape_a() {
         rotate([90,0,0]) 
             linear_extrude(20)
-                base_shape_2d_a(1.0);
+                base_shape_2d_a(1.2);
 }
 
 module base_shape_2d_a(th) {
@@ -126,6 +126,8 @@ module shell_top() {
     translate([xmax-edge-2*thick+1, ymax-28, 10])
         cube([8,4,25]);
     
+    translate([3.5*thick, 17, 1.2])
+        cube([xmax-7*thick, 20, 3]);
     //feet, set PCB on top
     /*
     translate([20,35,0])
@@ -204,7 +206,7 @@ module screw(r) {
     difference() {
         cylinder(zmax,r*2,r*2);
         translate([0,0,-1]);
-            cylinder(zmax+2,r/2+0.05,r/2+0.05);
+            cylinder(zmax+2, 2.0, 2.0);
 //        cylinder(5,6,6);
     }
 }
