@@ -26,10 +26,10 @@ module shape() {
         translate([dev_x+17.5+32, dev_bot, 0])
             sio();
         
-        translate([dev_x+17.5+31+32+12, dev_bot, 0])
+        translate([dev_x+17.5+31+32+13, dev_bot+1, 0])
             par();
         
-        translate([dev_x+17.5+31+32+12+53+2, dev_bot, 0])
+        translate([dev_x+17.5+31+32+13+53+2, dev_bot+1, 0])
             ser();
 
         translate([dev_x+17.5+32+32+12+86+2, dev_bot, 0])
@@ -38,7 +38,7 @@ module shape() {
         translate([dev_x+17.5+32+32+12+86+3+9+5, dev_bot, 0])
             usb();
 
-        translate([60+63, 63,0])
+        translate([60+60.5, 63,0])
             floppy();
         
     }
@@ -65,11 +65,11 @@ module barrel() {
 }
 
 module par() {
-    cube([53, 12.5, thick]);
+    cube([53, 11.5, thick]);
 }
 
 module ser() {
-    cube([31, 12.5, thick]);
+    cube([30.5, 11.5, thick]);
 }
 
 module sio() {
@@ -97,10 +97,10 @@ module floppy() {
     translate([0,0,-thick]) {
     cube([60, 11, 2*thick]);
     
-    translate([60+10.5, 5, 0])
+    translate([60+11.5, 5, 0])
         cylinder(2*thick, 2, 2);
     
-    translate([-9.5, 5, 0])
+    translate([-8.5, 5, 0])
         cylinder(2*thick, 2, 2);
     }
 }

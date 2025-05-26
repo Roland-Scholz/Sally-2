@@ -41,23 +41,23 @@ module shape() {
             floppy();
 
         translate([ledx, ledy, 0])
-            led();
+            led3();
         translate([ledx+15, ledy, 0])
-            led();
+            led3();
         translate([ledx+2*15, ledy, 0])
-            led();
+            led3();
             
         translate([ledx, ledy+15, 0])
-            led();
+            led3();
         translate([ledx+15, ledy+15, 0])
-            led();
+            led3();
         translate([ledx+2*15, ledy+15, 0])
-            led();
+            led3();
         translate([ledx+3*15, ledy+15, 0])
-            led();
+            led3();
         
         translate([25, 10+10, 0])
-            led5();
+            led3();
     }
     
 //    translate([edge, zmax-4*thick-edge, -thick])
@@ -66,12 +66,12 @@ module shape() {
     translate([edge, 32, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
-    translate([edge, 7, -thick])
+    translate([edge, 6, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
 }
 
-module led() {
+module led3() {
     linear_extrude(thick)
         circle(1.6); 
 }
