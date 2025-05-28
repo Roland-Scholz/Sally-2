@@ -4644,7 +4644,7 @@ Statistics:
 
      5	passes
      0	jr promotions
-   555	symbols
+   556	symbols
   5359	bytes
 
 
@@ -4775,6 +4775,7 @@ DSTAT4          FB12      64274
 DSTAT5          FB1C      64284
 DSTAT6          FB1E      64286
 DTR            =55        85
+DUMMMYSYMBOL    01        1 (command line -D)
 DUMMY           F7E1      63457
 DWRT0           F90A      63754
 DWRT1           F927      63783

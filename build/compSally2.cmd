@@ -21,19 +21,39 @@ POPD
 if not %ERRORLEVEL%==0 goto :error
 
 rem ****************************************************
-rem * compile Sally-2
+rem * compile all modules
 rem ****************************************************
 :compile
 IF EXIST %OUTPUT_DIR% del /Q %OUTPUT_DIR%\*.*
 IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
-call :compile %MODULE%
+@echo off
+
+rem ****************************************************
+rem * compile sally2
+rem ****************************************************
+call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
-call :compile ddinit-0100
+
+rem ****************************************************
+rem * compile DDINIT for Sally 2
+rem ****************************************************
+call :compile ddinit SALLYBUILD
 if not %ERRORLEVEL%==0 goto :error
-rem *** Build ATR 8000 ROM ***
+move %OUTPUT_DIR%\ddinit.com %OUTPUT_DIR%\ddinits2.com
+
+rem ****************************************************
+rem * compile DDINIT for ATR8000
+rem ****************************************************
+call :compile ddinit DUMMYSYMBOL
+if not %ERRORLEVEL%==0 goto :error
+
+rem ****************************************************
+rem * compile ATR8000 (4k) ROM
+rem ****************************************************
 set ASM_EXTENSION=MAC
-call :compile ROM
+call :compile ROM DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
+
 ECHO Success!!
 goto ende
 
@@ -42,8 +62,11 @@ rem ****************************************************
 rem * Compile subroutine
 rem ****************************************************
 :compile
-ECHO *** compile %1
-%ASSEMBLER_EXE% --oo lst,hex,cim --od %OUTPUT_DIR% %SOURCE_DIR%\%1.%ASM_EXTENSION%
+ECHO ****************************************************
+ECHO *** compile %1 -D%2
+ECHO ****************************************************
+
+%ASSEMBLER_EXE% -D%2 --oo lst,hex,cim --od %OUTPUT_DIR% %SOURCE_DIR%\%1.%ASM_EXTENSION%
 if %ERRORLEVEL%==0 ren %OUTPUT_DIR%\%1.cim %1.com
 EXIT /B
 

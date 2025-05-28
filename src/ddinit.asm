@@ -538,12 +538,20 @@ l0764:		ld	a,l
 		
 l0777:		xor	a
      		ld	(067ah),a
-;     		ld	a,0bh				;restore with 3ms no spinup
-     		ld	a, RESTORE				;restore with 12ms spinup
+	IFNDEF SALLYBUILD	
+     		ld	a,0bh				;restore with 3ms no spinup
+	ELSE
+     		ld	a, RESTORE			;restore with 12ms spinup
+	ENDIF
      		call	cmdtout				;execute cmd
+		
      		xor	04h
-;     		and	84h
+	IFNDEF SALLYBUILD
+     		and	84h
+	ELSE
 		and	04h
+	ENDIF
+	
      		jp	nz,08e0h
      		ld	hl,0d00h			;build format code at 00d00h
      		ld	a,(0679h)
@@ -613,19 +621,27 @@ l07f9:		call	cmdout
      		ld	ix,09d6h
 l0811:		call	readsector
      		bit	7,a
-;     		jp	nz,08e0h
+	IFNDEF SALLYBUILD
+     		jp	nz,08e0h
+	ELSE
 		nop
 		nop
 		nop
+	ENDIF
      		and	18h
      		jr	z,l0833		; (+16h)
      		call	force
      		call	readsector
      		bit	7,a
-;     		jp	nz,08e0h
+		
+	IFNDEF SALLYBUILD
+		jp	nz,08e0h
+	ELSE
 		nop
 		nop
 		nop
+	ENDIF
+		
      		and	18h
      		jr	z,l0833		; (+07h)
      		ld	hl,(0636h)
