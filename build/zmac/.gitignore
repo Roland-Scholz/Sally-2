@@ -1,0 +1,7 @@
+zmac.exe
+zmac_doc.html
+src/doc.exe
+src/doc.inl
+src/*.o
+src/zmac.c
+

@@ -10,6 +10,9 @@ FORCEINT	equ	0d0h
 RESTORE		equ	01h
 STEPIN		equ	04bh
 
+NULL		equ	000h
+CR			equ	00dh
+LF			equ	00ah
 
 
      		ORG	00100h
@@ -26,7 +29,7 @@ STEPIN		equ	04bh
      		ld	bc,0018h			;c = 24
 l0106:		push	bc
      		call	printstr
-		db	"\r\n", 0
+		db	CR, LF,NULL
      		pop	bc
 l010e:		ex	(sp),hl
      		ex	(sp),hl
@@ -37,7 +40,7 @@ l010e:		ex	(sp),hl
      		jr	nz,l0106			;24 x newline
 		
      		call	printstr
-		db	".... ATR8000 Disk Formatter  2.1 ....\r\n\n", 0
+		db	".... ATR8000 Disk Formatter  2.1 ....",CR, LF,LF,NULL
 		
       		ld	a,(0218h)			;first time called?
      		or	a
@@ -46,10 +49,10 @@ l010e:		ex	(sp),hl
      		ld	(0218h),a
 		
      		call	printstr
-		db	"This program erases all recorded data\r\n"
-		db	"in the process of formatting. Please\r\n"
-		db	"remove any valuable diskettes before\r\n"
-		db	"proceeding ... ", 0
+		db	"This program erases all recorded data",CR, LF
+		db	"in the process of formatting. Please",CR, LF
+		db	"remove any valuable diskettes before",CR, LF
+		db	"proceeding ... ", NULL
 		
 l01d5:		ld	hl,0000h
 l01d8:		push	hl
@@ -65,25 +68,25 @@ l01dd:		jr	nz,l01e6		; (+07h)
 l01e6:		call	getupper
 l01e9:		push	af
      		call	printstr
-		db	"\r\n", 0
+		db	CR, LF, NULL
      		pop	af
 l01f1:		cp	03h
      		jr	nz,l0219		; (+24h)
      		call	printstr
-		db	"\r\n\nreturning to CP/M ... \r\n\n", 0
+		db	CR, LF, LF, "returning to CP/M ... ", CR, LF, LF, NULL
      		jp	0000h
 		
 l0218:		nop
 l0219:		call	printstr
-		db	"\r\n"
-		db	"--- Disk Format Menu ---\r\n\n"
-		db	"   density   sector size\r\n"
-		db	"   -------   -----------\r\n"
-		db	"1) single     128 bytes\r\n"
-		db	"2) double     256 bytes\r\n"
-		db	"3) double     512 bytes\r\n"
-		db	"4) double    1024 bytes\r\n\n"
-		db	"enter number of format (1 thru 4) ... ", 0
+		db	CR, LF
+		db	"--- Disk Format Menu ---", CR, LF, LF
+		db	"   density   sector size",CR, LF
+		db	"   -------   -----------",CR, LF
+		db	"1) single     128 bytes",CR, LF
+		db	"2) double     256 bytes",CR, LF
+		db	"3) double     512 bytes",CR, LF
+		db	"4) double    1024 bytes", CR, LF, LF
+		db	"enter number of format (1 thru 4) ... ", NULL
 
 l02f9:		call	06c7h
      		cp	31h
@@ -94,7 +97,7 @@ l02f9:		call	06c7h
      		ld	(067bh),a			;sector size 
 		
 		call	printstr
-		db	"\r\nenter drive name (A,B,C or D) ....... ", 0
+		db	CR, LF, "enter drive name (A,B,C or D) ....... ", NULL
 l0335:		call	06c7h
      		cp	41h
      		jr	c,l0335
@@ -105,7 +108,7 @@ l0335:		call	06c7h
      		xor	a
      		ld	(0680h),a			;bits 7: single / double = 1
 l0349:		call	printstr
-		db	"\r\nsingle or double sided (S or D) ..... ", 0
+		db	CR, LF, "single or double sided (S or D) ..... ", NULL
 		
 l0375:		call	06c7h
      		cp	53h
@@ -115,15 +118,15 @@ l0375:		call	06c7h
      		ld	hl,0680h
      		set	7,(hl)
 l0385:		call	printstr
-		db	"\r\n", 0
+		db	CR, LF, NULL
 		ld      a,(0682h)
 		add     a,41h
 		ld      (03bch),a
 		
 		
 		call	printstr
-		db	"\r\npress <Y> when ready to format disk A\r\n"
-		db	"or <CTL-C> to exit to CP/M ... ", 0
+		db	CR, LF, "press <Y> when ready to format disk A",CR, LF
+		db	"or <CTL-C> to exit to CP/M ... ", NULL
 		
 l03df:		call	070bh
      		call	getupper
@@ -135,7 +138,7 @@ l03df:		call	070bh
      		jp	0100h
 		
 l03f4:		call	printstr
-		db	"\r\n\n", 0
+		db	CR, LF, LF, NULL
 		
      		ld	ix,0681h			;select drive 
 l03ff:		call	0f00fh
@@ -143,19 +146,19 @@ l03ff:		call	0f00fh
      		bit	7,a
      		jr	z,l044e		; (+45h)
 l0409:		call	printstr
-		db	"*** DRIVE NOT READY ***\r\n"
-		db	"(drive door open?  disk in wrong?)\r\n", 7, 0
+		db	"*** DRIVE NOT READY ***",CR, LF
+		db	"(drive door open?  disk in wrong?)",CR, LF, 7, NULL
 l044b:		jp	038bh
 
 l044e:		bit	6,a
      		jr	z,l048d		; (+3bh)
      		call	printstr
-		db	"*** WRITE PROTECTED ***\r\n"
-		db	"(check write protect tab)\r\n", 0
+		db	"*** WRITE PROTECTED ***",CR, LF
+		db	"(check write protect tab)",CR, LF, NULL
      		jp	038bh
 		
 l048d:		call	printstr
-		db	"\r\n", 0
+		db	CR, LF, NULL
 		
      		ld	hl,0000h
      		ld	(0636h),hl
@@ -241,39 +244,39 @@ l0532:		di
      		xor	a
      		out	(LATCH),a
      		call	printstr
-		db	"\r\n\n", 0
+		db	CR, LF, LF, NULL
      		ld	hl,0676h
      		ld	a,(067ah)
      		inc	a
      		cp	(hl)
      		jr	nc,l0569		; (+12h)
      		call	printstr
-		db	"aborted ... ", 0
+		db	"aborted ... ", NULL
 l0567:		jr	l0576		; (+0dh)
 
 l0569:		call	printstr
-		db	"done ... ", 0
+		db	"done ... ", NULL
 		
 l0576:		ld	hl,(0636h)
      		ld	a,h
      		or	l
      		jr	nz,l059a		; (+1dh)
      		call	printstr
-		db	"no bad sectors detected", 0
+		db	"no bad sectors detected", NULL
      		jr	l05b9		; (+1fh)
 l059a:		ld	hl,(0636h)
      		call	072bh
 l05a0:		call	printstr
-		db	" bad sectors detected", 0
+		db	" bad sectors detected", NULL
 		
 l05b9:		call	printstr
-		db	"\r\n", 0
+		db	CR, LF, NULL
      		jp	038bh
 		
      		jp	(hl)
 		
 prttrack:     	call	printstr
-		db	"\rTRACK ", 0
+		db	CR, "TRACK ", NULL
 		
 l05ce:		ld	a,(067fh)
      		or	a
@@ -287,7 +290,7 @@ l05d8:		ld	h,00h
      		bit	7,a
      		jr	z,l05fa		; (+15h)
      		call	printstr
-		db	"  SIDE ", 0
+		db	"  SIDE ", NULL
 		
 l05f0:		ld	a,(063ah)
      		and	01h
@@ -299,10 +302,10 @@ l05fa:		ld	hl,(0636h)
      		sbc	hl,de
      		jr	z,l0632		; (+2ch)
      		call	printstr
-     		db	07, "  *** ", 0
+     		db	07, "  *** ", NULL
 l0611:		call	072bh
      		call	printstr
-		db	" bad sector(s) ***\r\n", 0
+		db	" bad sector(s) ***",CR, LF, NULL
 l062c:		ld	hl,(0636h)
      		ld	(0638h),hl
 l0632:		call	06f9h

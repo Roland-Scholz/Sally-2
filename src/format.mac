@@ -29,8 +29,7 @@ FORMAT:
 	OUT	(INDXSET),A	;SET FLIPFLOP FOR NORMAL INDEX PULSES
 	INC	A
 	OUT	(INDXCLR),A
-;	LD	A,RSTCMD+HLOAD+3
-	LD	A,RSTCMD+HLOAD+1;WD1772: 1=12ms step rate
+	LD	A,RSTCMD+HLOAD+STEPRATE
 	CALL	TYP1CMD		;ISSUE SLOW RESTORE COMMAND
 	XOR	00000100B	;FLIP TK0 STATUS BIT
 	AND	10000100B
@@ -61,24 +60,23 @@ FORM2:	LD	(HL),076H	;STORE 'HALT' OPCODE
 FORM3:	LD	(TRACK),A	;A HOLDS NEXT TRACK NUMBER
 	OR	A
 	JR	Z,FORM3A	;SKIP STEP-IN IF ON TRACK ZERO
-;	LD	A,STEPIN+HLOAD+3
-	LD	A,STEPIN+HLOAD+1
+	LD	A,STEPIN+HLOAD+STEPRATE
 	CALL	TYP1CMD		;STEP TO NEXT TRACK
 FORM3A:	LD	IX,(FRMPTR)	;GET SELECTED FORMAT DATA POINTER
 	LD	IY,(SKWPTR)	;GET SELECTED SKEW TABLE POINTER
 	ld	a,(sides)
 	rra
-	ld	a,(OUTCPY)
+	ld	a,(outcpy)
 	jr	nc,form3b	;jump if not formatting both sides
 	xor	00100000b
-	ld	(OUTCPY),a	;else flip side select bit in latch
-	out	(LATCH),a
-form3b:	call	BUILD
+	ld	(outcpy),a	;else flip side select bit in latch
+	out	(latch),a
+form3b:	call	build
 	LD	A,(TRACK)
 	OUT	(TRKREG),A
 	LD	HL,(TRKPTR)	;POINT TO START OF TRACK IMAGE
 	DI
-	LD	A,11110100B	;write track + 30ms settle delay
+	LD	A,WRTKDLY	;write track + 30ms settle delay
 	CALL	CMDOUT		;ISSUE WRITE TRACK COMMAND
 	LD	A,(TRKSIZ)
 	LD	B,A		;LOAD B WITH TRACK SIZE MOD 256
@@ -96,12 +94,12 @@ FORM4:	IN	A,(STSREG)
 FORM5:	LD	A,(IX)
 	INC	IX
 	OUT	(SECREG),A
-	ld	a,(OUTCPY)
-	and	00100000b
-	ld	a,RDCMD		;determine if reading side 0 or 1
-	jr	z,form51
-	set	1,a		;WD1772 no side-no in cmd (I leave it there, doesn't seem to matter)
-form51:	call	TYP2CMD		;read sector discarding the data
+	LD	A,(OUTCPY)
+	AND	00100000b
+	LD	A,RDCMD		;determine if reading side 0 or 1
+	JR	Z,FORM51
+	SET	1,A		;WD1772 no side-no in cmd (I leave it there, doesn't seem to matter)
+FORM51:	CALL	TYP2CMD		;read sector discarding the data
 	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
 	JR	Z,FORM6		;JUMP IF SECTOR READ OK
 
@@ -123,9 +121,9 @@ FORM6:	INC	DE
 	DJNZ	FORM5
 	LD	(SEQNUM),DE	;STORE UPDATED ERROR TRACE STUFF
 	LD	(SEQPTR),HL
-	ld	a,(OUTCPY)
+	ld	a,(outcpy)
 	and	00100000b
-	jp	nz,FORM3A	;go back and do side 0 if on side 1 now
+	jp	nz,form3a	;go back and do side 0 if on side 1 now
 	LD	A,(TRACK)
 	INC	A
 	ld	hl,tracks
@@ -173,7 +171,7 @@ BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
 	POP	IX		;IX POINTS TO START OF SECTOR POOP
 BUILD3:	LD	A,(TRACK)
 	LD	(IX+7),A	;STORE TRACK# FOR TRACK BEING FORMATTED
-	ld	a,(OUTCPY)
+	ld	a,(outcpy)
 	and	00100000b
 	ld	a,0
 	jr	z,bild31	;jump if formatting side 0
@@ -191,7 +189,7 @@ BUILD4:	CALL	INSERT
 
 	LD	A,(IX+13)
 	call	getsize		;compute sector size in bytes
-BUILD6:	ld	a,0ffh
+build6:	ld	a,0ffh
 	ld	(de),a		;fill sector data with ff's
 	INC	DE
 	DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED

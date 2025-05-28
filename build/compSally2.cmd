@@ -1,54 +1,68 @@
 @echo off
+setlocal
 set MODULE=sally2
-set TOOLS=C:\github\FABIAN
-PATH=%PATH%;%TOOLS%\tools;%TOOLS%\tools\z88dk\bin;
-
-set ASM=z80asm
+set ASSEMBLER_PATH=zmac
+set ASSEMBLER_EXE="%ASSEMBLER_PATH%/zmac.exe"
+set ASM_EXTENSION=asm
+set SOURCE_DIR=..\src
+set OUTPUT_DIR=..\release
 
 rem ****************************************************
-rem * compile Rolli-1
+rem * Clean (if requested)
 rem ****************************************************
-call :compile %MODULE%-f000 F000
-if not %ERRORLEVEL%==0 goto error
-call :compile %MODULE%-0000 0000
-if not %ERRORLEVEL%==0 goto error
-call :compile ddinit-0100 0100
-if not %ERRORLEVEL%==0 goto error
+if "%1"=="--clean" GOTO :CLEAN
 
-del /Q	..\release\*.*
+IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
 
-move ..\src\*.o ..\release	>nul 2>&1	
-move ..\src\*.hex ..\release	>nul 2>&1
-move ..\src\*.lis ..\release	>nul 2>&1
-move ..\src\*.com ..\release	>nul 2>&1
+IF EXIST %ASSEMBLER_EXE% GOTO :compile
+PUSHD %ASSEMBLER_PATH%\src
+CALL build.bat
+POPD
+if not %ERRORLEVEL%==0 goto :error
 
-pushd	..\release
-copy	%MODULE%-0000.com /B + %MODULE%-f000.com /B %MODULE%.com /B
-bin2hex %MODULE%.com %MODULE%.hex -o 0000
-popd
-
-pause
-goto ende
-
-
-
-pause
-goto ende
-
-rem ----------------------------------------------
+rem ****************************************************
+rem * compile Sally-2
+rem ****************************************************
 :compile
-	pushd ..\src
-	echo *** compile %1
-	%ASM% -mz80 %3 -b -l -o%1.com %1 
-	if not %ERRORLEVEL%==0 goto ende
+IF EXIST %OUTPUT_DIR% del /Q %OUTPUT_DIR%\*.*
+IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
+call :compile %MODULE%
+if not %ERRORLEVEL%==0 goto :error
+call :compile ddinit-0100
+if not %ERRORLEVEL%==0 goto :error
+rem *** Build ATR 8000 ROM ***
+set ASM_EXTENSION=MAC
+call :compile ROM
+if not %ERRORLEVEL%==0 goto error
+ECHO Success!!
+goto ende
 
-	bin2hex %1.com %1.hex -o %2
-	popd
-	goto ende
-rem ----------------------------------------------
+
+rem ****************************************************
+rem * Compile subroutine
+rem ****************************************************
+:compile
+ECHO *** compile %1
+%ASSEMBLER_EXE% --oo lst,hex,cim --od %OUTPUT_DIR% %SOURCE_DIR%\%1.%ASM_EXTENSION%
+if %ERRORLEVEL%==0 ren %OUTPUT_DIR%\%1.cim %1.com
+EXIT /B
+
+
+rem ****************************************************
+rem * Clean up the build output
+rem ****************************************************
+:CLEAN
+IF EXIST %OUTPUT_DIR% del /Q %OUTPUT_DIR%\*.*
+IF EXIST %OUTPUT_DIR% RD %OUTPUT_DIR%
+PUSHD %ASSEMBLER_PATH%\src
+CALL build.bat %1
+POPD
+goto ende
+
 
 :error
+	ECHO.
+	ECHO Error during build.
 	pause
 :ende
-
-
+endlocal
