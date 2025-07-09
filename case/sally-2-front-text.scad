@@ -12,11 +12,10 @@ ledy = 12;
 
 edge=5;
 
-rotate([180,0,0]) {
-    shape();
-}
-
-//beschriftung();
+//rotate([180,0,0]) {
+//    shape();
+//}
+beschriftung();
 
 module shape() {
     
@@ -116,7 +115,7 @@ module base_shape_2d(th) {
 }
 
 module beschriftung() {
-    //linear_extrude(0.2){
+    linear_extrude(0.2){
     translate([145, -25.5, -2 ])
     rotate([180, 0, 0])
     {
@@ -151,5 +150,5 @@ module beschriftung() {
         text("Power                                A             B", 3
     , "Arial:style=Regular"  );
     }
-//}
+}
 }

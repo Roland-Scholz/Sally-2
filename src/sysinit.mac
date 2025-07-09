@@ -5,140 +5,140 @@
 ;
 ;
 ;
-INIT:	DI
+INIT:		DI
 		XOR	A
-INIT1:	DEC	A
-		JR	NZ,INIT1	;DO NOTHING FOR 1 MILLISECOND
+INIT1:		DEC	A
+		JR	NZ,INIT1				;DO NOTHING FOR 1 MILLISECOND
 
 		LD	HL,INITAB
-		LD	B,ITBLEN/2	;SEND INITIAL POOP TO PROGRAMABLE I/O'S
-INIT2:	LD	C,(HL)
+		LD	B,ITBLEN/2				;SEND INITIAL POOP TO PROGRAMABLE I/O'S
+INIT2:		LD	C,(HL)
 		INC	HL
 		OUTI
 		JR	NZ,INIT2
 ;
-;
 ;	PERFORM READ/WRITE TEST OF TOP 4K RAM
 ;
-RAMTST:	LD	HL,MONITOR
+RAMTST:		LD	HL,MONITOR
 		LD	A,1
-RTST1:	LD	B,16
-RTST2:	LD	(HL),A		;WRITE TEST BYTE INTO MONITOR/GLOBALS
-		RLCA			;ROTATE BIT PATTERN IN A
-		INC	L		;BUMP L TO DO INNER LOOP 256 TIMES
+RTST1:		LD	B,16
+RTST2:		LD	(HL),A					;WRITE TEST BYTE INTO MONITOR/GLOBALS
+		RLCA						;ROTATE BIT PATTERN IN A
+		INC	L					;BUMP L TO DO INNER LOOP 256 TIMES
 		JR	NZ,RTST2
-		INC		H
-		DJNZ	RTST2		;REPEAT 16 TIMES FOR 4096 BYTES
+		INC	H
+		DJNZ	RTST2					;REPEAT 16 TIMES FOR 4096 BYTES
 
 		LD	C,16
-RTST3:	DEC	HL
+RTST3:		DEC	HL
 		RRCA
-		CP	(HL)		;VERIFY THAT TEST PATTERN IS WRITTEN
-		JR	NZ,$		;STICK FOREVER IF MONITOR RAM FAILURE
+		CP	(HL)					;VERIFY THAT TEST PATTERN IS WRITTEN
+		JR	NZ,$					;STICK FOREVER IF MONITOR RAM FAILURE
 		DJNZ	RTST3
 		DEC	C
 		JR	NZ,RTST3
 
 		ADD	A,A
-		JR	NZ,RTST1	;DO 8 PASSES OVER MEMORY
+		JR	NZ,RTST1				;DO 8 PASSES OVER MEMORY
 ;
 ;	NOW COPY MONITOR AND VARIABLES TO HIGH RAM
 ;
 		LD	HL,MONCOPY
 		LD	DE,MONITOR
 		LD	BC,MONSIZE
-		LDIR			;COPY RESIDENT CODE INTO RAM
+		LDIR						;COPY RESIDENT CODE INTO RAM
 
 		LD	HL,VARCOPY
 		LD	DE,glbvars
 		LD	BC,glbsize
-		LDIR			;INITIALIZE GLOBAL VARIABLES
+		LDIR						;INITIALIZE GLOBAL VARIABLES
 		XOR	A
-ZEROS:	LD	(DE),A
+ZEROS:		LD	(DE),A
 		INC	E
-		JR	NZ,ZEROS	;FILL REST OF SCRATCHPAD WITH ZEROS
+		JR	NZ,ZEROS				;FILL REST OF SCRATCHPAD WITH ZEROS
 ;
 ;	ESTABLISH STACK AND INTERRUPT VECTOR BASE
 ;
-		LD	SP,KEYBUF+16	;TEMP PLACE FOR STACK
-		LD	A,HIGH RAM
-		LD	I,A		;POINT I REGISTER TO VECTOR TABLE
-		IM	2		;SELECT VECTORED INTERRUPTS
+		LD	SP,KEYBUF+16				;TEMP PLACE FOR STACK
+		LD	A,HIGH RAM			
+		LD	I,A					;POINT I REGISTER TO VECTOR TABLE
+		IM	2					;SELECT VECTORED INTERRUPTS
+;			
+;step 5 times in and then out to trk00.  
+;set bit 6 for each online floppy in ff5eh percom block (16 bytes, byte 8 bit 6)
 ;
-;step 5 times in and then out to trk00.  set bit 6 for each online floppy in ff5eh percom block (16 bytes, byte 8 bit 6)
-;
-REST:	LD	A, FBS+DRVSEL4+DRVSEL3+DRVSEL2+DRVSEL1	;;INITIAL DRIVE PATTERN (ALL SELECTED) - select drive 1-4, Motor off, side 0, B/S=1, DD
-		OUT	 (LATCH), A
-		LD	D,A		;KEEP PATTERN IN D (d = 4fh)
-		LD	B,5		;step 5 times
-REST1:	LD	A,STEPIN+NOWAITMTR+STEPRATE	;4b: 4 = step-in, b = NOWAITMTR+STEPRATE3
+REST:		LD	A, FBS+DRVSEL4+DRVSEL3+DRVSEL2+DRVSEL1	;INITIAL DRIVE PATTERN (ALL SELECTED) - select drive 1-4, Motor off, side 0, B/S=1, DD
+		OUT	(LATCH), A
+		LD	D,A					;KEEP PATTERN IN D (d = 4fh)
+		LD	B,5					;step 5 times
+REST1:		LD	A,STEPIN+NOWAITMTR+STEPRATE		;4b: 4 = step-in, b = NOWAITMTR+STEPRATE3
 
-IF SALLYBUILD
-		CALL	SalyCMDOUT	;write A to FDC command and wait
-ELSE
-		CALL	TYP1CMD		;STEP IN 5 TIMES AS PRECAUTION FOR
-ENDIF	;SALLYBUILD
-
-		DJNZ	REST1		; DRIVES THAT GET BEHIND TK0 SENSOR
-		LD	B,100		;DO 100 STEPS TOWARD TRACK ZERO (support 100 track drives)
-REST2:	LD	A,D
-		OUT	(LATCH),A	;ISSUE SELECTS AND PAUSE A BIT
+IF WD1772
+		CALL	SalyCMDOUT				;write A to FDC command and wait
+ELSE			
+		CALL	TYP1CMD					;STEP IN 5 TIMES AS PRECAUTION FOR
+ENDIF	;WD1772			
+			
+		DJNZ	REST1					; DRIVES THAT GET BEHIND TK0 SENSOR
+		LD	B,100					;DO 100 STEPS TOWARD TRACK ZERO (support 100 track drives)
+REST2:		LD	A,D			
+		OUT	(LATCH),A				;ISSUE SELECTS AND PAUSE A BIT
 		EX	(SP),HL
 		EX	(SP),HL
 		LD	A,STEPOUT+NOWAITMTR+STEPRATE		;6b: 6 = step-out, b = NOWAITMTR+STEPRATE3
 
-IF SALLYBUILD
-		CALL	SalyCMDOUT	;write A to FDC command and wait
+IF WD1772
+		CALL	SalyCMDOUT				;write A to FDC command and wait
+ELSE			
+		CALL	TYP1CMD					;ISSUE STEP OUT COMMAND TO DRIVES
+ENDIF	;WD1772			
+			
+		LD	E,DRVSEL1				;PREPARE TO TEST TK0 INDICATORS
+REST3:		LD	A,E			
+		OR	FBS			
+		OUT	(LATCH),A				;SELECT ONE DRIVE AT A TIME
+		EX	(SP),HL					;Use this benign operation pair
+		EX	(SP),HL					;to wait 38 T-states
+
+IF WD1772
+		IN	A, (STSREG)
 ELSE
-		CALL	TYP1CMD		;ISSUE STEP OUT COMMAND TO DRIVES
-ENDIF	;SALLYBUILD
-
-		LD	E,DRVSEL1	;PREPARE TO TEST TK0 INDICATORS
-REST3:	LD	A,E
-		OR	FBS
-		OUT	(LATCH),A	;SELECT ONE DRIVE AT A TIME
-		EX	(SP),HL		;Use this benign operation pair
-		EX	(SP),HL		;to wait 38 T-states
-
-IF SALLYBUILD
-		IN		A, (STSREG)
-ELSE
-		CALL	FORCE		;FORCE INTERRUPT TO SET TYPE 1 STATUS
-ENDIF	;SALLYBUILD
-
-		BIT	 2, A
-		JR	Z,REST3A	;JUMP IF TRACK ZERO NOT INDICATED
-		LD	A,E
-		CPL
-		AND	D		;ELSE RESET SELECT BIT FOR DRIVE IN D
-		LD	D,A
-REST3A:	SLA	E		;ADVANCE SELECT BIT
-		BIT	4,E
-		JR	Z,REST3		;DO SAME FOR ALL 4 DRIVES
-		DJNZ	REST2		;THEN REPEAT STEP OUT 100 TIMES
-
-IF SALLYBUILD
-		LD	A, FDCRESET+FBS	;reset FDC and deselct
-		OUT	(LATCH), A
-		LD	A, FBS		;reset FDC and deselct
-		OUT	(LATCH), A
-ELSE
-		call	shutdown	;unload the heads and deselect the drives
-ENDIF	;SALLYBUILD
+		CALL	FORCE					;FORCE INTERRUPT TO SET TYPE 1 STATUS
+ENDIF	;WD1772			
+			
+		BIT	2, A			
+		JR	Z,REST3A				;JUMP IF TRACK ZERO NOT INDICATED
+		LD	A,E			
+		CPL			
+		AND	D					;ELSE RESET SELECT BIT FOR DRIVE IN D
+		LD	D,A			
+REST3A:		SLA	E					;ADVANCE SELECT BIT
+		BIT	4,E			
+		JR	Z,REST3					;DO SAME FOR ALL 4 DRIVES
+		DJNZ	REST2					;THEN REPEAT STEP OUT 100 TIMES
+			
+IF WD1772			
+		LD	A, FDCRESET+FBS				;reset FDC and deselct
+		OUT	(LATCH), A			
+		LD	A, FBS					;reset FDC and deselct
+		OUT	(LATCH), A			
+ELSE			
+		call	shutdown				;unload the heads and deselect the drives
+ENDIF	;WD1772
 
 		LD	HL,DMATRIX+DSKBITS
 		LD	BC,16
-		LD	A,4		;PREP TO SET FLAGS FOR DRIVES PRESENT
-REST4:	RR	D
-		JR	C,REST4A	;JUMP IF DRIVE(N) NOT AT TRACK ZERO
-		SET	PRESENT,(HL)	;ELSE SET BIT IN ARRAY(HL)
-REST4A:	ADD	HL,BC
-		DEC	 A
-		JR	NZ,REST4	;DO FOR ALL 4 DRIVES
-;
-IF SALLYBUILD
-		LD	HL, 00000h	; source
-		LD	DE, 08000h	; dest
+		LD	A,4					;PREP TO SET FLAGS FOR DRIVES PRESENT
+REST4:		RR	D			
+		JR	C,REST4A				;JUMP IF DRIVE(N) NOT AT TRACK ZERO
+		SET	PRESENT,(HL)				;ELSE SET BIT IN ARRAY(HL)
+REST4A:		ADD	HL,BC			
+		DEC	 A			
+		JR	NZ,REST4				;DO FOR ALL 4 DRIVES
+;			
+IF SALLYBUILD			
+		LD	HL, 00000h				; source
+		LD	DE, 08000h				; dest
 		LD	BC, 02000h
 		LDIR
 		LD	HL, code8000
@@ -155,13 +155,13 @@ code8000:
 code0000:
 ENDIF	;SALLYBUILD
 
-		LD		SP, IOBUFF			;NEW PLACE FOR STACK
+		LD	SP, IOBUFF				;NEW PLACE FOR STACK
 
 IF SALLYBUILD
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
-		LD	HL, 0ffffh			;reset drive / track buffer
+		LD	HL, 0ffffh				;reset drive / track buffer
 		LD	(drive), HL
 
 		LD	HL, DISKTAB+2
@@ -194,13 +194,14 @@ IF SALLYBUILD
 		LD	(hispeed), A
 		LD	A, 2
 		LD	(direct), A
-		LD	A, 0c3h				;'JP' instruction
+		LD	A, 0c3h					;'JP' instruction
 		LD	(XMITBUF), A
 		LD	(RXBLOCK), A
 		LD	(CMDWAIT), A
 		LD	(SalyLOGN1), A
 		LD	(SalyDISKWRT1), A
 		LD	(SalyDISKRD1), A
+;		LD	(DISK4),A
 
 		LD	HL, xmitbuffn
 		LD	(XMITBUF+1), HL
@@ -218,11 +219,38 @@ IF SALLYBUILD
 		LD	(SalyDISKWRT1+1), HL
 		LD	HL, dskrd1
 		LD	(SalyDISKRD1+1), HL
+;		LD	HL, diskiodebug
+;		LD	(DISK4+1),HL
 
+;loop:		CALL	serinfn
+;		
+;		LD	A, 041h + 000h + 000h
+;		OUT	(LATCH), A
+;
+;		XOR	A
+;		OUT	(TRKREG), A
+;		LD	A, 01
+;		OUT	(SECREG), A
+;		LD	A, RDCMD
+;		out	(CMDREG), A
+;
+;loop1:		IN	A,(STSREG)
+;		BIT	0,A
+;		JR	NZ,loop1				;LOOP TILL 1797 BUSY BIT GOES AWAY
+;		
+;		CALL	serhex
+;		CALL	sercr		
+;;		CALL	serinfn
+;		
+;		LD	A, 040h
+;		OUT	(LATCH), A
+;		
+;		JP	loop
+		
 ;--------------------------------------------------
 ; test code
 ;--------------------------------------------------
-;		LD	A, 0c3h				;'JP' instruction
+;		LD	A, 0c3h					;'JP' instruction
 ;		LD	(SEL4), A
 ;		LD	HL, SalySEL4
 ;		LD	(SEL4+1), HL
@@ -293,12 +321,12 @@ IF SALLYBUILD
 ;		RET
 ;
 ;testdcb:	DB	TSTRDY					;DISK OPERATION CODE
-;		DB	1						;DRIVE# (WITH SIDE# IN BIT 7)
-;		DB	0						;TRACK#
-;		DB	1						;SECTOR#
+;		DB	1					;DRIVE# (WITH SIDE# IN BIT 7)
+;		DB	0					;TRACK#
+;		DB	1					;SECTOR#
 ;		DW	08000h					;READ/WRITE POINTER
-;		DW	0						;AUXILLIARY PARAMETERS (2 BYTES)
-;		DB	0						;OPERATION COMPLETION STATUS
+;		DW	0					;AUXILLIARY PARAMETERS (2 BYTES)
+;		DB	0					;OPERATION COMPLETION STATUS
 ;
 ;sectab:
 ;		DB	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
@@ -310,282 +338,286 @@ IF SALLYBUILD
 ;--------------------------------------------------
 ENDIF	;SALLYBUILD
 
-		JP	EMULATOR	;GO INITIALIZE FOR ATARI OR CP/M
+		JP	EMULATOR				;GO INITIALIZE FOR ATARI OR CP/M
 
 IF SALLYBUILD
 SalyLogon:
-		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
+		LD	(RWMAX),A				;DO LESS RETRIES IN ATARI MODE
 
-		LD	A, 0c3h				;'JP' instruction
+		LD	A, 0c3h					;'JP' instruction
 		LD	(SEL4), A
 		LD	HL, SalySEL4
 		LD	(SEL4+1), HL
+	IF WD1772
 		LD	HL, SalyShutdn
 		LD	(SHUTDOWN+1), HL
+	ENDIF
 		JP	SalyLOGN2
 
-
+	IF WD1772
+	
 SalyShutdn:
 		CALL	SalyResetFDC
 		LD	A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT	(CTC1), A	;SOFWARE RESET CTC1
-		LD	A, 1		;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
+		OUT	(CTC1), A				;SOFWARE RESET CTC1
+		LD	A, 1					;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
 		OUT	(CTC1), A
 		RET
+	ENDIF
 ;
 ;
 ;
 SalySEL4:
-		BIT		6, B				;8" found?
-		JR		Z, SalySEL4ex			;yes, do nothing
+		BIT	6, B					;8" found?
+		JR	Z, SalySEL4ex				;yes, do nothing
 
 		PUSH	BC					;save registers
 		PUSH	DE
 		PUSH	HL
 		PUSH	IX
 
-		LD		A, B				;switch HD on
-		RES		6, A
-		OUT		(LATCH), A
+		LD	A, B					;switch HD on
+		RES	6, A
+		OUT	(LATCH), A
 
 		PUSH	IX					;load HL with IX
-		POP		HL
-		LD		DE, dcb
-		LD		BC, 9
+		POP	HL
+		LD	DE, dcb
+		LD	BC, 9
 		LDIR						;copy dcb
-
-		LD		IX, dcb
-		LD		HL, id
-		LD		(dcb + DSKPTR), HL
-		LD		A, RIDCMD
-		LD		(CMDBYT), A
-		LD		A, 018h				;substitute JR	Z,xx by JR xx
-		LD		(DISK3 + 031h), A
-		LD		B, 6
+			
+		LD	IX, dcb
+		LD	HL, id
+		LD	(dcb + DSKPTR), HL
+		LD	A, RIDCMD
+		LD	(CMDBYT), A
+		LD	A, 018h					;substitute JR	Z,xx by JR xx
+		LD	(DISK3 + 031h), A
+		LD	B, 6
 SalySEL4A:
 		PUSH	BC
 		CALL	SalyDISK3				;DISK3: READ 6 BYTE ID RECORD
-		POP		BC
+		POP	BC
 		DJNZ	SalySEL4A
 
-		LD		A, 028h				;reset JR Z,xx
-		LD		(DISK3 + 031h), A
-
-		POP		IX
-		POP		HL
-		POP		DE
-		POP		BC
-		LD		A, (dcb + DSKSTS)	;check disk status
-		OR		A
-		JR		NZ, SalySEL4ex			;not zero, no HD
-		RES		6, B				;
-SalySEL4ex:
-		LD		A, B
-		LD		D, 0
-		JP		SEL5
+		LD	A, 028h					;reset JR Z,xx
+		LD	(DISK3 + 031h), A
+			
+		POP	IX
+		POP	HL
+		POP	DE
+		POP	BC
+		LD	A, (dcb + DSKSTS)			;check disk status
+		OR	A
+		JR	NZ, SalySEL4ex				;not zero, no HD
+		RES	6, B					;
+SalySEL4ex:             
+		LD	A, B
+		LD	D, 0
+		JP	SEL5
 
 ;--------------------------------------------------
 ; hook for read directSector if aux1/2 = 0
 ;--------------------------------------------------
 dskrd1:
-		LD		A, 2
-		LD		(direct), A			;clear direct
+		LD	A, 2
+		LD	(direct), A				;clear direct
 
-		LD		HL, (CFRAME + 2)	;load DAUX1/2, test if zero
-		LD		A, L
-		OR		H
-		JR		Z, dskrd2			;if zero, use direct sector number
-		CALL	SECTRAN				;else use original code, call SECTRAN
-		JP		SalyDISKRD2				;and procees
+		LD	HL, (CFRAME + 2)			;load DAUX1/2, test if zero
+		LD	A, L
+		OR	H
+		JR	Z, dskrd2				;if zero, use direct sector number
+		CALL	SECTRAN					;else use original code, call SECTRAN
+		JP	SalyDISKRD2				;and procees
 
 dskrd2:
-		LD		IX, DKIOCB
-		LD		(IX + DSKOP), TSTRDY
-;	CALL	dumpdcb
+		LD	IX, DKIOCB
+		LD	(IX + DSKOP), TSTRDY
+;		CALL	dumpdcb
 		PUSH	HL
 		CALL	DISKV
-		POP		HL
+		POP	HL
 
-		CALL	sec2track			;compute sector, track, side from direct sector
-		LD		(IX + DSKOP), GETSEC
-;	CALL	dumpdcb
+		CALL	sec2track				;compute sector, track, side from direct sector
+		LD	(IX + DSKOP), GETSEC
+;		CALL	dumpdcb
 		PUSH	HL
-		CALL	dskreadfn			;CALL DISK I/O HANDLER
-		POP		HL
+		CALL	dskreadfn				;CALL DISK I/O HANDLER
+		POP	HL
 
-		LD		A, (DKIOCB+DSKSTS)
-		CALL	SETSTAT				;call SETSTAT
-		LD		D, 0				;no invert
-		JP		SENDBUFF			;jump SENDBUFF
+		LD	A, (DKIOCB+DSKSTS)
+		CALL	SETSTAT					;call SETSTAT
+		LD	D, 0					;no invert
+		JP	SENDBUFF				;jump SENDBUFF
 
 ;--------------------------------------------------
 ;compute sector, track, side from direct sector
 ;--------------------------------------------------
 sec2track:
-		XOR		A					;clear carry and a
-		LD		B, 0ffh				;also b
-		LD		HL, (dsector)		;compute track and side numer
-		LD		DE, 18				;18 secs per track
-sec2track1:
-		INC		B					;b holds track-number
-		sbc		HL, DE
-		JR		NC, sec2track1		;subtract 18 as long carry clear
-		LD		A, L
-		ADD		19					;add 19 to get sector number + 1
-		LD		(DKIOCB+DSKSEC), A
-		SRL		B					;divide track by two, (we have two sides)
-		LD		A, B
-		LD		(DKIOCB+DSKTRK), A
-		RRA							;shift-in side-number from previously lowest-bit
-		AND		080h				;mask out bit 0-6
-		LD		HL, DKIOCB+DSKDRV
-		RES		7, (HL)
-		OR		(HL)
-		LD		(HL), A
-
+		XOR	A					;clear carry and a
+		LD	B, 0ffh					;also b
+		LD	HL, (dsector)				;compute track and side numer
+		LD	DE, 18					;18 secs per track
+sec2track1:             
+		INC	B					;b holds track-number
+		sbc	HL, DE
+		JR	NC, sec2track1				;subtract 18 as long carry clear
+		LD	A, L
+		ADD	19					;add 19 to get sector number + 1
+		LD	(DKIOCB+DSKSEC), A
+		SRL	B					;divide track by two, (we have two sides)
+		LD	A, B
+		LD	(DKIOCB+DSKTRK), A
+		RRA						;shift-in side-number from previously lowest-bit
+		AND	080h					;mask out bit 0-6
+		LD	HL, DKIOCB+DSKDRV
+		RES	7, (HL)
+		OR	(HL)
+		LD	(HL), A
+			
 		CALL	serhex
 		CALL	serspace
-		LD		A, 'S'
+		LD	A, 'S'
 		CALL	seroutfn
-		LD		A, (DKIOCB+DSKSEC)
+		LD	A, (DKIOCB+DSKSEC)
 		CALL	serhex
 		CALL	serspace
-		LD		A, 'T'
+		LD	A, 'T'
 		CALL	seroutfn
-		LD		A, (DKIOCB+DSKTRK)
+		LD	A, (DKIOCB+DSKTRK)
 		CALL	serhex
 		CALL	sercr
-
-		LD		HL, 512
-		LD		(DKIOCB+DSKAUX), HL
-		LD		HL, IOBUFF
-		LD		(DKIOCB+DSKPTR), HL
-		LD		IX, DKIOCB
-		RET
+			
+		LD	HL, 512
+		LD	(DKIOCB+DSKAUX), HL
+		LD	HL, IOBUFF
+		LD	(DKIOCB+DSKPTR), HL
+		LD	IX, DKIOCB
+		RET     
 
 ;--------------------------------------------------
 ; hook for setDirectSector if aux1/2 = 0
 ;--------------------------------------------------
-dwrt:	PUSH	HL
-		LD		(LOGSIZ),HL			;SAVE DATA BLOCK LENGTH
+dwrt:		PUSH	HL
+		LD	(LOGSIZ),HL				;SAVE DATA BLOCK LENGTH
 
-		LD		HL, (CFRAME + 2)	;load DAUX1/2
-		LD		A, L
-		OR		H
-		JR		Z, dwrta			;if zero, do special stuff
+		LD	HL, (CFRAME + 2)			;load DAUX1/2
+		LD	A, L
+		OR	H
+		JR	Z, dwrta				;if zero, do special stuff
 
-		POP		HL					;otherwise continue
-		JP		SalyDISKWRT2			;normal
+		POP	HL					;otherwise continue
+		JP	SalyDISKWRT2				;normal
 
-dwrta:	CALL	SENDACK
+dwrta:		CALL	SENDACK
 
-		LD		HL, direct			;direct
-;	LD		A, (HL)
-;	CALL	serhex
-		DEC		(HL)
-		JR		Z, dwrtd			;first sector
-		JP		M, dwrtb			;second sector
+		LD	HL, direct				;direct
+;		LD	A, (HL)
+;		CALL	serhex
+		DEC	(HL)
+		JR	Z, dwrtd				;first sector
+		JP	M, dwrtb				;second sector
 
-		LD		B, 64
+		LD	B, 64
 		DJNZ	$					;wait some time
 
-		LD		HL, (IOBUFF)		;save 2-byte sector number (0-xxxx)
-		LD		(dsector), HL
+		LD	HL, (IOBUFF)				;save 2-byte sector number (0-xxxx)
+		LD	(dsector), HL
 
-dwrtc:	POP		HL
-		LD		A, 'C'
-		JP		SENDCHAR
+dwrtc:		POP	HL
+		LD	A, 'C'
+		JP	SENDCHAR
 
-dwrtd:	LD		HL, IOBUFF
-		LD		DE, IOBUFF+LEN+2
-		LD		BC, 0100h			;rec first half
+dwrtd:		LD	HL, IOBUFF
+		LD	DE, IOBUFF+LEN+2
+		LD	BC, 0100h				;rec first half
 		LDIR
-		JR		dwrtc
+		JR	dwrtc
 
-dwrtb:	LD		(HL), 2				;direct = 2
+dwrtb:		LD	(HL), 2					;direct = 2
 
-		LD		HL, 512				;LOGSIZ 512 bytes in this case
-		LD		(LOGSIZ), HL
-
-		LD		HL, IOBUFF
-		LD		DE, IOBUFF+0100h
-		LD		BC, 0100h
-		LDIR
-		LD		HL, IOBUFF+LEN+2
-		LD		DE, IOBUFF
-		LD		BC, 0100h
+		LD	HL, 512					;LOGSIZ 512 bytes in this case
+		LD	(LOGSIZ), HL
+			
+		LD	HL, IOBUFF
+		LD	DE, IOBUFF+0100h
+		LD	BC, 0100h
+		LDIR    
+		LD	HL, IOBUFF+LEN+2
+		LD	DE, IOBUFF
+		LD	BC, 0100h
 		LDIR
 
 		CALL	sec2track
 
-		LD		(IX + DSKOP), PUTSEC
+		LD	(IX + DSKOP), PUTSEC
 		CALL	dskwrite
 
-		JR		dwrtc
+		JR	dwrtc
 ;--------------------------------------------------
 ; dskwrite: write through sector
 ;--------------------------------------------------
 dskwrite:
-;	LD		A, 'W';
-;	CALL	seroutfn
+;		LD	A, 'W';
+;		CALL	seroutfn
 
-;	JP		DISKV
+;		JP	DISKV
 
 		CALL	checktrack
-		JR		NZ, dskwrite1
+		JR	NZ, dskwrite1
 
-;	LD		HL, (LOGSIZ)
-;	CALL	seraddr
+;		LD	HL, (LOGSIZ)
+;		CALL	seraddr
 
 		CALL	compbufadr
-;	CALL	seraddr
+;		CALL	seraddr
 
-		EX		DE, HL
-		LD		H, (IX + DSKPTR+1)
-		LD		L, (IX + DSKPTR)
-		LD		BC, (LOGSIZ)
+		EX	DE, HL
+		LD	H, (IX + DSKPTR+1)
+		LD	L, (IX + DSKPTR)
+		LD	BC, (LOGSIZ)
 
 		LDIR
 
 dskwrite1:
-		JP		DISKV
+		JP	DISKV
 
 ;--------------------------------------------------
 ; Debug routine
 ;--------------------------------------------------
-;debug:		CALL	seroutfn
-;		LD		A, (IX + DSKDRV)
-;		CALL	serhex
-;		LD		A, 't'
-;		CALL	seroutfn
-;		LD		A, (IX + DSKTRK)
-;		CALL	serhex
-;		LD		A, 's'
-;		CALL	seroutfn
-;		LD		A, (IX + DSKSEC)
-;		CALL	serhex
-;		LD		A, (IX + DSKPTR+1)
-;		CALL	serhex
-;		LD		A, (IX + DSKPTR)
-;		CALL	serhex
-;		LD		A, (IX + DSKAUX+1)
-;		CALL	serhex
-;		LD		A, (IX + DSKAUX)
-;		CALL	serhex
-;
-;		CALL	serspace
-;		LD		A, (CFRAME+3)
-;		CALL	serhex
-;		LD		A, (CFRAME+2)
-;		CALL	serhex
-;		CALL	serspace
-;		LD		A, (IY+NSECS+1)
-;		CALL	serhex
-;		LD		A, (IY+NTRKS)
-;		CALL	serhex
-;
-;		CALL	sercr
-;		RET
+debug:		CALL	seroutfn
+		LD	A, (IX + DSKDRV)
+		CALL	serhex
+		LD	A, 't'
+		CALL	seroutfn
+		LD	A, (IX + DSKTRK)
+		CALL	serhex
+		LD	A, 's'
+		CALL	seroutfn
+		LD	A, (IX + DSKSEC)
+		CALL	serhex
+		LD	A, (IX + DSKPTR+1)
+		CALL	serhex
+		LD	A, (IX + DSKPTR)
+		CALL	serhex
+		LD	A, (IX + DSKAUX+1)
+		CALL	serhex
+		LD	A, (IX + DSKAUX)
+		CALL	serhex
+
+		CALL	serspace
+		LD	A, (CFRAME+3)
+		CALL	serhex
+		LD	A, (CFRAME+2)
+		CALL	serhex
+		CALL	serspace
+		LD	A, (IY+NSECS+1)
+		CALL	serhex
+		LD	A, (IY+NTRKS)
+		CALL	serhex
+
+		CALL	sercr
+		RET
 ;
 dumpdcb:
 		PUSH	AF
@@ -593,131 +625,141 @@ dumpdcb:
 		PUSH	HL
 
 		PUSH	IX
-		POP		HL
+		POP	HL
 ;		CALL	sercr
-		LD		B, 9
+		LD	B, 9
 dumpdcb1:
-		LD		A, (HL)
-		INC		HL
+		LD	A, (HL)
+		INC	HL
 		CALL	serhex
 		CALL	serspace
 		DJNZ	dumpdcb1
 		CALL	sercr
 
-		POP		HL
-		POP		BC
-		POP		AF
+		POP	HL
+		POP	BC
+		POP	AF
 		RET
 ;--------------------------------------------------
 ; dskreadfn: cache a track
 ;--------------------------------------------------
 dskreadfn:
-;	LD		A, 'R'
-;	CALL	debug
+;		LD	A, 'R'
+;		CALL	debug
 
 		CALL	checktrack
-		JP		Z, match
-
-		LD		(drive), DE			;save new drive and track
+		JP	Z, match
+;		ld	a, 'N'
+;		CALL	seroutfn
+		LD	(drive), DE				;save new drive and track
 		PUSH	IX					;save IX
 
 		PUSH	IX					;load HL with IX
-		POP		HL
-		LD		DE, dcb
-		LD		BC, 9
+		POP	HL
+		LD	DE, dcb
+		LD	BC, 9
 		LDIR						;copy dcb
+			
+		LD	IX, dcb					;load IX with new dcb
+			
+		LD	A, (dcb + DSKAUX+1)			;get sector length high-byte
+		CP	2
+		JR	NZ, readtrack2				;no MS-DOS disk
 
-		LD		IX, dcb				;load IX with new dcb
 
-		LD		A, (dcb + DSKAUX+1)	;get sector length high-byte
-		CP		2
-		JR		NZ, readtrack2		;no MS-DOS disk
-
-
-		LD		HL, TRKBUFFER
-		LD		BC, 18 * 256 + 1	;b=18, c = 1
+		LD	HL, TRKBUFFER
+		LD	BC, 18 * 256 + 1			;b=18, c = 1
 
 readtrack3:
-		LD		(dcb + DSKPTR), HL
-		LD		(IX + DSKSEC),	C
+		LD	(dcb + DSKPTR), HL
+		LD	(IX + DSKSEC),	C
 
-;	CALL	dumpdcb
+;		CALL	dumpdcb
 
 		PUSH	HL
 		PUSH	BC
 		CALL	DISKV
-		POP		BC
-		POP		HL
-;	CALL	dumpsec
-		LD		A, (dcb + DSKSTS)	;error occured?
-		OR		A
-		JR		NZ, readtrack4		;yes
-		INC		H
-		INC		H
-		INC		C
+		POP	BC
+		POP	HL
+;		CALL	dumpsec 
+		LD	A, (dcb + DSKSTS)			;error occured?
+		OR	A
+		JR	NZ, readtrack4				;yes
+		INC	H
+		INC	H
+		INC	C
 		DJNZ	readtrack3
-		JR		readtrack5
+		JR	readtrack5
 
 readtrack2:
-		LD		B, 0				;compute skew-list from media type
-		LD		C, (IY + MEDIA)
-		LD		HL, skewtab
-		ADD		HL, BC
-		LD		A, (HL)
-		INC		HL
-		LD		H, (HL)
-		LD		L, A
-		LD		B, (IY + NSECS+1)
+		LD	B, 0					;compute skew-list from media type
+		LD	C, (IY + MEDIA)
+		LD	HL, skewtab
+		ADD	HL, BC
+		LD	A, (HL)
+		INC	HL
+		LD	H, (HL)
+		LD	L, A
+		LD	B, (IY + NSECS+1)
 
 readtrack1:
-		LD		(secptr), HL
+		LD	(secptr), HL
 
 readtrack:
-		LD		HL, (secptr)
-		LD		A, (HL)
-		LD		(dcb + DSKSEC), A
-		INC		HL
-		LD		(secptr), HL
+		LD	HL, (secptr)
+		LD	A, (HL)
+		LD	(dcb + DSKSEC), A
+		INC	HL
+		LD	(secptr), HL
 
 		PUSH	BC
 		CALL	compbufadr
-		LD		(dcb + DSKPTR), HL
+		LD	(dcb + DSKPTR), HL
 		CALL	DISKV
-		POP		BC
+		POP	BC
 
-		LD		A, (dcb + DSKSTS)	;error occured?
-		OR		A
-		JR		Z, readtrack6		;no
-readtrack4:
-		LD		HL, 0ffffh
-		LD		(drive), HL
-		POP		IX					;yes, store in original dcb
-		JR		match2
-readtrack6:
+;		IN	A,(TRKREG)
+;		CALL	serhex
+;		IN	A,(SECREG)
+;		CALL	serhex
+		LD	A, (dcb + DSKSTS)			;error occured?
+;		CALL	serhex
+		OR	A
+		JR	Z, readtrack6				;no
+readtrack4:             
+		LD	HL, 0ffffh
+		LD	(drive), HL
+		POP	IX					;yes, store in original dcb
+		JR	match2
+readtrack6:             
 		DJNZ	readtrack
 readtrack5:
-		POP		IX
+		POP	IX
 
 match:
+;		ld	a, 'M'
+;		CALL	seroutfn
+		
 		CALL	compbufadr
-		LD		D, (IX + DSKPTR+1)
-		LD		E, (IX + DSKPTR)
-		LD		BC, (LOGSIZ)
-		LD		A, (dcb + DSKAUX+1)	;get sector length high-byte
-		CP		2
-		JR		NZ, match1
-		LD		BC, 512
+		LD	D, (IX + DSKPTR+1)
+		LD	E, (IX + DSKPTR)
+		LD	BC, (LOGSIZ)
+		LD	A, (dcb + DSKAUX+1)			;get sector length high-byte
+		CP	2
+		JR	NZ, match1
+		LD	BC, 512
 match1:
 		LDIR
 
-		XOR		A
+		XOR	A
 match2:
-		LD		(IX + DSKSTS), A
+		LD	(IX + DSKSTS), A
 
-		LD		A, FINCMD			;keeps motor spinning
+	IF	WD1772
+		LD	A, FINCMD				;keeps motor spinning
 		CALL	SalyCMDOUT
-
-		JP		ACTIVON
+	ENDIF
+		JP	ACTIVON
 
 
 ;--------------------------------------------------
@@ -728,104 +770,104 @@ dumpsec:
 		PUSH	HL
 		CALL	seraddr
 		CALL	sercr
-		LD		BC, 512
+		LD	BC, 512
 match3a:
-		LD		A, (HL)
+		LD	A, (HL)
 		CALL	serhex
-		LD		A, B
-		AND		15
-		JR		NZ, match3
+		LD	A, B
+		AND	15
+		JR	NZ, match3
 		CALL	sercr
 match3:
-		INC		HL
-		DEC		C
-		JR		NZ, match3a
+		INC	HL
+		DEC	C
+		JR	NZ, match3a
 		DJNZ	match3a
-		POP		HL
-		POP		BC
-		JP		sercr
+		POP	HL
+		POP	BC
+		JP	sercr
 
 ;--------------------------------------------------
 ; HL = TRKBUF + DSKSEC * (128/256/512)
 ;--------------------------------------------------
 compbufadr:
-		LD		HL, TRKBUFFER
-		LD		B, (IX + DSKSEC)
-		DEC		B
-		LD		C, 0
-		LD		A, (dcb + DSKAUX + 1)	;load seclen highbyte
-		OR		A
-		JR		Z, compbufadr2		;if zero, assume 128 bytes length
-		CP		1
-		JR		Z, compbufadr1		;if 1, assume 256 bytes
-		SLA		B					;512 bytes
-		JR		compbufadr1
+		LD	HL, TRKBUFFER
+		LD	B, (IX + DSKSEC)
+		DEC	B
+		LD	C, 0
+		LD	A, (dcb + DSKAUX + 1)			;load seclen highbyte
+		OR	A
+		JR	Z, compbufadr2				;if zero, assume 128 bytes length
+		CP	1
+		JR	Z, compbufadr1				;if 1, assume 256 bytes
+		SLA	B					;512 bytes
+		JR	compbufadr1
 compbufadr2:
-		SRL	B				;128 bytes
-		RR		C
+		SRL	B					;128 bytes
+		RR	C
 compbufadr1:
 		ADD	HL, BC
 		RET
 
 checktrack:
-		LD		HL, (drive)			;load
-		LD		D, (IX + DSKTRK)	;high
-		LD		E, (IX + DSKDRV)	;low
-		OR		A					;clear carry
-		sbc		HL, DE
+		LD	HL, (drive)				;load
+		LD	D, (IX + DSKTRK)			;high
+		LD	E, (IX + DSKDRV)			;low
+		OR	A					;clear carry
+		sbc	HL, DE
 		RET
 
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
 getspeed:
-;	LD	A, '?'
-;	CALL	seroutfn
+;		LD	A, '?'
+;		CALL	seroutfn
 
-		CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+		CALL	DRVINDEX				;POINT IY TO DRIVE'S DATA AREA
 		RET	C					;EXIT IF NOT A DRIVE IN OUR BOX
 
-;	CALL	HASPARMS
-;	RET	Z					;EXIT IF DISK PARAMS NOT KNOWN
+;		CALL	HASPARMS
+;		RET	Z					;EXIT IF DISK PARAMS NOT KNOWN
 
-		CALL	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+		CALL	SENDACK					;SEND 'ACK' FOR COMMAND FRAME
 
-		LD		HL, IOBUFF+LEN-1
+		LD	HL, IOBUFF+LEN-1
 
-		IF NOHIGHSPEEDSIO <> 1
-		LD		A, SIOFAST
-		LD		(HL), A
-		LD		(hispeed), A
-		ELSE
-		LD		(HL), SIONORMAL
-		ENDIF	; HIGHSPEEDSIO
+	IF NOHIGHSPEEDSIO <> 1
+		LD	A, SIOFAST
+		LD	(HL), A
+		LD	(hispeed), A
+	ELSE
+		LD	(HL), SIONORMAL
+	ENDIF	; HIGHSPEEDSIO
 
-		LD		DE, 'C'
-		JP		SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+		LD	DE, 'C'
+		JP	SENDBUFF				;SEND 'C' AND PARAMS DATA FRAME
 
 
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
 cmdwaitfn:
-		LD		A, (CMDFLG)
-		OR		A					;SEE IF COMMAND FRAME HAS ARRIVED
-		RET		Z					;EXIT IF NOTHING HAS HAPPENED
+		LD	A, (CMDFLG)
+		OR	A					;SEE IF COMMAND FRAME HAS ARRIVED
+		RET	Z					;EXIT IF NOTHING HAS HAPPENED
 
-;	CALL	sercmd				;5-byte command frame
+;		CALL	sercmd					;5-byte command frame
 
-		LD		A, (CMDFLG)
-		CP		1
+		LD	A, (CMDFLG)
+		CP	1
 
-		DI							;ELSE RESET INTERRUPT AND START AGAIN
-		LD		A, CTC_D1_SW_RST + CTC_D0_CONTROL	; SOFTWARE RESET CTC0
-		OUT		(CTC0),A			;PERFORM THE RESET
+		DI						;ELSE RESET INTERRUPT AND START AGAIN
+		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
+		OUT	(CTC0),A				;PERFORM THE RESET
 		EI
 
-		JP		Z, CMDL4			;good cmd-frame
+		JP	Z, CMDL4				;good cmd-frame
 
 		CALL	togglebaud
-		JP		CMDL5
+		JP	CMDL5
 
 
 
@@ -834,103 +876,103 @@ cmdwaitfn:
 ;--------------------------------------------------
 xmitbuffn:
 		DI
-		LD		A, (pokeydiv)		;is fast?
-		CP		SIONORMAL
-		JR		NZ, xmitfast		;yes, jump
-		LD		BC, STARBIT
-		JP		SalyXMITBUF
+		LD	A, (pokeydiv)				;is fast?
+		CP	SIONORMAL
+		JR	NZ, xmitfast				;yes, jump
+		LD	BC, STARBIT
+		JP	SalyXMITBUF
 
 
 xmitfast:
-		LD		A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT		(CTC1), A	;SOFWARE RESET CTC1
-		LD		A, 1		;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
-		OUT		(CTC1), A
+		LD	A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+		OUT	(CTC1), A				;SOFWARE RESET CTC1
+		LD	A, 1					;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
+		OUT	(CTC1), A
 
 xmitfast1:
-		LD		A, (HL)				;7
-		INC		HL					;6
-		XOR		D					;4
-		LD		C, A				;4
-		ADD		A, E				;4
-		ADC		0					;7
-		LD		E, A				;4
-		CALL	fastsend			;17 send byte in c
-		LD		A, H				;4
-		CP		HIGH (IOBUFF+LEN)	;7
-		JR		C, xmitfast1		;12/7 loop if buffer end not reached
+		LD	A, (HL)					;7
+		INC	HL					;6
+		XOR	D					;4
+		LD	C, A					;4
+		ADD	A, E					;4
+		ADC	0					;7
+		LD	E, A					;4
+		CALL	fastsend				;17 send byte in c
+		LD	A, H					;4
+		CP	HIGH (IOBUFF+LEN)			;7
+		JR	C, xmitfast1				;12/7 loop if buffer end not reached
 
-		LD		A, CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT		(CTC1), A			;SOFWARE RESET CTC1
+		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL
+		OUT	(CTC1), A				;SOFWARE RESET CTC1
 		EI
 		RET
 
 fastsend:
-		XOR		A
-		OUT		(ATROUT), A
+		XOR	A
+		OUT	(ATROUT), A
 
 		PUSH	IX					;15
-		POP		IX					;14
-		LD		A,	C				;4
-		LD		B, 8				;7
-		INC		BC					;6
-		NOP							;4
+		POP	IX					;14
+		LD	A,	C				;4
+		LD	B, 8					;7
+		INC	BC					;6
+		NOP						;4
 
 fastsend1:
-		NOP							;4
-		CP		1					;7
-		OUT		(ATROUT), A			;11
+		NOP						;4
+		CP	1					;7
+		OUT	(ATROUT), A				;11
 		RRCA						;4
 		PUSH	IX					;15
-		POP		IX					;14
-		DJNZ	fastsend1			;13 / 8
+		POP	IX					;14
+		DJNZ	fastsend1				;13 / 8
 
-		LD		A, r				;9
-		LD		A, 1				;7
-		OUT		(ATROUT), A			;11
-		RET							;10
+		LD	A, r					;9
+		LD	A, 1					;7
+		OUT	(ATROUT), A				;11
+		RET						;10
 
 ;--------------------------------------------------
 ; rxblck
 ;--------------------------------------------------
 rxblck:
-		LD		A, (pokeydiv)		;is fast?
-		CP		SIONORMAL
-		JP		Z, rxblck1
+		LD	A, (pokeydiv)				;is fast?
+		CP	SIONORMAL
+		JP	Z, rxblck1
 
-		CALL	fastrecv			;yes, fast speed
-		LD		A, CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT		(CTC3), A			;SOFWARE RESET CTC3
-		LD		C, D				;checksum in c
+		CALL	fastrecv				;yes, fast speed
+		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL
+		OUT	(CTC3), A				;SOFWARE RESET CTC3
+		LD	C, D					;checksum in c
 		RET
 
 rxblck1:
-		LD		BC, 0				;no, normal speed
-		JP		SalyRXBLOCK
+		LD	BC, 0					;no, normal speed
+		JP	SalyRXBLOCK
 
 ;--------------------------------------------------
 ; togglebaud
 ;--------------------------------------------------
 togglebaud:
-;	LD	A, (hispeed)
-;	OR	A
-;	RET	Z
+;		LD	A, (hispeed)
+;		OR	A
+;		RET	Z
 
-		LD		A, (pokeydiv)
-		CP		SIONORMAL
-		LD		A, SIOFAST
-		JR		Z, togglebaud1
-		LD		A, SIONORMAL
+		LD	A, (pokeydiv)
+		CP	SIONORMAL
+		LD	A, SIOFAST
+		JR	Z, togglebaud1
+		LD	A, SIONORMAL
 togglebaud1:
-		LD		(pokeydiv), A
+		LD	(pokeydiv), A
 		RET
 
 ;--------------------------------------------------
 ; set 4ms watchdog
 ;--------------------------------------------------
 irq4ms:
-		POP	AF	;pop irq-addr
-		OR	A	;clear carry
+		POP	AF					;pop irq-addr
+		OR	A					;clear carry
 irq4ms1:
 		EI
 		RETI
@@ -940,52 +982,52 @@ irq4ms1:
 ;--------------------------------------------------
 fastrecv:
 		DI
-		LD		BC, irq4ms
-		LD		(CTCVEC+6),bc		;SET VECTOR TO irq4ms ROUTINE
-		LD		BC, CTC3			;CLEAR B, LOAD C WITH ADDRESS OF CTC3
-		LD		DE, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT		(C), E				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
-		OUT		(C), C				;TIME CONSTANT OF 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
+		LD	BC, irq4ms
+		LD	(CTCVEC+6),bc				;SET VECTOR TO irq4ms ROUTINE
+		LD	BC, CTC3				;CLEAR B, LOAD C WITH ADDRESS OF CTC3
+		LD	DE, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+		OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+		OUT	(C), C					;TIME CONSTANT OF 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
 		EI
 
-fastrecv1:
-		IN		A, (ATARI)			;11
-		RLA							;4
-		JP		C, fastrecv1		;10	NEW BYTE IS COMING IF START BIT LOW
-										;14-25 / 7
-		LD		A, D				;4
-		ADD		A, B				;4
-		ADC		A, 0				;7 ACCUMULATE CHECKSUM ATARI STYLE
-		LD		D, A				;4
-
-		LD		B, 07fh				;7
-		JP		fastrecv2a			;10 = 50
+fastrecv1:              
+		IN	A, (ATARI)				;11
+		RLA						;4
+		JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
+								;14-25 / 7
+		LD	A, D					;4
+		ADD	A, B					;4
+		ADC	A, 0					;7 ACCUMULATE CHECKSUM ATARI STYLE
+		LD	D, A					;4
+				
+		LD	B, 07fh					;7
+		JP	fastrecv2a				;10 = 50
 ;
 ; SERIAL->PARALLEL CONVERSION AT 17,36 MICROSECONDS PER BIT
 ;
 fastrecv2:
 		PUSH	AF					;11
-		POP		AF					;10
+		POP	AF					;10
 fastrecv2a:
-		LD		A, (HL)				;7
-		LD		A, (HL)				;7
+		LD	A, (HL)					;7
+		LD	A, (HL)					;7
 
-		IN		A, (ATARI)			;11 CYCLES
-		RLA							; 4 CYCLES
-		RR		B					; 8 CYCLES
-		JR		C, fastrecv2		;12/7 = 70 / 65 cycles
+		IN	A, (ATARI)				;11 CYCLES
+		RLA						; 4 CYCLES
+		RR	B					; 8 CYCLES
+		JR	C, fastrecv2				;12/7 = 70 / 65 cycles
 
-		LD		(HL), B				;7 THEN STORE IN MEMORY BUFFER @HL
-		INC		HL					;6
-		LD		A, H				;4
-		CP		HIGH (IOBUFF+LEN)	;7
-		CCF							;4
-		RET		C					;5 RETURN WITH CARRY SET IF BUFFER FILLED
+		LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
+		INC	HL					;6
+		LD	A, H					;4
+		CP	HIGH (IOBUFF+LEN)			;7
+		CCF						;4
+		RET	C					;5 RETURN WITH CARRY SET IF BUFFER FILLED
 
-		OUT		(C), E				;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
-		OUT		(C), C				;12 COUNT MOD 256 - ACTUALLY C = 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
+		OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+		OUT	(C), C					;12 COUNT MOD 256 - ACTUALLY C = 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
 
-		JP		fastrecv1			;10
+		JP	fastrecv1				;10
 
 
 ;serdumpcpl:
@@ -993,17 +1035,44 @@ fastrecv2a:
 ;		PUSH	AF
 ;		PUSH	BC
 ;		PUSH	DE
-;		LD		D, 255
-;		JR		serdump1
+;		LD	D, 255
+;		JR	serdump1
 
+diskiodebug:	LD	a, (CMDBYT)
+		CP	080h
+		JR	NZ, diskiodebug1
+
+		CALL	sercr
+		
+		LD	A,(IX+DSKSEC)	
+		OUT	(SECREG),A	
+		LD	A,(IX+DSKTRK)	
+		OUT	(TRKREG),A	
+
+		in	a, (TRKREG)
+		CALL	serhex
+		in	a, (SECREG)
+		CALL	serhex		
+		LD	A,(CMDBYT)				
+		OUT	(CMDREG),A				;START 1791 WORKING ON W/R COMMAND
+
+dbgRWBUSY:	IN	A,(STSREG)
+		BIT	0,A
+		JR	NZ,dbgRWBUSY				;LOOP TILL 1797 BUSY BIT GOES AWAY
+		CALL	serhex
+		CALL	sercr
+	
+diskiodebug1:	LD	A,(IX+DSKSEC)
+		JP	DISK4+3
+		
 ;--------------------------------------------------
 ; RS232 sercmd
 ;--------------------------------------------------
 sercmd:
 		PUSH	HL
-		LD		HL, CFRAME
+		LD	HL, CFRAME
 		CALL	sercr
-		JR		serdump2
+		JR	serdump2
 
 ;--------------------------------------------------
 ; RS232 dump
@@ -1015,22 +1084,22 @@ serdump2:
 		PUSH	BC
 		PUSH	DE
 
-		LD		D, 0
+		LD	D, 0
 
 serdump1:
-		LD		A, (HL)
-		XOR		D
+		LD	A, (HL)
+		XOR	D
 		CALL	serhex
 		CALL	serspace
-		INC		HL
-		LD		A, H
-		CP		A, 0c3h
-		JR		C, serdump1
+		INC	HL
+		LD	A, H
+		CP	A, 0c3h
+		JR	C, serdump1
 
-		POP		DE
-		POP		BC
-		POP		AF
-		POP		HL
+		POP	DE
+		POP	BC
+		POP	AF
+		POP	HL
 		RET
 
 ;--------------------------------------------------
@@ -1038,9 +1107,9 @@ serdump1:
 ;--------------------------------------------------
 serspace:
 		PUSH	AF
-		LD		A, ' '
+		LD	A, ' '
 		CALL	seroutfn
-		POP		AF
+		POP	AF
 		RET
 
 ;--------------------------------------------------
@@ -1048,20 +1117,20 @@ serspace:
 ;--------------------------------------------------
 sercr:
 		PUSH	AF
-		LD		A, CR
+		LD	A, CR
 		CALL	seroutfn
-		POP		AF
+		POP	AF
 		RET
 
 ;--------------------------------------------------
 ; RS232 output HL in hex
 ;--------------------------------------------------
 seraddr:
-		LD		A, H
+		LD	A, H
 		CALL	serhex
-		LD		A, L
+		LD	A, L
 		CALL	serhex
-		JR		serspace
+		JR	serspace
 ;--------------------------------------------------
 ; RS232 output A in hex
 ;--------------------------------------------------
@@ -1073,17 +1142,17 @@ serhex:
 		RRCA
 		RRCA
 		CALL	sernib
-		POP		AF
+		POP	AF
 		CALL	sernib
-		POP		AF
+		POP	AF
 		RET
 
 sernib:
-		AND		0fh
-		ADD		'0'
-		CP		'9' + 1
-		JR		C, sernib1
-		ADD		7
+		AND	0fh
+		ADD	'0'
+		CP	'9' + 1
+		JR	C, sernib1
+		ADD	7
 sernib1:
 ;--------------------------------------------------
 ; RS232 out	208 T-States
@@ -1091,26 +1160,26 @@ sernib1:
 seroutfn:
 		PUSH	AF
 		PUSH	BC
-		LD		B, A
-		XOR		A
+		LD	B, A
+		XOR	A
 		DI
-		OUT		(SEROUT), A			;startbit
-		CALL	time19600			;17
-
-		LD		A, B
-		LD		B, 8				;7
-serout1:
-		OUT		(SEROUT), A			;11
-		CALL	time19600			;17
+		OUT	(SEROUT), A				;startbit
+		CALL	time19600				;17
+	
+		LD	A, B	
+		LD	B, 8					;7
+serout1:	
+		OUT	(SEROUT), A				;11
+		CALL	time19600				;17
 		RRCA						;4
-		DJNZ	serout1				;8
-		EI
-		LD		A, 1				;7
-		OUT		(SEROUT), A			;11
-		CALL	time19600			;17
+		DJNZ	serout1					;8
+		EI	
+		LD	A, 1					;7
+		OUT	(SEROUT), A				;11
+		CALL	time19600				;17
 
-		POP		BC
-		POP		AF
+		POP	BC
+		POP	AF
 		RET
 
 
@@ -1120,66 +1189,66 @@ serout1:
 serinfn:
 		PUSH	BC
 serin2:
-		IN		A, (SERIN)
+		IN	A, (SERIN)
 		RLCA
-		JR		C, serin2
+		JR	C, serin2
 
-		EX		(SP), HL			;19, 4.75uS
-		EX		(SP), HL			;19  9uS
+		EX	(SP), HL				;19, 4.75uS
+		EX	(SP), HL				;19  9uS
 
-		LD		B, 80h
+		LD	B, 80h
 serin1:
 		CALL	time19600
-		IN		A, (SERIN)
+		IN	A, (SERIN)
 		RLCA
-		RR		B
-		JR		NC, serin1
+		RR	B
+		JR	NC, serin1
 
-		LD		A, B
-		POP		BC
+		LD	A, B
+		POP	BC
 		RET
 
 time19600:
-		LD		C, 9				;4
+		LD	C, 9					;4
 time19600a:
-		DEC		C					;4
-		JR		NZ, time19600a		;12/7
-		RET							;10
+		DEC	C					;4
+		JR	NZ, time19600a				;12/7
+		RET						;10
 
 SalyCMDOUT:
-		OUT		(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
+		OUT	(CMDREG),A				;OUTPUT DISK CONTROLLER COMMAND BYTE
 slyCMDT1:
-		LD		A,14
+		LD	A,14
 slyCMDT2:
-		DEC		A
-		JR		NZ,slyCMDT2			;DELAY 56 MICROSECONDS
+		DEC	A
+		JR	NZ,slyCMDT2				;DELAY 56 MICROSECONDS
 CMDT3:
-		IN		A, (STSREG)
-		BIT		0, A
-		JR		NZ, slyCMDT1
+		IN	A, (STSREG)
+		BIT	0, A
+		JR	NZ, slyCMDT1
 		RET
-		ENDIF		; SALLYBUILD
+		ENDIF	; SALLYBUILD
 
 ;--------------------------------------------------
 ; 11 times port:value
 ;--------------------------------------------------
-INITAB:	DEFB	ATROUT,1								;SET ATART OUTPUT TO MARK STATE
-		DEFB	SEROUT,1								;SET RS232 OUTPUT TO MARK STATE
+INITAB:		DEFB	ATROUT,1				;SET ATART OUTPUT TO MARK STATE
+		DEFB	SEROUT,1				;SET RS232 OUTPUT TO MARK STATE
 		DEFB	CTC0, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
-		DEFB	CTC0, low ctcvec						;SET CTC0 BASE INTERRUPT VECTOR
+		DEFB	CTC0, low ctcvec			;SET CTC0 BASE INTERRUPT VECTOR
 		DEFB	CTC1, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL	;PUT CTC1 IN TIMER MODE + SET TIME CONSTANT
-		DEFB	CTC1, 1									;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
+		DEFB	CTC1, 1					;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
 		DEFB	CTC2, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC2
 		DEFB	CTC3, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC3
-		DEFB	CDMUX, 1								;SET MUX TO PASS ATARI DATA
-IF SALLYBUILD
-	DB	LATCH, 050h				;DRIVE CONTROL reset FDC
-	DB	LATCH, 040h				;DRIVE CONTROL 8Mhz
-ELSE
-	DEFB	LATCH,00000000B	;ZEROS TO DRIVE SELECT LATCH
-	DEFB	CMDREG,FINCMD	;FORCE DISK CONTROLLER INTERRUPT
-ENDIF	;SALLYBUILD
-ITBLEN	EQU	$-INITAB
+		DEFB	CDMUX, 1				;SET MUX TO PASS ATARI DATA
+	IF WD1772
+		DB	LATCH, 050h				;DRIVE CONTROL reset FDC
+		DB	LATCH, 040h				;DRIVE CONTROL 8Mhz
+	ELSE
+		DEFB	LATCH,00000000B				;ZEROS TO DRIVE SELECT LATCH
+		DEFB	CMDREG,FINCMD				;FORCE DISK CONTROLLER INTERRUPT
+	ENDIF	;WD1772
+ITBLEN		EQU	$-INITAB
 ;
 ;
 ;
@@ -1197,7 +1266,7 @@ IF SALLYBUILD
 ; 2 commands added '?' and 0xDD (setDirectSector)
 ;
 dsktb:		DW	0, 0, 0, 0, 0, 0, 0, 0
-			DW	0, 0, 0, 0, 0, 0, 0, 0
+		DW	0, 0, 0, 0, 0, 0, 0, 0
 
 ;
 ; direct MSDOS sector for each drive
@@ -1213,19 +1282,19 @@ thetrack:	DB	255
 secptr:		DW	0
 
 skewtab:	DW	SKEWSD
-			DW	SKEW13
-			DW	SKEWDD
-			DW	SKEW17
+		DW	SKEW13
+		DW	SKEWDD
+		DW	SKEW17
 
-dcb:		DB	0						;DISK OPERATION CODE
-			DB	0						;DRIVE# (WITH SIDE# IN BIT 7)
-			DB	0						;TRACK#
-			DB	0						;SECTOR#
-			DW	0						;READ/WRITE POINTER
-			DW	0						;AUXILLIARY PARAMETERS (2 BYTES)
-			DB	0						;OPERATION COMPLETION STATUS
+dcb:		DB	0					;DISK OPERATION CODE
+		DB	0					;DRIVE# (WITH SIDE# IN BIT 7)
+		DB	0					;TRACK#
+		DB	0					;SECTOR#
+		DW	0					;READ/WRITE POINTER
+		DW	0					;AUXILLIARY PARAMETERS (2 BYTES)
+		DB	0					;OPERATION COMPLETION STATUS
 
-id:			DW	0, 0, 0
+id:		DW	0, 0, 0
 
 ENDIF	;SALLYBUILD
 ;

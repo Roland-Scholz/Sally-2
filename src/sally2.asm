@@ -1,20 +1,10 @@
 ;
-			SALLYBUILD	EQU	1
+		SALLYBUILD	EQU	1
+		WD1772		EQU	1
+
 	ASEG
 	ORG	0
 ;
-;
-;
-;
-NOHIGHSPEEDSIO	EQU	0
-;
-;--------------------------------------------------
-; Track-Buffer 26*256 bytes
-;--------------------------------------------------
-TRKBUFFER	EQU	00800h
-
-SIONORMAL	EQU	40
-SIOFAST		EQU	8
 ;
 ;
 		INCLUDE EQUS.MAC
