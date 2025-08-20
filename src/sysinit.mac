@@ -4,6 +4,8 @@
 ;********************************************************
 ;
 ;
+	SALLYDEBUG = 0
+;
 ;
 INIT:		DI
 		XOR	A
@@ -191,7 +193,7 @@ IF SALLYBUILD
 		LD	A, SIONORMAL
 		LD	(pokeydiv), A
 		XOR	A
-		LD	(hispeed), A
+;		LD	(hispeed), A
 		LD	A, 2
 		LD	(direct), A
 		LD	A, 0c3h					;'JP' instruction
@@ -222,123 +224,10 @@ IF SALLYBUILD
 ;		LD	HL, diskiodebug
 ;		LD	(DISK4+1),HL
 
-;loop:		CALL	serinfn
-;		
-;		LD	A, 041h + 000h + 000h
-;		OUT	(LATCH), A
-;
-;		XOR	A
-;		OUT	(TRKREG), A
-;		LD	A, 01
-;		OUT	(SECREG), A
-;		LD	A, RDCMD
-;		out	(CMDREG), A
-;
-;loop1:		IN	A,(STSREG)
-;		BIT	0,A
-;		JR	NZ,loop1				;LOOP TILL 1797 BUSY BIT GOES AWAY
-;		
-;		CALL	serhex
-;		CALL	sercr		
-;;		CALL	serinfn
-;		
-;		LD	A, 040h
-;		OUT	(LATCH), A
-;		
-;		JP	loop
-		
-;--------------------------------------------------
-; test code
-;--------------------------------------------------
-;		LD	A, 0c3h					;'JP' instruction
-;		LD	(SEL4), A
-;		LD	HL, SalySEL4
-;		LD	(SEL4+1), HL
-;
-;		LD	A, 255
-;		LD	(CTCVEC+2), A
-;
-;		LD	B, 3
-;		LD	A, ' '
-;stars:		CALL	seroutfn
-;		DJNZ	stars
-;
-;		LD	IX, testdcb
-;		CALL	sercr
-;		CALL	DISKV
-;		CALL	dumpdcb
-;
-;		LD	A, GETID
-;		LD	(testdcb), A
-;		CALL	DISKV
-;		CALL	dumpdcb
-;		CALL	dumprid
-;
-;		LD	HL, 512
-;		LD	(testdcb+DSKAUX), HL
-;		LD	A, GETSEC
-;		LD	(testdcb), A
-;
-;		LD	A, '*'
-;		CALL	seroutfn
-;
-;		LD	C, 1
-;secloop1:	LD	B, 18
-;		LD	HL, sectab
-;secloop:	LD	A, (HL)
-;		LD	(testdcb + DSKSEC), A
-;		INC	HL
-;		PUSH	BC
-;		PUSH	HL
-;		CALL	DISKV
-;		POP	HL
-;		POP	BC
-;		DJNZ	secloop
-;		DEC	C
-;		JR	NZ, secloop1
-;
-;		LD	A, '-'
-;		CALL	seroutfn
-;
-;loop:		JR	loop
-;
-;
-
-;
-;dumprid:
-;		LD	HL, (testdcb + DSKPTR)
-;		CALL	sercr
-;		LD	B, 6
-;dumprid1:	LD	A, (HL)
-;		INC	HL
-;		CALL	serhex
-;		CALL	serspace
-;		DJNZ	dumprid1
-;		RET
-;
-;dummy:		XOR	A
-;		CALL	serhex
-;		RET
-;
-;testdcb:	DB	TSTRDY					;DISK OPERATION CODE
-;		DB	1					;DRIVE# (WITH SIDE# IN BIT 7)
-;		DB	0					;TRACK#
-;		DB	1					;SECTOR#
-;		DW	08000h					;READ/WRITE POINTER
-;		DW	0					;AUXILLIARY PARAMETERS (2 BYTES)
-;		DB	0					;OPERATION COMPLETION STATUS
-;
-;sectab:
-;		DB	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-;		DB	1, 3, 5, 7, 9, 11, 13, 15, 17, 2, 4, 6, 8, 10, 12, 14, 16, 18
-;		DB	1, 4, 7, 10, 13, 16, 2, 5, 8, 11, 14, 17, 3, 6, 9, 12, 15, 18
-;		DB	1, 5, 9, 13, 17, 3, 7, 11, 15, 2, 6, 10, 14, 18, 4, 8, 12, 16
-;--------------------------------------------------
-; end of test code
-;--------------------------------------------------
 ENDIF	;SALLYBUILD
 
 		JP	EMULATOR				;GO INITIALIZE FOR ATARI OR CP/M
+
 
 IF SALLYBUILD
 SalyLogon:
@@ -475,18 +364,18 @@ sec2track1:
 		OR	(HL)
 		LD	(HL), A
 			
-		CALL	serhex
-		CALL	serspace
-		LD	A, 'S'
-		CALL	seroutfn
-		LD	A, (DKIOCB+DSKSEC)
-		CALL	serhex
-		CALL	serspace
-		LD	A, 'T'
-		CALL	seroutfn
-		LD	A, (DKIOCB+DSKTRK)
-		CALL	serhex
-		CALL	sercr
+;		CALL	serhex
+;		CALL	serspace
+;		LD	A, 'S'
+;		CALL	seroutfn
+;		LD	A, (DKIOCB+DSKSEC)
+;		CALL	serhex
+;		CALL	serspace
+;		LD	A, 'T'
+;		CALL	seroutfn
+;		LD	A, (DKIOCB+DSKTRK)
+;		CALL	serhex
+;		CALL	sercr
 			
 		LD	HL, 512
 		LD	(DKIOCB+DSKAUX), HL
@@ -582,64 +471,7 @@ dskwrite:
 dskwrite1:
 		JP	DISKV
 
-;--------------------------------------------------
-; Debug routine
-;--------------------------------------------------
-debug:		CALL	seroutfn
-		LD	A, (IX + DSKDRV)
-		CALL	serhex
-		LD	A, 't'
-		CALL	seroutfn
-		LD	A, (IX + DSKTRK)
-		CALL	serhex
-		LD	A, 's'
-		CALL	seroutfn
-		LD	A, (IX + DSKSEC)
-		CALL	serhex
-		LD	A, (IX + DSKPTR+1)
-		CALL	serhex
-		LD	A, (IX + DSKPTR)
-		CALL	serhex
-		LD	A, (IX + DSKAUX+1)
-		CALL	serhex
-		LD	A, (IX + DSKAUX)
-		CALL	serhex
 
-		CALL	serspace
-		LD	A, (CFRAME+3)
-		CALL	serhex
-		LD	A, (CFRAME+2)
-		CALL	serhex
-		CALL	serspace
-		LD	A, (IY+NSECS+1)
-		CALL	serhex
-		LD	A, (IY+NTRKS)
-		CALL	serhex
-
-		CALL	sercr
-		RET
-;
-dumpdcb:
-		PUSH	AF
-		PUSH	BC
-		PUSH	HL
-
-		PUSH	IX
-		POP	HL
-;		CALL	sercr
-		LD	B, 9
-dumpdcb1:
-		LD	A, (HL)
-		INC	HL
-		CALL	serhex
-		CALL	serspace
-		DJNZ	dumpdcb1
-		CALL	sercr
-
-		POP	HL
-		POP	BC
-		POP	AF
-		RET
 ;--------------------------------------------------
 ; dskreadfn: cache a track
 ;--------------------------------------------------
@@ -718,12 +550,7 @@ readtrack:
 		CALL	DISKV
 		POP	BC
 
-;		IN	A,(TRKREG)
-;		CALL	serhex
-;		IN	A,(SECREG)
-;		CALL	serhex
 		LD	A, (dcb + DSKSTS)			;error occured?
-;		CALL	serhex
 		OR	A
 		JR	Z, readtrack6				;no
 readtrack4:             
@@ -761,31 +588,6 @@ match2:
 	ENDIF
 		JP	ACTIVON
 
-
-;--------------------------------------------------
-; dump 512 bytes at HL
-;--------------------------------------------------
-dumpsec:
-		PUSH	BC
-		PUSH	HL
-		CALL	seraddr
-		CALL	sercr
-		LD	BC, 512
-match3a:
-		LD	A, (HL)
-		CALL	serhex
-		LD	A, B
-		AND	15
-		JR	NZ, match3
-		CALL	sercr
-match3:
-		INC	HL
-		DEC	C
-		JR	NZ, match3a
-		DJNZ	match3a
-		POP	HL
-		POP	BC
-		JP	sercr
 
 ;--------------------------------------------------
 ; HL = TRKBUF + DSKSEC * (128/256/512)
@@ -837,7 +639,7 @@ getspeed:
 	IF NOHIGHSPEEDSIO <> 1
 		LD	A, SIOFAST
 		LD	(HL), A
-		LD	(hispeed), A
+;		LD	(hispeed), A
 	ELSE
 		LD	(HL), SIONORMAL
 	ENDIF	; HIGHSPEEDSIO
@@ -861,15 +663,24 @@ cmdwaitfn:
 
 		DI						;ELSE RESET INTERRUPT AND START AGAIN
 		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
-		OUT	(CTC0),A				;PERFORM THE RESET
+		OUT	(CTC0), A				;PERFORM THE RESET
 		EI
 
 		JP	Z, CMDL4				;good cmd-frame
-
-		CALL	togglebaud
+								;fall through
+;--------------------------------------------------
+; togglebaud
+;--------------------------------------------------
+togglebaud:
+		LD	A, (pokeydiv)
+		CP	SIONORMAL
+		LD	A, SIOFAST
+		JR	Z, togglebaud1
+		LD	A, SIONORMAL
+togglebaud1:
+		LD	(pokeydiv), A
+;		CALL	serhex
 		JP	CMDL5
-
-
 
 ;--------------------------------------------------
 ; xmitbuffn
@@ -950,22 +761,6 @@ rxblck1:
 		LD	BC, 0					;no, normal speed
 		JP	SalyRXBLOCK
 
-;--------------------------------------------------
-; togglebaud
-;--------------------------------------------------
-togglebaud:
-;		LD	A, (hispeed)
-;		OR	A
-;		RET	Z
-
-		LD	A, (pokeydiv)
-		CP	SIONORMAL
-		LD	A, SIOFAST
-		JR	Z, togglebaud1
-		LD	A, SIONORMAL
-togglebaud1:
-		LD	(pokeydiv), A
-		RET
 
 ;--------------------------------------------------
 ; set 4ms watchdog
@@ -1029,42 +824,162 @@ fastrecv2a:
 
 		JP	fastrecv1				;10
 
+	if SALLYDEBUG = 1 
+;--------------------------------------------------
+; debug and dump rouines
+;--------------------------------------------------
 
-;serdumpcpl:
-;		PUSH	HL
-;		PUSH	AF
-;		PUSH	BC
-;		PUSH	DE
-;		LD	D, 255
-;		JR	serdump1
+serdumpcpl:
+		PUSH	HL
+		PUSH	AF
+		PUSH	BC
+		PUSH	DE
+		LD	D, 255
+		JR	serdump1
 
 diskiodebug:	LD	a, (CMDBYT)
 		CP	080h
 		JR	NZ, diskiodebug1
-
-		CALL	sercr
 		
-		LD	A,(IX+DSKSEC)	
-		OUT	(SECREG),A	
+		call	serhex
 		LD	A,(IX+DSKTRK)	
-		OUT	(TRKREG),A	
-
-		in	a, (TRKREG)
 		CALL	serhex
-		in	a, (SECREG)
-		CALL	serhex		
-		LD	A,(CMDBYT)				
-		OUT	(CMDREG),A				;START 1791 WORKING ON W/R COMMAND
+		LD	A,(IX+DSKSEC)	
+		CALL	serhex
 
 dbgRWBUSY:	IN	A,(STSREG)
 		BIT	0,A
 		JR	NZ,dbgRWBUSY				;LOOP TILL 1797 BUSY BIT GOES AWAY
 		CALL	serhex
+
 		CALL	sercr
 	
 diskiodebug1:	LD	A,(IX+DSKSEC)
 		JP	DISK4+3
 		
+;--------------------------------------------------
+; debug code for VR177x
+; test 1 write/read TRKREG or SECREG 
+;--------------------------------------------------
+		DI
+		
+		CALL	sercr	
+		
+		in	a, (STSREG)
+		CALL	serhex
+		CALL	sercr
+
+		call	serinfn
+		
+		LD	b, 0 
+dloop:		LD	a, b
+		CALL	serhex
+		CALL	serspace
+			
+		out	(SECREG),a
+		LD	c, 4				;4*8 = 32uS
+dloop1:		DEC	c				;4
+		JR	nz, dloop1			;12 = 16 T-states = 4uS
+		
+		in	a,(SECREG)
+		
+		CP	b
+		JR	NZ, error
+		DJNZ	dloop
+ok:		JR	ok
+		
+error:		ld	a, 'E'
+		CALL	seroutfn
+error1:		JR	error1
+
+;--------------------------------------------------
+; dump 512 bytes at HL
+;--------------------------------------------------
+dumpsec:
+		PUSH	BC
+		PUSH	HL
+		CALL	seraddr
+		CALL	sercr
+		LD	BC, 256
+
+dumpsec1:	LD	A, C
+		AND	15
+		JR	NZ, dumpsec2
+		CALL	sercr
+dumpsec2:	LD	A, (HL)
+		CALL	serhex
+		call	serspace
+		
+		INC	HL
+		DEC	C
+		JR	NZ, dumpsec1
+		DJNZ	dumpsec1
+		
+		POP	HL
+		POP	BC
+		JP	sercr
+
+;--------------------------------------------------
+; Debug routine
+;--------------------------------------------------
+debugtrk:	CALL	seroutfn
+		LD	A, (IX + DSKDRV)
+		CALL	serhex
+		LD	A, 't'
+		CALL	seroutfn
+		LD	A, (IX + DSKTRK)
+		CALL	serhex
+		LD	A, 's'
+		CALL	seroutfn
+		LD	A, (IX + DSKSEC)
+		CALL	serhex
+		LD	A, (IX + DSKPTR+1)
+		CALL	serhex
+		LD	A, (IX + DSKPTR)
+		CALL	serhex
+		LD	A, (IX + DSKAUX+1)
+		CALL	serhex
+		LD	A, (IX + DSKAUX)
+		CALL	serhex
+
+		CALL	serspace
+		LD	A, (CFRAME+3)
+		CALL	serhex
+		LD	A, (CFRAME+2)
+		CALL	serhex
+		CALL	serspace
+		LD	A, (IY+NSECS+1)
+		CALL	serhex
+		LD	A, (IY+NTRKS)
+		CALL	serhex
+
+		CALL	sercr
+		RET
+;
+;
+;
+dumpdcb:
+		PUSH	AF
+		PUSH	BC
+		PUSH	HL
+
+		PUSH	IX
+		POP	HL
+;		CALL	sercr
+		LD	B, 9
+dumpdcb1:
+		LD	A, (HL)
+		INC	HL
+		CALL	serhex
+		CALL	serspace
+		DJNZ	dumpdcb1
+		CALL	sercr
+
+		POP	HL
+		POP	BC
+		POP	AF
+		RET
+
 ;--------------------------------------------------
 ; RS232 sercmd
 ;--------------------------------------------------
@@ -1215,6 +1130,8 @@ time19600a:
 		JR	NZ, time19600a				;12/7
 		RET						;10
 
+	ENDIF
+	
 SalyCMDOUT:
 		OUT	(CMDREG),A				;OUTPUT DISK CONTROLLER COMMAND BYTE
 slyCMDT1:
@@ -1275,7 +1192,7 @@ dsector:	DB	0, 0
 direct:		DB	0
 
 pokeydiv:	DB	SIONORMAL
-hispeed:	DB	0
+;hispeed:	DB	0
 
 drive:		DB	255
 thetrack:	DB	255
@@ -1296,6 +1213,8 @@ dcb:		DB	0					;DISK OPERATION CODE
 
 id:		DW	0, 0, 0
 
+		include version.asm
+		
 ENDIF	;SALLYBUILD
 ;
 ;

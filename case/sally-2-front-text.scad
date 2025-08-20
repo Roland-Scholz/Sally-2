@@ -115,40 +115,54 @@ module base_shape_2d(th) {
 }
 
 module beschriftung() {
+    
+    translate([49,-29.5, 0])
+    cube([25, 0.6, 0.2]);
+    translate([49,-11.75, 0])
+    cube([25, 0.6, 0.2]);
+    
     linear_extrude(0.2){
-    translate([145, -25.5, -2 ])
+    translate([127, -25.5, -2 ])
     rotate([180, 0, 0])
     {
-        text("A           B           C          D ", 3
-    , "Arial:style=Regular"  );
+        text("Drive        A           B           C          D ", 3
+    , "Arial:style=Bold"  );
     }
     
-    translate([145, -10.5, -2 ])
+    translate([145, -10, -2 ])
     rotate([180, 0, 0])
     {
         text("DD        FM        Side B", 3
-    , "Arial:style=Regular"  );
+    , "Arial:style=Bold"  );
     }
 
     translate([210, -16, -2 ])
     rotate([180, 0, 0])
     {
         text("Reset", 3
-    , "Arial:style=Regular"  );
+    , "Arial:style=Bold"  );
     }
     
-    translate([58, -26, -2 ])
+    translate([22, -28, -2 ])
     rotate([180, 0, 0])
     {
-        text("ON", 3
-    , "Arial:style=Regular"  );
+        text("ON -", 3
+    , "Arial:style=Bold"  );
+    }
+
+    translate([22.25, -10.5, -2 ])
+    rotate([180, 0, 0])
+    {
+        text("Off -", 3
+    , "Arial:style=Bold"  );
     }
     
-    translate([34, -5, -2 ])
+    translate([33, -5, -2 ])
     rotate([180, 0, 0])
     {
-        text("Power                                A             B", 3
-    , "Arial:style=Regular"  );
+        text("Power                                 A             B", 3
+    , "Arial:style=Bold"  );
     }
 }
+
 }

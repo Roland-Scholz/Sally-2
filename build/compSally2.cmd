@@ -1,4 +1,5 @@
 @echo off
+PATH=%PATH%;C:\msys64\usr\bin
 setlocal
 set MODULE=sally2
 set ASSEMBLER_PATH=zmac
@@ -31,6 +32,8 @@ IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
 rem ****************************************************
 rem * compile sally2
 rem ****************************************************
+for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do echo SALLYVERSION: DB "%%a" > %SOURCE_DIR%\version.asm
+
 call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
 
