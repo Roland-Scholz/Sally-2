@@ -120,12 +120,12 @@
   45:				;
   46:				;	NOW COPY MONITOR AND VARIABLES TO HIGH RAM
   47:				;
-  48:  191+10	002E  21C504  			LD	HL,MONCOPY
+  48:  191+10	002E  21AE04  			LD	HL,MONCOPY
   49:  201+10	0031  1100F0  			LD	DE,MONITOR
   50:  211+10	0034  01FC0E  			LD	BC,MONSIZE
   51:  221+16+5	0037  EDB0    			LDIR						;COPY RESIDENT CODE INTO RAM
   52:				
-  53:  237+10	0039  21C113  			LD	HL,VARCOPY
+  53:  237+10	0039  21AA13  			LD	HL,VARCOPY
   54:  247+10	003C  1120FF  			LD	DE,glbvars
   55:  257+10	003F  012F00  			LD	BC,glbsize
   56:  267+16+5	0042  EDB0    			LDIR						;INITIALIZE GLOBAL VARIABLES
@@ -982,25 +982,15 @@
 1213:				
 1214:     -	04A8  00000000	id:		DW	0, 0, 0
 	              0000
-1215:				
-1216:						include version.asm
-**** ..\src\version.asm ****
-   1:     -	04AE  73616C6C	SALLYVERSION: DB "sally-1.0.2-34-gcacf743" 
-	              792D312E
-	              302E322D
-	              33342D67
-	              63616366
-	              373433
-**** ..\src\SYSINIT.MAC ****
-1217:						
-1218:				ENDIF	;SALLYBUILD
-1219:				;
-1220:				;
+1215:						
+1216:				ENDIF	;SALLYBUILD
+1217:				;
+1218:				;
 **** ..\src\sally2.asm ****
   15:				;
   16:				;	PHASE TO RAM-RESIDENT PART OF PROGRAM
   17:				;
-  18:     -	04C5          	MONCOPY	EQU	$
+  18:     -	04AE          	MONCOPY	EQU	$
   19:     -	F000          		.PHASE	0F000H
   20:				;
   21:				;
@@ -4219,11 +4209,11 @@
   57:				;
   58:				;
   59:				;
-  60:     -	13C1          		.DEPHASE
+  60:     -	13AA          		.DEPHASE
   61:     -	0EFC          	MONSIZE	EQU	$-MONCOPY
   62:				;
   63:				;
-  64:     -	13C1          	varcopy	equ	$
+  64:     -	13AA          	varcopy	equ	$
   65:     -	FF20          		.phase	0ff00h+32
   66:     -	FF00          	ram	equ	$-32		;put ram on start of 256 byte page
   67:     -	FF00          	KEYBUF	equ	ram		;16 byte keyboard input fifo
@@ -4321,31 +4311,35 @@
   88:				;
 **** ..\src\sally2.asm ****
   70:				;
-  71:     -	13F1          		.DEPHASE
+  71:     -	13DA          		.DEPHASE
   72:				;
   73:     -	0001          	IF SALLYBUILD
   74:				;
   75:				;--------------------------------------------------
   76:				; set to zero in startup code until 0ffffh
   77:				;--------------------------------------------------
-  78:22530+4	13F1  00      			NOP
-  79:22534+4	13F2  00      			NOP
-  80:22538+4	13F3  00      			NOP
-  81:22542+4	13F4  00      			NOP
-  82:22546+4	13F5  00      			NOP
-  83:22550+4	13F6  00      			NOP
-  84:22554+4	13F7  00      			NOP
-  85:22558+4	13F8  00      			NOP
-  86:22562+4	13F9  00      			NOP
-  87:22566+4	13FA  00      			NOP
-  88:22570+4	13FB  00      			NOP
-  89:     -	13FC  524F4C4C			DB  'ROLLI 1 Rev 1.00'
-	              49203120
-	              52657620
-	              312E3030
-  90:				ELSE
- 101:				ENDIF	;SALLYBUILD
- 102:     -	140C          	END
+  78:22530+4	13DA  00      			NOP
+  79:22534+4	13DB  00      			NOP
+  80:22538+4	13DC  00      			NOP
+  81:22542+4	13DD  00      			NOP
+  82:22546+4	13DE  00      			NOP
+  83:22550+4	13DF  00      			NOP
+  84:22554+4	13E0  00      			NOP
+  85:22558+4	13E1  00      			NOP
+  86:22562+4	13E2  00      			NOP
+  87:22566+4	13E3  00      			NOP
+  88:22570+4	13E4  00      			NOP
+  89:				;		DB  'ROLLI 1 Rev 1.00'
+  90:						include version.asm
+**** ..\src\version.asm ****
+   1:     -	13E5  73616C6C	SVERSION DB "sally-1.0.3     " 
+	              792D312E
+	              302E3320
+	              20202020
+**** ..\src\sally2.asm ****
+  91:				ELSE
+ 102:				ENDIF	;SALLYBUILD
+ 103:     -	13F5          	END
 
 
 
@@ -4354,7 +4348,7 @@ Statistics:
      5	passes
      0	jr promotions
    538	symbols
-  5132	bytes
+  5109	bytes
 
 
 
@@ -4561,7 +4555,7 @@ MAIN            F7AC      63404
 MEDIA          =05        5
 MEMPTR          FCB2      64690
 MINIMON         F3DE      62430
-MONCOPY        = 4C5      1221
+MONCOPY        = 4AE      1198
 MONITOR        =F000      61440
 MONSIZE        = EFC      3836
 NEWLIN          FF3E      65342
@@ -4663,7 +4657,6 @@ RXSTOP          F52C      62764
 RXTEMP         =F51C      62748
 SALLYBUILD     =01        1
 SALLYDEBUG     =00        0
-SALLYVERSION     4AE      1198
 SCAN            F810      63504
 SD5N18          FE16      65046
 SD8N26          FE7A      65146
@@ -4748,6 +4741,7 @@ STRAN4          FAA5      64165
 STRAN5          FABF      64191
 STROBE         =53        83
 STSREG         =40        64
+SVERSION        13E5      5093
 SalyCMDOUT       44B      1099
 SalyDISK3       F0C5      61637
 SalyDISKID      F82B      63531
@@ -4802,7 +4796,7 @@ TXTMP7         =F5D4      62932
 TYP1CMD         F350      62288
 TYP2CMD         F347      62279
 UNIT            FF2C      65324
-VARCOPY        =13C1      5057
+VARCOPY        =13AA      5034
 VERIFY          F27A      62074
 VFLAG          =FFB5      65461
 VIEW            F430      62512

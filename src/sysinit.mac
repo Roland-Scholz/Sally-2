@@ -1212,8 +1212,6 @@ dcb:		DB	0					;DISK OPERATION CODE
 		DB	0					;OPERATION COMPLETION STATUS
 
 id:		DW	0, 0, 0
-
-		include version.asm
 		
 ENDIF	;SALLYBUILD
 ;

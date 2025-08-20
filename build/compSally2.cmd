@@ -32,8 +32,11 @@ IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
 rem ****************************************************
 rem * compile sally2
 rem ****************************************************
-for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do echo SALLYVERSION: DB "%%a" > %SOURCE_DIR%\version.asm
+for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
+echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
 
+
+pause
 call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
 

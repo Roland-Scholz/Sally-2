@@ -86,7 +86,8 @@ IF SALLYBUILD
 		NOP
 		NOP
 		NOP
-		DB  'ROLLI 1 Rev 1.00'
+;		DB  'ROLLI 1 Rev 1.00'
+		include version.asm
 ELSE
 ;
 LAST	EQU	$

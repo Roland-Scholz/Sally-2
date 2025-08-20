@@ -117,12 +117,12 @@
   45:				;
   46:				;	NOW COPY MONITOR AND VARIABLES TO HIGH RAM
   47:				;
-  48:  191+10	002E  21AA04  			LD	HL,MONCOPY
+  48:  191+10	002E  219304  			LD	HL,MONCOPY
   49:  201+10	0031  1100F0  			LD	DE,MONITOR
   50:  211+10	0034  01FC0E  			LD	BC,MONSIZE
   51:  221+16+5	0037  EDB0    			LDIR						;COPY RESIDENT CODE INTO RAM
   52:				
-  53:  237+10	0039  21A613  			LD	HL,VARCOPY
+  53:  237+10	0039  218F13  			LD	HL,VARCOPY
   54:  247+10	003C  1120FF  			LD	DE,glbvars
   55:  257+10	003F  012F00  			LD	BC,glbsize
   56:  267+16+5	0042  EDB0    			LDIR						;INITIALIZE GLOBAL VARIABLES
@@ -964,25 +964,15 @@
 1213:				
 1214:     -	048D  00000000	id:		DW	0, 0, 0
 	              0000
-1215:				
-1216:						include version.asm
-**** ..\src\version.asm ****
-   1:     -	0493  73616C6C	SALLYVERSION: DB "sally-1.0.2-34-gcacf743" 
-	              792D312E
-	              302E322D
-	              33342D67
-	              63616366
-	              373433
-**** ..\src\SYSINIT.MAC ****
-1217:						
-1218:				ENDIF	;SALLYBUILD
-1219:				;
-1220:				;
+1215:						
+1216:				ENDIF	;SALLYBUILD
+1217:				;
+1218:				;
 **** ..\src\ROM.MAC ****
   12:				;
   13:				;	PHASE TO RAM-RESIDENT PART OF PROGRAM
   14:				;
-  15:     -	04AA          	MONCOPY	EQU	$
+  15:     -	0493          	MONCOPY	EQU	$
   16:     -	F000          		.PHASE	0F000H
   17:				;
   18:				;
@@ -4174,11 +4164,11 @@
   50:				;
   51:				;
   52:				;
-  53:     -	13A6          		.DEPHASE
+  53:     -	138F          		.DEPHASE
   54:     -	0EFC          	MONSIZE	EQU	$-MONCOPY
   55:				;
   56:				;
-  57:     -	13A6          	varcopy	equ	$
+  57:     -	138F          	varcopy	equ	$
   58:     -	FF20          		.phase	0ff00h+32
   59:     -	FF00          	ram	equ	$-32		;put ram on start of 256 byte page
   60:     -	FF00          	keybuf	equ	ram		;16 byte keyboard input fifo
@@ -4276,15 +4266,15 @@
   88:				;
 **** ..\src\ROM.MAC ****
   63:				;
-  64:     -	13D6          		.DEPHASE
+  64:     -	13BF          		.DEPHASE
   65:				;
   66:				;
-  67:     -	13D6          	LAST	EQU	$
+  67:     -	13BF          	LAST	EQU	$
   68:				
   69:     -	0000          		IF SALLYBUILD = 0
   77:					ENDIF
   78:				
-  79:     -	13D6          	END
+  79:     -	13BF          	END
 
 
 
@@ -4292,8 +4282,8 @@ Statistics:
 
      5	passes
      0	jr promotions
-   536	symbols
-  5078	bytes
+   535	symbols
+  5055	bytes
 
 
 
@@ -4490,7 +4480,7 @@ IOPTR          =FFB3      65459
 ITBLEN         =16        22
 KEYBUF         =FF00      65280
 KLUDGE          F188      61832
-LAST           =13D6      5078
+LAST           =13BF      5055
 LATCH          =30        48
 LEN            = 200      512
 LF             =0A        10
@@ -4501,7 +4491,7 @@ MAIN            F7AC      63404
 MEDIA          =05        5
 MEMPTR          FCB2      64690
 MINIMON         F3DE      62430
-MONCOPY        = 4AA      1194
+MONCOPY        = 493      1171
 MONITOR        =F000      61440
 MONSIZE        = EFC      3836
 NEWLIN          FF3E      65342
@@ -4603,7 +4593,6 @@ RXSTOP          F52C      62764
 RXTEMP         =F51C      62748
 SALLYBUILD     =01        1
 SALLYDEBUG     =00        0
-SALLYVERSION     493      1171
 SCAN            F810      63504
 SD5N18          FE16      65046
 SD8N26          FE7A      65146
@@ -4738,7 +4727,7 @@ TXTMP7         =F5D4      62932
 TYP1CMD         F36B      62315
 TYP2CMD         F362      62306
 UNIT            FF2C      65324
-VARCOPY        =13A6      5030
+VARCOPY        =138F      5007
 VERIFY          F295      62101
 VFLAG          =FFB5      65461
 VIEW            F430      62512
