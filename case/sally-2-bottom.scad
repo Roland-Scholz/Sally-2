@@ -21,12 +21,14 @@ difference() {
         cylinder(4, 3.5, 3.5);
     translate([xmax-20,35,0])
         cylinder(4, 3.5, 3.5);
+    /*
     translate([21.5,35+118,0])
         cylinder(4, 3.5, 3.5);
     translate([xmax-21.5,35+118,0])
         cylinder(4, 3.5, 3.5);
+    */
     
-    //bumper
+    //bumper (rubber feet)
     
     translate([35, 27.5, 0])
         cylinder(1, 1, 1);
@@ -36,7 +38,7 @@ difference() {
         cylinder(1, 1, 1);
     translate([xmax-35, ymax-27.5, 0])
         cylinder(1, 1, 1);
-    
+ 
 }
 
 
@@ -168,8 +170,8 @@ module screw(r) {
 
 module foot(r, h) {    
     difference() {
-        cylinder(h,r*2,r*1.3);
-            cylinder(h,r/2+0.2,r/2+0.2);
+        cylinder(h,r*2,r*1.5);
+            cylinder(h, 2.1, 2.1);
 //        cylinder(5,6,6);
     }
 }

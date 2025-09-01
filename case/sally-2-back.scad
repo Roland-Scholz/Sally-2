@@ -15,7 +15,6 @@ edge=5;
 rotate([180,0,0])
     shape();
 
-
 module shape() {
     difference(){
         base_shape();
@@ -34,10 +33,10 @@ module shape() {
 
         translate([dev_x+17.5+32+32+12+86+2, dev_bot, 0])
             barrel();
-        
+/*        
         translate([dev_x+17.5+32+32+12+86+3+9+5, dev_bot, 0])
             usb();
-
+*/
         translate([60+60.5, 63,0])
             floppy();
         
@@ -81,6 +80,11 @@ module base_shape() {
     rotate([0,0,0])
     linear_extrude(1.6)
         base_shape_2d(thick * tf);
+    
+    translate([60+60.5+8.5, 58, -7])
+        spacer_round();
+    translate([49, 58, -7])
+        spacer_round();
 
 }
 
@@ -105,3 +109,10 @@ module floppy() {
     }
 }
 
+module spacer_round() {
+    difference(){
+        cylinder(h=7, r=3);
+            cylinder(h=7, r=1.6);
+        
+    };
+}

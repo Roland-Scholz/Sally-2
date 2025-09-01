@@ -206,7 +206,7 @@ module screw(r) {
     difference() {
         cylinder(zmax,r*2,r*2);
         translate([0,0,-1]);
-            cylinder(zmax+2, 2.0, 2.0);
+            cylinder(zmax+2, 2.1, 2.1);
 //        cylinder(5,6,6);
     }
 }

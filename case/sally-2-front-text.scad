@@ -117,9 +117,9 @@ module base_shape_2d(th) {
 module beschriftung() {
     
     translate([49,-29.5, 0])
-    cube([25, 0.6, 0.2]);
+        cube([25, 0.6, 0.2]);
     translate([49,-11.75, 0])
-    cube([25, 0.6, 0.2]);
+        cube([25, 0.6, 0.2]);
     
     linear_extrude(0.2){
     translate([127, -25.5, -2 ])
