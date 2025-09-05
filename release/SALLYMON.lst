@@ -1,0 +1,1747 @@
+   1:				;--------------------------------------------------------------
+   2:				; Variables
+   3:				;--------------------------------------------------------------
+   4:     -	FFF0          	VARS		equ	0fff0h
+   5:     -	0000          	echo		equ	0
+   6:     -	0001          	sum		equ	1
+   7:     -	0002          	addr		equ	2
+   8:				
+   9:				;--------------------------------------------------------------
+  10:				; Constants
+  11:				;--------------------------------------------------------------
+  12:     -	000A          	LF		equ	0ah
+  13:     -	000D          	CR		equ	0dh
+  14:				
+  15:						include "EQUS.MAC"
+**** ..\src\EQUS.MAC ****
+   1:				;--------------------------------------------------
+   2:				; Equates for Sally2 Hi-Speed-SIO code
+   3:				;--------------------------------------------------
+   4:     -	0000          	NOHIGHSPEEDSIO	EQU	0
+   5:				;
+   6:				;--------------------------------------------------
+   7:				; Track-Buffer 26*256 bytes
+   8:				;--------------------------------------------------
+   9:     -	0800          	TRKBUFFER	EQU	00800h
+  10:				
+  11:     -	0028          	SIONORMAL	EQU	40
+  12:     -	0008          	SIOFAST		EQU	8
+  13:				;--------------------------------------------------
+  14:				;
+  15:				;--------------------------------------------------
+  16:				;
+  17:				;
+  18:				;
+  19:     -	0020          	PRINTER	EQU	20H		;PRINTER OUTPUT/INPUTS
+  20:     -	0030          	LATCH	EQU	30H		;DRIVE CONTROL LATCH
+  21:     -	0040          	WD179X	EQU	40H		;WD TYPE DISK CONTROLLER
+  22:				;
+  23:     -	0050          	SERIN	EQU	50H		;RS232 SERIAL INPUT
+  24:				;
+  25:     -	0050          	ATROUT	EQU	50H		;ATARI SERIAL OUTPUT
+  26:     -	0051          	SEROUT	EQU	51H		;RS232 SERIAL OUTPUT
+  27:     -	0052          	BANKSW	EQU	52H		;ROM BANKSWITCH BIT
+  28:     -	0053          	STROBE	EQU	53H		;PRINTER STROBE
+  29:     -	0054          	INDXCLR	EQU	54H		;INDEX CONTROL FLOP CLEAR
+  30:     -	0055          	DTR		EQU	55H		;DTR OUTPUT CONTROL
+  31:     -	0056          	INDXSET	EQU	56H		;INDEX CONTROL FLOP SET
+  32:     -	0057          	CDMUX	EQU	57H		;ATARI CMD/DATA MUX CONTROL
+  33:				;
+  34:     -	0070          	ATARI	EQU	70H		;ATARI INPUT BITS PORT
+  35:     -	0080          	CTC0	EQU	80H		;ZILOG COUNTER/TIMER 0
+  36:     -	0081          	CTC1	EQU	81H		;ZILOG COUNTER/TIMER 1
+  37:     -	0082          	CTC2	EQU	82H		;ZILOG COUNTER/TIMER 2
+  38:     -	0083          	CTC3	EQU	83H		;ZILOG COUNTER/TIMER 3
+  39:				;
+  40:     -	0000          	CTC_D0_VECTOR:		EQU	00000000B	;Data is a Vector
+  41:     -	0001          	CTC_D0_CONTROL:		EQU	00000001B	;Data is a Control Word
+  42:     -	0002          	CTC_D1_SW_RST:		EQU	00000010B	;Perform a software reset
+  43:     -	0004          	CTC_D2_TCNEXT:		EQU	00000100B	;Time Constant follows
+  44:     -	0000          	CTC_D3_AUTOTRG:		EQU	00000000B	;Automatic trigger when Time Constant loaded
+  45:     -	0008          	CTC_D3_CLKTRG:		EQU	00001000B	;CLK/TRIG pin pulse starts timer
+  46:     -	0000          	CTC_D4_FALLEDGE:	EQU	00000000B	;CLK/TRIG edge selection - falling edge
+  47:     -	0010          	CTC_D4_RISEEDGE:	EQU	00010000B	;CLK/TRIG edge selection - rising edge
+  48:     -	0000          	CTC_D5_PRESC_16:	EQU	00000000B	;Timer prescaler value of 16
+  49:     -	0020          	CTC_D5_PRESC256:	EQU	00100000B	;Timer prescaler value of 256
+  50:     -	0000          	CTC_D6_MODE_TIM:	EQU	00000000B	;Selects Timer mode
+  51:     -	0040          	CTC_D6_MODE_CNT:	EQU	01000000B	;Selects Counter mode
+  52:     -	0000          	CTC_D7_INT_DIS:		EQU	00000000B	;Disables Interrupt
+  53:     -	0080          	CTC_D7_INT_EN:		EQU	10000000B	;Enables Interrupt
+  54:				;
+  55:     -	0000          	NULL	EQU	00H
+  56:     -	000D          	CR	EQU	0DH
+  57:     -	000A          	LF	EQU	0AH
+  58:				;
+**** ..\src\SALLYMON.MAC ****
+  16:				
+  17:				;--------------------------------------------------------------
+  18:     -	0000          			ORG	0
+  19:				;--------------------------------------------------------------
+  20:    0+10	0000  C30900  			jp	sallymon
+  21:   10+10	0003  C30702  			jp	seroutfn
+  22:   20+10	0006  C32702  			jp	serinfn
+  23:						
+  24:   30+4	0009  F3      	sallymon:	di
+  25:						
+  26:   34+14	000A  DD21F0FF			ld	ix, VARS
+  27:   48+10	000E  DDF9    			ld	sp, ix
+  28:				
+  29:   58+10	0010  21F203  			LD	HL,INITAB
+  30:   68+7	0013  060B    			LD	B,ITBLEN/2				;SEND INITIAL POOP TO PROGRAMABLE I/O'S
+  31:   75+7	0015  4E      	INIT2:		LD	C,(HL)
+  32:   82+6	0016  23      			INC	HL
+  33:   88+16	0017  EDA3    			OUTI
+  34:  104+7+5	0019  20FA    			JR	NZ,INIT2
+  35:				
+  36:  111+4	001B  AF      			XOR	A
+  37:  115+4	001C  3D      	INIT1:		DEC	A
+  38:  119+7+5	001D  20FD    			JR	NZ,INIT1				;DO NOTHING FOR 1 MILLISECOND
+  39:				
+  40:  126+7	001F  0610    			ld	b, 16
+  41:  133+10	0021  21F0FF  			ld	hl, VARS
+  42:  143+7	0024  77      	init3:		ld	(hl), a
+  43:  150+6	0025  23      			inc	hl
+  44:  156+8+5	0026  10FC    			djnz	init3
+  45:				
+  46:				;--------------------------------------------------------------
+  47:				; print menu
+  48:				; print prompt
+  49:				; read upper key
+  50:				; check if key is found in menukey
+  51:				; read jmp-address and jump to subroutine
+  52:				;--------------------------------------------------------------
+  53:  164+19	0028  DD360001	printmenu:	ld	(ix + echo), 1		;set echo to 1
+  54:						
+  55:  183+10	002C  21A502  			ld      HL, menutext
+  56:  193+17	002F  CDAB01  			call	printstr
+  57:				
+  58:     -	0032          	printprompt:		
+  59:  210+17	0032  CDEC01  			call	newline
+  60:  227+7	0035  0E3E    			ld	c, '>'
+  61:  234+17	0037  CDC101  			call	printaddr
+  62:					
+  63:     -	003A          	enterkey:	
+  64:  251+7	003A  0E00    			ld	c, 0			;offset in jumptable
+  65:  258+10	003C  218902  			ld	hl, menukey		;number auf keys
+  66:  268+7	003F  46      			ld	b, (hl)			;in b
+  67:  275+6	0040  23      			inc	hl
+  68:  281+17	0041  CDFE01  			call	getupper		;read upper key
+  69:				;		call	printhex
+  70:     -	0044          	enterkey2: 
+  71:  298+7	0044  BE      			cp	(HL)			;key found?
+  72:  305+7+5	0045  2807    			jr	Z, enterkey1		;yes ==>
+  73:  312+6	0047  23      			inc	HL
+  74:  318+4	0048  0C      			inc	c
+  75:  322+4	0049  0C      			inc	c
+  76:  326+8+5	004A  10F8    			djnz	enterkey2		;decrease b and jump
+  77:  334+12	004C  18EC    			jr	enterkey
+  78:     -	004E          	enterkey1:	
+  79:  346+7	004E  0600    			ld	b, 0			;add offset in BC
+  80:  353+10	0050  219302  			ld	HL, menutab		;to base
+  81:  363+11	0053  09      			add	HL, BC
+  82:  374+10	0054  013200  			ld	BC, printprompt		;push return-address
+  83:  384+11	0057  C5      			push	BC
+  84:  395+7	0058  5E      			ld	e, (HL)			;load jp address in DE
+  85:  402+6	0059  23      			inc	HL
+  86:  408+7	005A  56      			ld	d, (HL)
+  87:  415+4	005B  EB      			ex	DE, HL			;in HL now
+  88:  419+4	005C  E9      			jp	(HL)
+  89:				
+  90:				;--------------------------------------------------------------
+  91:				; jump to printmenu
+  92:				;--------------------------------------------------------------
+  93:     -	005D          	questionmark:
+  94:  423+10	005D  C1      			pop	BC
+  95:  433+10	005E  C32800  			jp	printmenu
+  96:						
+  97:				;--------------------------------------------------------------
+  98:				; jump to (addr)
+  99:				;--------------------------------------------------------------
+ 100:  443+16	0061  2AF2FF  	goto:		ld	HL, (VARS + addr)
+ 101:  459+4	0064  E9      			jp	(HL)
+ 102:				
+ 103:				;--------------------------------------------------------------
+ 104:				; Disassemble 22 lines starting from (addr)
+ 105:				;--------------------------------------------------------------
+ 106:     -	0065          	disass:
+ 107:  463+7	0065  0616    			ld	B, 22
+ 108:  470+20	0067  ED5BF2FF			ld	DE, (VARS + addr)
+ 109:  490+17	006B  CDEC01  			call	newline
+ 110:     -	006E          	disass1:
+ 111:  507+11	006E  C5      			push	BC
+ 112:  518+17	006F  CD0804  			call	DISASM
+ 113:  535+17	0072  CDEC01  			call	newline
+ 114:  552+10	0075  C1      			pop	BC
+ 115:  562+8+5	0076  10F6    			djnz	disass1
+ 116:						
+ 117:  570+20	0078  ED53F2FF			ld	(VARS + addr), DE	;save new address
+ 118:  590+10	007C  C9      			ret
+ 119:						
+ 120:				;--------------------------------------------------------------
+ 121:				; change a byte in (addr)
+ 122:				;--------------------------------------------------------------
+ 123:     -	007D          	changebyte:
+ 124:  600+16	007D  2AF2FF  			ld	HL, (VARS + addr)
+ 125:  616+7	0080  7E      			ld	a, (HL)
+ 126:  623+17	0081  CDD001  			call	printhex
+ 127:  640+7	0084  3E3A    			ld	a, ':'
+ 128:  647+17	0086  CD0702  			call	seroutfn
+ 129:  664+17	0089  CD7801  			call	gethexbyte
+ 130:  681+7	008C  77      			ld	(HL), a
+ 131:  688+10	008D  C9      			ret
+ 132:				
+ 133:				;--------------------------------------------------------------
+ 134:				; 
+ 135:				;--------------------------------------------------------------
+ 136:     -	008E          	fillmem:
+ 137:  698+10	008E  217702  			ld	HL, filltext
+ 138:  708+17	0091  CDAB01  			call	printstr
+ 139:						
+ 140:  725+17	0094  CD7801  			call	gethexbyte		;get from-addr
+ 141:  742+4	0097  67      			ld	h, a
+ 142:  746+17	0098  CD7801  			call	gethexbyte
+ 143:  763+4	009B  6F      			ld	l, a
+ 144:  767+11	009C  E5      			push	HL
+ 145:  778+11	009D  E5      			push	HL
+ 146:						
+ 147:  789+10	009E  216C02  			ld	HL, lentext
+ 148:  799+17	00A1  CDAB01  			call	printstr
+ 149:  816+17	00A4  CD7801  			call	gethexbyte		;get length
+ 150:  833+4	00A7  47      			ld	b, a
+ 151:  837+17	00A8  CD7801  			call	gethexbyte
+ 152:  854+4	00AB  4F      			ld	c, a
+ 153:						
+ 154:  858+4	00AC  78      			ld	a, b			; if BC = 0
+ 155:  862+4	00AD  B1      			or	a, c
+ 156:  866+5+6	00AE  C8      			ret	Z			; return	
+ 157:  871+6	00AF  0B      			dec	BC
+ 158:						
+ 159:  877+10	00B0  218202  			ld	HL, withtext
+ 160:  887+17	00B3  CDAB01  			call	printstr
+ 161:  904+17	00B6  CD7801  			call	gethexbyte
+ 162:						
+ 163:  921+10	00B9  D1      			pop	DE			; DE = HL + 1
+ 164:  931+6	00BA  13      			inc	DE
+ 165:						
+ 166:  937+10	00BB  E1      			pop	HL
+ 167:  947+7	00BC  77      			ld	(HL), a 
+ 168:						
+ 169:  954+4	00BD  78      			ld	a, b
+ 170:  958+4	00BE  B1      			or	a, c
+ 171:  962+5+6	00BF  C8      			ret	Z
+ 172:						
+ 173:  967+16+5	00C0  EDB0    			LDIR
+ 174:						
+ 175:  983+10	00C2  C9      			ret
+ 176:				
+ 177:				;--------------------------------------------------------------
+ 178:				; 
+ 179:				;--------------------------------------------------------------
+ 180:     -	00C3          	transfer:	
+ 181:  993+10	00C3  215D02  			ld	HL, transtext
+ 182: 1003+17	00C6  CDAB01  			call	printstr
+ 183:						
+ 184: 1020+17	00C9  CD7801  			call	gethexbyte		;get from-addr
+ 185: 1037+4	00CC  67      			ld	h, a
+ 186: 1041+17	00CD  CD7801  			call	gethexbyte
+ 187: 1058+4	00D0  6F      			ld	l, a
+ 188: 1062+11	00D1  E5      			push	HL
+ 189:						
+ 190: 1073+10	00D2  216C02  			ld	HL, lentext
+ 191: 1083+17	00D5  CDAB01  			call	printstr
+ 192: 1100+17	00D8  CD7801  			call	gethexbyte		;get length
+ 193: 1117+4	00DB  47      			ld	b, a
+ 194: 1121+17	00DC  CD7801  			call	gethexbyte
+ 195: 1138+4	00DF  4F      			ld	c, a
+ 196:				
+ 197: 1142+10	00E0  217202  			ld	HL, totext
+ 198: 1152+17	00E3  CDAB01  			call	printstr
+ 199: 1169+17	00E6  CD7801  			call	gethexbyte		;get dest-addr
+ 200: 1186+4	00E9  57      			ld	d, a
+ 201: 1190+17	00EA  CD7801  			call	gethexbyte
+ 202: 1207+4	00ED  5F      			ld	e, a
+ 203:				
+ 204: 1211+10	00EE  E1      			pop	HL
+ 205:						
+ 206: 1221+16+5	00EF  EDB0    			LDIR
+ 207:						
+ 208: 1237+10	00F1  C9      			ret
+ 209:						
+ 210:				;--------------------------------------------------------------
+ 211:				; read new address from serinfn
+ 212:				;--------------------------------------------------------------
+ 213:     -	00F2          	newaddress:
+ 214: 1247+10	00F2  215402  			ld	HL, addrtext
+ 215: 1257+17	00F5  CDAB01  			call	printstr
+ 216: 1274+17	00F8  CD7801  			call	gethexbyte
+ 217: 1291+13	00FB  32F3FF  			ld	(VARS + addr + 1), a
+ 218: 1304+17	00FE  CD7801  			call	gethexbyte
+ 219: 1321+13	0101  32F2FF  			ld	(VARS + addr), a
+ 220: 1334+10	0104  C9      			ret
+ 221:						
+ 222:				;--------------------------------------------------------------
+ 223:				; dump 256 bytes starting from (HL)
+ 224:				;--------------------------------------------------------------
+ 225:     -	0105          	dumpmem:
+ 226: 1344+17	0105  CDEC01  			call	newline
+ 227: 1361+7	0108  1610    			ld	d, 16
+ 228: 1368+16	010A  2AF2FF  			ld	HL, (VARS + addr)
+ 229:					
+ 230:     -	010D          	dumpline:
+ 231: 1384+7	010D  0E3A    			ld	c, ':'
+ 232: 1391+17	010F  CDC101  			call	printaddr
+ 233:						
+ 234: 1408+17	0112  CDF601  			call	space
+ 235: 1425+11	0115  E5      			push	HL
+ 236:						
+ 237: 1436+7	0116  0610    			ld	b, 16
+ 238:     -	0118          	dumpmem1:
+ 239: 1443+7	0118  7E      			ld	a, (HL)
+ 240: 1450+6	0119  23      			inc	HL
+ 241: 1456+17	011A  CDD001  			call	printhex
+ 242: 1473+17	011D  CDF601  			call	space
+ 243: 1490+4	0120  78      			ld	a, b
+ 244: 1494+7	0121  FE09    			cp	9
+ 245: 1501+7+5	0123  2003    			jr	NZ, dumpmem3
+ 246: 1508+17	0125  CDF601  			call	space
+ 247:     -	0128          	dumpmem3:	
+ 248: 1525+8+5	0128  10EE    			djnz	dumpmem1
+ 249:						
+ 250:						
+ 251: 1533+7	012A  3E7C    			ld	a, '|'
+ 252: 1540+17	012C  CD0702  			call	seroutfn
+ 253: 1557+7	012F  0610    			ld	b, 16
+ 254: 1564+10	0131  E1      			pop	HL
+ 255:					
+ 256:     -	0132          	dumpmem5:
+ 257: 1574+7	0132  7E      			ld	a, (HL)
+ 258: 1581+6	0133  23      			inc	HL
+ 259: 1587+7	0134  FE20    			cp	32
+ 260: 1594+7+5	0136  3804    			jr	C, dumpmem6
+ 261: 1601+7	0138  FE7E    			cp	126
+ 262: 1608+7+5	013A  3802    			jr	C, dumpmem4
+ 263:     -	013C          	dumpmem6:
+ 264: 1615+7	013C  3E2E    			ld	a, '.'
+ 265:     -	013E          	dumpmem4:
+ 266:				;		ld	c, a
+ 267: 1622+17	013E  CD0702  			call	seroutfn
+ 268: 1639+8+5	0141  10EF    			djnz	dumpmem5
+ 269:						
+ 270: 1647+7	0143  3E7C    			ld	a, '|'
+ 271: 1654+17	0145  CD0702  			call	seroutfn
+ 272:						
+ 273: 1671+17	0148  CDEC01  			call	newline
+ 274: 1688+16	014B  22F2FF  			ld	(VARS + addr), hl
+ 275: 1704+4	014E  15      			dec	d
+ 276: 1708+7+5	014F  20BC    			jr	NZ, dumpline
+ 277: 1715+10	0151  C9      			ret
+ 278:						
+ 279:				;--------------------------------------------------------------
+ 280:				; binary download to 0f000h
+ 281:				;--------------------------------------------------------------
+ 282: 1725+10	0152  210080  	download:	ld	hl, 08000h
+ 283:				;		ld	(VARS + addr), hl
+ 284:						
+ 285: 1735+17	0155  CD5D01  	download1:	call	rs232in
+ 286: 1752+7	0158  77      			ld	(hl), a				;7
+ 287: 1759+6	0159  23      			inc	hl				;6
+ 288: 1765+10	015A  C35501  			jp	download1			;10
+ 289:							
+ 290: 1775+11	015D  DB50    	rs232in:	in	a, (SERIN)			;11	bit 7, wait for start-bit (0)
+ 291: 1786+4	015F  17      			rla					;4
+ 292: 1790+7+5	0160  38FB    			jr	c, rs232in			;12/7	22
+ 293: 1797+4	0162  00      			nop
+ 294: 1801+4	0163  00      			nop
+ 295: 1805+7	0164  1608    			ld	d, 8
+ 296: 1812+7	0166  0616    			ld	b, 22				;7
+ 297: 1819+8+5	0168  10FE    			djnz	$				;13/8
+ 298: 1827+11	016A  DB50    	rs232in1:	in	a, (SERIN)			;11
+ 299: 1838+4	016C  17      			rla					;11 + 4
+ 300: 1842+8	016D  CB19    			rr	c				;15 + 8
+ 301: 1850+7	016F  060D    			ld	b, 13				;23 + 7
+ 302: 1857+8+5	0171  10FE    			djnz	$				;30 + 169 13 * 13
+ 303: 1865+4	0173  15      			dec	d				;169 + 4	
+ 304: 1869+7+5	0174  20F4    			jr	nz, rs232in1			;173 + 12 12/7
+ 305: 1876+4	0176  79      			ld	a, c				;4
+ 306: 1880+10	0177  C9      			ret
+ 307:				
+ 308:     -	0178          	ctcvec:
+ 309:				
+ 310:				
+ 311:				;--------------------------------------------------------------
+ 312:				; gethexbyte
+ 313:				; returns 00-FF in A
+ 314:				; uses E
+ 315:				;--------------------------------------------------------------
+ 316:     -	0178          	gethexbyte:
+ 317: 1890+11	0178  D5      			push	DE
+ 318: 1901+17	0179  CD8F01  			call	getnibble
+ 319: 1918+4	017C  07      			rlca
+ 320: 1922+4	017D  07      			rlca
+ 321: 1926+4	017E  07      			rlca
+ 322: 1930+4	017F  07      			rlca
+ 323: 1934+4	0180  5F      			ld	e, a
+ 324: 1938+17	0181  CD8F01  			call	getnibble
+ 325: 1955+4	0184  B3      			or	e
+ 326: 1959+4	0185  5F      			ld	e, a
+ 327: 1963+19	0186  DD8601  			add	a, (IX + sum)
+ 328: 1982+13	0189  32F1FF  			ld	(VARS + sum), a
+ 329: 1995+4	018C  7B      			ld	a, e
+ 330: 1999+10	018D  D1      			pop	DE
+ 331: 2009+10	018E  C9      			ret
+ 332:					
+ 333:				;--------------------------------------------------------------
+ 334:				; calls serinfn
+ 335:				; returns 0-F in A
+ 336:				;--------------------------------------------------------------
+ 337:     -	018F          	getnibble:
+ 338: 2019+17	018F  CD2702  			call	serinfn
+ 339: 2036+11	0192  F5      			push	AF
+ 340: 2047+13	0193  3AF0FF  			ld	a, (VARS + echo)
+ 341: 2060+4	0196  B7      			or	a
+ 342: 2064+7+5	0197  2807    			jr	Z, getnibble2
+ 343: 2071+10	0199  F1      			pop	AF
+ 344: 2081+11	019A  F5      			push	AF
+ 345: 2092+11	019B  C5      			push	BC
+ 346:				;		ld	c, a
+ 347: 2103+17	019C  CD0702  			call	seroutfn
+ 348: 2120+10	019F  C1      			pop	BC
+ 349:     -	01A0          	getnibble2:
+ 350: 2130+10	01A0  F1      			pop	AF	
+ 351: 2140+7	01A1  D630    			sub	'0'
+ 352: 2147+7	01A3  FE0A    			cp	10		; < 10 ?
+ 353: 2154+5+6	01A5  D8      			ret	C		; yes, return
+ 354: 2159+7	01A6  E6DF    			and	11011111b	; make uppercase
+ 355: 2166+7	01A8  D607    			sub	7
+ 356: 2173+10	01AA  C9      			ret
+ 357:				
+ 358:				;--------------------------------------------------------------
+ 359:				; print text in (HL) uses
+ 360:				; A
+ 361:				;--------------------------------------------------------------
+ 362:     -	01AB          	printstr:
+ 363: 2183+11	01AB  C5      			push	bc
+ 364:     -	01AC          	printstr2:
+ 365: 2194+7	01AC  7E      			ld	a, (HL)
+ 366: 2201+6	01AD  23      			inc	HL
+ 367: 2207+4	01AE  B7      			or	a
+ 368: 2211+7+5	01AF  280E    			jr	z, printstr1
+ 369: 2218+17	01B1  CD0702  			call	seroutfn
+ 370: 2235+7	01B4  FE0D    			cp	CR
+ 371: 2242+7+5	01B6  20F4    			jr	NZ, printstr2
+ 372: 2249+7	01B8  3E0A    			ld	a, LF
+ 373: 2256+17	01BA  CD0702  			call	seroutfn
+ 374: 2273+12	01BD  18ED    			jr	printstr2
+ 375:     -	01BF          	printstr1:
+ 376: 2285+10	01BF  C1      			pop	bc
+ 377: 2295+10	01C0  C9      			ret
+ 378:						
+ 379:				;--------------------------------------------------------------
+ 380:				; 
+ 381:				;--------------------------------------------------------------
+ 382: 2305+16	01C1  2AF2FF  	printaddr:	ld	hl, (VARS + addr)
+ 383: 2321+17	01C4  CDCB01  			call	printhl
+ 384: 2338+4	01C7  79      			ld	a, c
+ 385: 2342+10	01C8  C30702  			jp	seroutfn
+ 386:						
+ 387:				;--------------------------------------------------------------
+ 388:				; 
+ 389:				;--------------------------------------------------------------
+ 390:     -	01CB          	printhl:
+ 391: 2352+4	01CB  7C      			ld	a, h
+ 392: 2356+17	01CC  CDD001  			call	printhex
+ 393: 2373+4	01CF  7D      			ld	a, l
+ 394:				
+ 395:				;--------------------------------------------------------------
+ 396:				; prints byte in A in hexadecimal format
+ 397:				;--------------------------------------------------------------
+ 398: 2377+11	01D0  F5      	printhex:	push    af
+ 399: 2388+11	01D1  F5      			push    af
+ 400: 2399+4	01D2  1F      			rra
+ 401: 2403+4	01D3  1F      			rra
+ 402: 2407+4	01D4  1F      			rra
+ 403: 2411+4	01D5  1F      			rra
+ 404: 2415+17	01D6  CDDF01  			call    printnib
+ 405: 2432+10	01D9  F1      			pop     af
+ 406: 2442+17	01DA  CDDF01  			call    printnib
+ 407: 2459+10	01DD  F1      			pop     af
+ 408: 2469+10	01DE  C9      			ret
+ 409:     -	01DF          	printnib:
+ 410: 2479+7	01DF  E60F    			and     0fh
+ 411: 2486+7	01E1  C630    			add     '0'		
+ 412: 2493+7	01E3  FE3A    			cp      '9' + 1
+ 413: 2500+7+5	01E5  3802    			jr      c, print
+ 414: 2507+7	01E7  C607    			add     7
+ 415: 2514+10	01E9  C30702  	print:		jp    	seroutfn
+ 416:						
+ 417:     -	01EC          	newline:
+ 418: 2524+7	01EC  3E0D    			ld      a, CR
+ 419: 2531+17	01EE  CD0702  			call    seroutfn
+ 420: 2548+7	01F1  3E0A    			ld      a, LF
+ 421: 2555+10	01F3  C30702  			jp    	seroutfn
+ 422:				
+ 423:     -	01F6          	space:
+ 424: 2565+11	01F6  F5      			push	af
+ 425: 2576+7	01F7  3E20    			ld	a, ' '
+ 426: 2583+17	01F9  CD0702  			call	seroutfn
+ 427: 2600+10	01FC  F1      			pop	af
+ 428: 2610+10	01FD  C9      			ret
+ 429:						
+ 430:     -	01FE          	getupper:
+ 431: 2620+17	01FE  CD2702  			call	serinfn
+ 432: 2637+7	0201  FE61    			cp	'a'
+ 433: 2644+5+6	0203  D8      			ret	c
+ 434: 2649+7	0204  D620    			sub	32
+ 435: 2656+10	0206  C9      			ret
+ 436:				
+ 437:				;--------------------------------------------------
+ 438:				; RS232 out	208 T-States
+ 439:				;--------------------------------------------------
+ 440:     -	0207          	seroutfn:
+ 441: 2666+11	0207  F5      			PUSH	AF
+ 442: 2677+11	0208  C5      			PUSH	BC
+ 443: 2688+4	0209  47      			LD	B, A
+ 444: 2692+4	020A  AF      			XOR	A
+ 445: 2696+4	020B  F3      			DI
+ 446: 2700+11	020C  D351    			OUT	(SEROUT), A				;startbit
+ 447: 2711+17	020E  CD3E02  			CALL	time19600				;17
+ 448:					
+ 449: 2728+4	0211  78      			LD	A, B	
+ 450: 2732+7	0212  0608    			LD	B, 8					;7
+ 451:     -	0214          	serout1:	
+ 452: 2739+11	0214  D351    			OUT	(SEROUT), A				;11
+ 453: 2750+17	0216  CD3E02  			CALL	time19600				;17
+ 454: 2767+4	0219  0F      			RRCA						;4
+ 455: 2771+8+5	021A  10F8    			DJNZ	serout1					;8
+ 456: 2779+4	021C  FB      			EI	
+ 457: 2783+7	021D  3E01    			LD	A, 1					;7
+ 458: 2790+11	021F  D351    			OUT	(SEROUT), A				;11
+ 459: 2801+17	0221  CD3E02  			CALL	time19600				;17
+ 460:				
+ 461: 2818+10	0224  C1      			POP	BC
+ 462: 2828+10	0225  F1      			POP	AF
+ 463: 2838+10	0226  C9      			RET
+ 464:				
+ 465:				
+ 466:				;--------------------------------------------------
+ 467:				; RS232 in	208 T-States = 52uS
+ 468:				;--------------------------------------------------
+ 469:     -	0227          	serinfn:
+ 470: 2848+11	0227  C5      			PUSH	BC
+ 471:     -	0228          	serin2:
+ 472: 2859+11	0228  DB50    			IN	A, (SERIN)
+ 473: 2870+4	022A  07      			RLCA
+ 474: 2874+7+5	022B  38FB    			JR	C, serin2
+ 475:				
+ 476: 2881+19	022D  E3      			EX	(SP), HL				;19, 4.75uS
+ 477: 2900+19	022E  E3      			EX	(SP), HL				;19  9uS
+ 478:				
+ 479: 2919+7	022F  0680    			LD	B, 80h
+ 480:     -	0231          	serin1:
+ 481: 2926+17	0231  CD3E02  			CALL	time19600
+ 482: 2943+11	0234  DB50    			IN	A, (SERIN)
+ 483: 2954+4	0236  07      			RLCA
+ 484: 2958+8	0237  CB18    			RR	B
+ 485: 2966+7+5	0239  30F6    			JR	NC, serin1
+ 486:				
+ 487: 2973+4	023B  78      			LD	A, B
+ 488: 2977+10	023C  C1      			POP	BC
+ 489: 2987+10	023D  C9      			RET
+ 490:				
+ 491:     -	023E          	time19600:
+ 492: 2997+7	023E  0E09    			LD	C, 9					;4
+ 493:     -	0240          	time19600a:
+ 494: 3004+4	0240  0D      			DEC	C					;4
+ 495: 3008+7+5	0241  20FD    			JR	NZ, time19600a				;12/7
+ 496: 3015+10	0243  C9      			RET						;10
+ 497:					
+ 498:     -	0244  646F776E	downtext:	DB	"downloading...", CR, 0
+	              6C6F6164
+	              696E672E
+	              2E2E0D00
+ 499:				;downendtext:	DB	"finished.", CR, 0
+ 500:     -	0254  61646472	addrtext:	DB	"address:", 0
+	              6573733A
+	              00
+ 501:				;errortext:	DB	"error!", 0
+ 502:     -	025D  7472616E	transtext:	DB	"transfer from:", 0
+	              73666572
+	              2066726F
+	              6D3A00
+ 503:     -	026C  206C656E	lentext:	DB	" len:", 0
+	              3A00
+ 504:     -	0272  20746F3A	totext:		DB	" to:", 0
+	              00
+ 505:     -	0277  66696C6C	filltext:	DB	"fill from:", 0
+	              2066726F
+	              6D3A00
+ 506:     -	0282  20776974	withtext:	DB	" with:", 0
+	              683A00
+ 507:				;disktext:	DB	"enter disk number (0-9):",0
+ 508:				;filetext:	DB	CR, "filename:",0		
+ 509:     -	0289          	menukey:
+ 510:     -	0289  09      			DB	9
+ 511:     -	028A  3F434446			DB	"?CDFGLMNT"
+	              474C4D4E
+	              54
+ 512:					
+ 513:     -	0293          	menutab:
+ 514:     -	0293  5D00    			DW	questionmark
+ 515:     -	0295  7D00    			DW	changebyte
+ 516:     -	0297  5201    			DW	download
+ 517:				;		DW	closedisk
+ 518:     -	0299  8E00    			DW	fillmem
+ 519:     -	029B  6100    			DW	goto
+ 520:     -	029D  6500    			DW	disass
+ 521:     -	029F  0501    			DW	dumpmem
+ 522:     -	02A1  F200    			DW	newaddress
+ 523:				;		DW	opendisk
+ 524:				;		DW	cpm
+ 525:     -	02A3  C300    			DW	transfer
+ 526:				;		DW	vt102
+ 527:				;		DW	exit
+ 528:     -	02A5          	menutext:
+ 529:     -	02A5  201B5B6D			DB	32, 27, "[m", CR
+	              0D
+ 530:     -	02AA  2A2A2A2A			DB	"****************************************************", CR
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              0D
+ 531:     -	02DF  2A2A2A20			DB	"***  Z80 ", 27, "[1mSally 2", 27, "[m Monitor (c) 2025  by ", 27, "[1mR. Scholz", 27,"[m  ***", CR
+	              205A3830
+	              201B5B31
+	              6D53616C
+	              6C792032
+	              1B5B6D20
+	              4D6F6E69
+	              746F7220
+	              28632920
+	              32303235
+	              20206279
+	              201B5B31
+	              6D522E20
+	              5363686F
+	              6C7A1B5B
+	              6D20202A
+	              2A2A0D
+ 532:     -	0322  2A2A2A2A			DB	"****************************************************", CR
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              2A2A2A2A
+	              0D
+ 533:     -	0357  3F202D20			DB	"? - This text", CR
+	              54686973
+	              20746578
+	              740D
+ 534:     -	0365  43202D20			DB	"C - Change byte", CR
+	              4368616E
+	              67652062
+	              7974650D
+ 535:     -	0375  44202D20			DB	"D - Download to 08000h", CR
+	              446F776E
+	              6C6F6164
+	              20746F20
+	              30383030
+	              30680D
+ 536:				;		DB	"E - Close Disk", CR
+ 537:     -	038C  46202D20			DB	"F - Fill memory", CR
+	              46696C6C
+	              206D656D
+	              6F72790D
+ 538:     -	039C  47202D20			DB	"G - Goto address", CR
+	              476F746F
+	              20616464
+	              72657373
+	              0D
+ 539:     -	03AD  4C202D20			DB	"L - Disassemble", CR
+	              44697361
+	              7373656D
+	              626C650D
+ 540:     -	03BD  4D202D20			DB	"M - Memory dump", CR
+	              4D656D6F
+	              72792064
+	              756D700D
+ 541:     -	03CD  4E202D20			DB	"N - New address", CR
+	              4E657720
+	              61646472
+	              6573730D
+ 542:				;		DB	"O - Open Disk", CR
+ 543:				;		DB	"P - CP/M", CR
+ 544:     -	03DD  54202D20			DB	"T - Transfer memory", CR
+	              5472616E
+	              73666572
+	              206D656D
+	              6F72790D
+ 545:				;		DB	"V - VT102 test", CR
+ 546:				;		DB	"X - eXit", CR
+ 547:     -	03F1  00      			DB	0
+ 548:						
+ 549:     -	03F2  5001    	INITAB:		DEFB	ATROUT,1				;SET ATART OUTPUT TO MARK STATE
+ 550:     -	03F4  5101    			DEFB	SEROUT,1				;SET RS232 OUTPUT TO MARK STATE
+ 551:     -	03F6  8003    			DEFB	CTC0, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
+ 552:     -	03F8  8078    			DEFB	CTC0, low ctcvec			;SET CTC0 BASE INTERRUPT VECTOR
+ 553:     -	03FA  8107    			DEFB	CTC1, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL	;PUT CTC1 IN TIMER MODE + SET TIME CONSTANT
+ 554:     -	03FC  8101    			DEFB	CTC1, 1					;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
+ 555:     -	03FE  8203    			DEFB	CTC2, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC2
+ 556:     -	0400  8303    			DEFB	CTC3, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC3
+ 557:     -	0402  5701    			DEFB	CDMUX, 1				;SET MUX TO PASS ATARI DATA
+ 558:     -	0404  3050    			DB	LATCH, 050h				;DRIVE CONTROL reset FDC
+ 559:     -	0406  3040    			DB	LATCH, 040h				;DRIVE CONTROL 8Mhz
+ 560:     -	0016          	ITBLEN		EQU	$-INITAB
+ 561:				
+ 562:						include "disz80.asm"
+**** ..\src\disz80.asm ****
+   1:				;==============================================================================
+   2:				; DIS-Z80 DISASSEMBLER
+   3:				;==============================================================================
+   4:				; This code was found in a ZX Spectrum tool called UTILITY3 v1.3
+   5:				; DIS-Z80 was published in the SUBSET column of Personal Computer World 1987.
+   6:				; The routine disassembles a single Z80 instruction at address DE.
+   7:				; Originally developed for CP/M on an Amstrad CPC128.
+   8:				; Just over 1K (1090 bytes) of incredibly compact code by John Kerr.
+   9:				;==============================================================================
+  10:				
+  11:				;	SECTION	code_clib
+  12:				;	PUBLIC	disz80
+  13:				;	PUBLIC	_disz80
+  14:				;	EXTERN	fputc_cons
+  15:				
+  16:				;------------------------------------------------------------------------------
+  17:				; Main disassembly routine entry points
+  18:				;------------------------------------------------------------------------------
+  19:				;.disz80
+  20:				;._disz80
+  21:				;	pop	hl
+  22:				;	pop	bc
+  23:				;	pop	de
+  24:				;	push	de
+  25:				;	push	bc
+  26:				;	push	hl
+  27:				;	push	ix				; save caller's ix
+  28:				;	
+  29:				;	ld	a, d				; Supplying -1 as address means disassemble following opcode
+  30:				;	and	e
+  31:				;	inc	a
+  32:				;	jr	nz, dizloop
+  33:				;	ld	hl, 2
+  34:				;	add	hl, sp
+  35:				;	ld	e, (hl)
+  36:				;	inc	hl
+  37:				;	ld	d, (hl)
+  38:				;	
+  39:				;.dizloop
+  40:				;	push	bc
+  41:				;	call	DISASM
+  42:				;	pop	bc
+  43:				;	ld	a, 13
+  44:				;	call	CHROP
+  45:				;	ld	a, 10
+  46:				;	call	CHROP
+  47:				;	dec	bc
+  48:				;	ld	a, b
+  49:				;	or	c
+  50:				;	jr	nz, dizloop
+  51:				;	ld	h, d				; Address of next instruction
+  52:				;	ld	l, e
+  53:				;	pop	ix				; restore caller's ix
+  54:				;	ret
+  55:				
+  56:				;==============================================================================
+  57:				; MAIN DISASSEMBLY ROUTINE
+  58:				;==============================================================================
+  59: 3025+17	0408  CD2F08  	DISASM:		CALL	ADRSP			; Display address
+  60: 3042+10	040B  010009  			LD	BC, $0900		; Initialize buffer counter
+  61: 3052+10	040E  212020  			LD	HL, $2020		; Space characters
+  62:				
+  63: 3062+11	0411  E5      	BUFFER:		PUSH	HL			; Create buffer on stack
+  64: 3073+8+5	0412  10FD    			DJNZ	BUFFER
+  65: 3081+4	0414  60      			LD	H, B
+  66: 3085+4	0415  69      			LD	L, C
+  67: 3089+11	0416  39      			ADD	HL, SP
+  68:				
+  69: 3100+11	0417  C5      			PUSH	BC
+  70: 3111+23	0418  DDE3    			EX	(SP), IX		; Set up IX pointer
+  71: 3134+11	041A  C5      			PUSH	BC
+  72: 3145+11	041B  C5      			PUSH	BC
+  73: 3156+15	041C  DD39    			ADD	IX, SP
+  74:				
+  75: 3171+11	041E  E5      			PUSH	HL
+  76: 3182+10	041F  219905  			LD	HL, GROUP3		; Point to prefix table
+  77:				
+  78:				;------------------------------------------------------------------------------
+  79:				; Check for instruction prefixes (DD, FD, ED, CB)
+  80:				;------------------------------------------------------------------------------
+  81: 3192+17	0422  CD2408  	TRYNDX:		CALL	FETCH			; Get next byte
+  82:				
+  83: 3209+4	0425  41      			LD	B, C
+  84: 3213+7	0426  FEED    			CP	$ED			; Extended instruction?
+  85: 3220+7+5	0428  280A    			JR	Z, CONFLG
+  86:				
+  87: 3227+4	042A  04      			INC	B
+  88: 3231+7	042B  FEDD    			CP	$DD			; IX prefix?
+  89: 3238+7+5	042D  2805    			JR	Z, CONFLG
+  90:				
+  91: 3245+4	042F  04      			INC	B
+  92: 3249+7	0430  FEFD    			CP	$FD			; IY prefix?
+  93: 3256+7+5	0432  2008    			JR	NZ, NOTNDX
+  94:				
+  95: 3263+19	0434  DD7001  	CONFLG:		LD	(IX+1), B		; Store prefix type
+  96: 3282+4	0437  04      			INC	B
+  97: 3286+8+5	0438  10E8    			DJNZ	TRYNDX
+  98:				
+  99: 3294+12	043A  182A    			JR	NXBYTE
+ 100:				
+ 101:				;------------------------------------------------------------------------------
+ 102:				; Handle non-prefix instructions
+ 103:				;------------------------------------------------------------------------------
+ 104: 3306+4	043C  4F      	NOTNDX:		LD	C, A			; Save opcode
+ 105: 3310+19	043D  DD7E01  			LD	A, (IX+1)		; Check prefix
+ 106: 3329+4	0440  B7      			OR	A
+ 107: 3333+7+5	0441  2818    			JR	Z, NODISP
+ 108:				
+ 109: 3340+4	0443  79      			LD	A, C
+ 110: 3344+7	0444  FECB    			CP	$CB			; Bit operations?
+ 111: 3351+7+5	0446  280D    			JR	Z, GETDIS
+ 112:				
+ 113: 3358+7	0448  E644    			AND	$44
+ 114: 3365+7	044A  FE04    			CP	4
+ 115: 3372+7+5	044C  2807    			JR	Z, GETDIS
+ 116:				
+ 117: 3379+4	044E  79      			LD	A, C
+ 118: 3383+7	044F  E6C0    			AND	$C0
+ 119: 3390+7	0451  FE40    			CP	$40
+ 120: 3397+7+5	0453  2006    			JR	NZ, NODISP
+ 121:				
+ 122: 3404+17	0455  CD2408  	GETDIS:		CALL	FETCH			; Get displacement byte
+ 123: 3421+19	0458  DD7702  			LD	(IX+2), A
+ 124:				
+ 125: 3440+10	045B  21F104  	NODISP:		LD	HL, GROUP1		; Point to main opcode table
+ 126: 3450+4	045E  79      			LD	A, C
+ 127: 3454+7	045F  FECB    			CP	$CB
+ 128: 3461+7+5	0461  2007    			JR	NZ, NEWMSK
+ 129:				
+ 130: 3468+10	0463  21D604  			LD	HL, GROUP2		; Use CB prefix table
+ 131:				
+ 132: 3478+17	0466  CD2408  	NXBYTE:		CALL	FETCH
+ 133: 3495+4	0469  4F      			LD	C, A
+ 134:				
+ 135:				;------------------------------------------------------------------------------
+ 136:				; Table lookup for instruction decoding
+ 137:				;------------------------------------------------------------------------------
+ 138: 3499+7	046A  7E      	NEWMSK:		LD	A, (HL)			; Get mask
+ 139: 3506+4	046B  B7      			OR	A
+ 140: 3510+7+5	046C  2816    			JR	Z, TABEND
+ 141:				
+ 142: 3517+4	046E  A1      			AND	C			; Apply mask to opcode
+ 143: 3521+6	046F  23      			INC	HL
+ 144:				
+ 145: 3527+7	0470  46      	NEWMOD:		LD	B, (HL)			; Get count
+ 146: 3534+6	0471  23      			INC	HL
+ 147: 3540+4	0472  04      			INC	B
+ 148: 3544+7+5	0473  28F5    			JR	Z, NEWMSK
+ 149:				
+ 150: 3551+7	0475  BE      	TRYMAT:		CP	(HL)			; Compare with table entry
+ 151: 3558+6	0476  23      			INC	HL
+ 152: 3564+7+5	0477  2807    			JR	Z, GETNDX
+ 153:				
+ 154: 3571+12	0479  CB7E    			BIT	7, (HL)			; Check end marker
+ 155: 3583+6	047B  23      			INC	HL
+ 156: 3589+7+5	047C  28F7    			JR	Z, TRYMAT
+ 157:				
+ 158: 3596+12	047E  18F0    			JR	NEWMOD
+ 159:				
+ 160: 3608+7	0480  7E      	GETNDX:		LD	A, (HL)			; Get instruction index
+ 161: 3615+7	0481  E67F    			AND	$7F
+ 162: 3622+4	0483  05      			DEC	B
+ 163:				
+ 164:				;------------------------------------------------------------------------------
+ 165:				; Extract mnemonic and format output
+ 166:				;------------------------------------------------------------------------------
+ 167: 3626+10	0484  E1      	TABEND:		POP	HL
+ 168: 3636+11	0485  D5      			PUSH	DE
+ 169: 3647+11	0486  E5      			PUSH	HL
+ 170:				
+ 171: 3658+4	0487  EB      			EX	DE, HL
+ 172: 3662+10	0488  21EF05  			LD	HL, MONICS		; Point to mnemonic table
+ 173: 3672+17	048B  CD0F08  			CALL	XTRACT			; Extract mnemonic
+ 174:				
+ 175: 3689+10	048E  E1      			POP	HL
+ 176: 3699+10	048F  110500  			LD	DE, 5			; Move to operand position
+ 177: 3709+11	0492  19      			ADD	HL, DE
+ 178: 3720+10	0493  D1      			POP	DE
+ 179:				
+ 180: 3730+4	0494  78      			LD	A, B
+ 181: 3734+7	0495  E6F0    			AND	$F0			; Check for first operand
+ 182: 3741+7+5	0497  2813    			JR	Z, SECOND
+ 183:				
+ 184: 3748+4	0499  1F      			RRA				; Extract operand type
+ 185: 3752+4	049A  1F      			RRA
+ 186: 3756+4	049B  1F      			RRA
+ 187: 3760+4	049C  1F      			RRA
+ 188: 3764+11	049D  C5      			PUSH	BC
+ 189:				
+ 190: 3775+4	049E  47      			LD	B, A
+ 191: 3779+4	049F  79      			LD	A, C
+ 192: 3783+17	04A0  CDBF06  			CALL	OPRND1			; Process first operand
+ 193:				
+ 194: 3800+10	04A3  C1      			POP	BC
+ 195: 3810+4	04A4  78      			LD	A, B
+ 196: 3814+7	04A5  E60F    			AND	$0F
+ 197: 3821+7+5	04A7  280B    			JR	Z, OPDONE
+ 198:				
+ 199: 3828+10	04A9  362C    			LD	(HL), 44		; Add comma separator
+ 200: 3838+6	04AB  23      			INC	HL
+ 201:				
+ 202: 3844+4	04AC  78      	SECOND:		LD	A, B
+ 203: 3848+7	04AD  E60F    			AND	$0F			; Process second operand
+ 204:				
+ 205: 3855+4	04AF  47      			LD	B, A
+ 206: 3859+4	04B0  79      			LD	A, C
+ 207: 3863+10+7	04B1  C4C506  			CALL	NZ, OPRND2
+ 208:				
+ 209:				;------------------------------------------------------------------------------
+ 210:				; Output formatting and display
+ 211:				;------------------------------------------------------------------------------
+ 212: 3873+7	04B4  3E03    	OPDONE:		LD	A, 3			; Calculate spacing
+ 213: 3880+19	04B6  DD9600  			SUB	(IX+0)
+ 214:				
+ 215: 3899+10	04B9  E1      			POP	HL
+ 216: 3909+10	04BA  E1      			POP	HL
+ 217: 3919+14	04BB  DDE1    			POP	IX
+ 218:				
+ 219: 3933+7+5	04BD  380C    			JR	C, OUTEXT
+ 220:				
+ 221: 3940+4	04BF  3C      			INC	A			; Add spacing
+ 222: 3944+4	04C0  47      			LD	B, A
+ 223: 3948+4	04C1  80      			ADD	A, B
+ 224: 3952+4	04C2  80      			ADD	A, B
+ 225: 3956+4	04C3  47      			LD	B, A
+ 226:				
+ 227: 3960+7	04C4  3E20    	SPACES:		LD	A, $20			; Output spaces
+ 228: 3967+17	04C6  CD4B08  			CALL	CHROP
+ 229: 3984+8+5	04C9  10F9    			DJNZ	SPACES
+ 230:						
+ 231: 3992+7	04CB  0612    	OUTEXT:		LD	B, 18			; Output buffer length
+ 232:				
+ 233: 3999+6	04CD  3B      	PUTOUT:		DEC	SP			; Output character buffer
+ 234: 4005+10	04CE  E1      			POP	HL
+ 235: 4015+4	04CF  7C      			LD	A, H
+ 236: 4019+17	04D0  CD4B08  			CALL	CHROP
+ 237: 4036+8+5	04D3  10F8    			DJNZ	PUTOUT
+ 238:				
+ 239: 4044+10	04D5  C9      			RET
+ 240:				
+ 241:				;==============================================================================
+ 242:				; INSTRUCTION TABLES
+ 243:				;==============================================================================
+ 244:				
+ 245:				;------------------------------------------------------------------------------
+ 246:				; CB prefix instruction table (bit operations)
+ 247:				;------------------------------------------------------------------------------
+ 248:     -	04D6  C03640  	GROUP2:		defb	$C0, $36, $40
+ 249:     -	04D9  04802DC0			defb	$04, $80, $2D, $C0, $BE
+	              BE
+ 250:     -	04DE  FFF80600			defb	$FF, $F8, $06, $00, $33
+	              33
+ 251:     -	04E3  08381035			defb	$08, $38, $10, $35, $18
+	              18
+ 252:     -	04E8  3A203F28			defb	$3A, $20, $3F, $28, $40
+	              40
+ 253:     -	04ED  300038C1			defb	$30, $00, $38, $C1
+ 254:				
+ 255:				;------------------------------------------------------------------------------
+ 256:				; Main instruction table
+ 257:				;------------------------------------------------------------------------------
+ 258:     -	04F1  FF0000  	GROUP1:		defb	$FF, $00, $00
+ 259:     -	04F4  2407320F			defb	$24, $07, $32, $0F, $37
+	              37
+ 260:     -	04F9  17311F36			defb	$17, $31, $1F, $36, $27
+	              27
+ 261:     -	04FE  0D2F0B37			defb	$0D, $2F, $0B, $37, $3D
+	              3D
+ 262:     -	0503  3F067614			defb	$3F, $06, $76, $14, $C9
+	              C9
+ 263:     -	0508  30D912F3			defb	$30, $D9, $12, $F3, $0F
+	              0F
+ 264:     -	050D  FB9172C6			defb	$FB, $91, $72, $C6, $02
+	              02
+ 265:     -	0512  CE01DEBC			defb	$CE, $01, $DE, $BC, $02
+	              02
+ 266:     -	0517  D642E603			defb	$D6, $42, $E6, $03, $EE
+	              EE
+ 267:     -	051C  43F625FE			defb	$43, $F6, $25, $FE, $8C
+	              8C
+ 268:     -	0521  04089301			defb	$04, $08, $93, $01, $10
+	              10
+ 269:     -	0526  10189DAF			defb	$10, $18, $9D, $AF, $22
+	              22
+ 270:     -	052B  A2FA2AA2			defb	$A2, $FA, $2A, $A2, $A7
+	              A7
+ 271:     -	0530  32A27A3A			defb	$32, $A2, $7A, $3A, $A2
+	              A2
+ 272:     -	0535  03C31CCD			defb	$03, $C3, $1C, $CD, $85
+	              85
+ 273:     -	053A  97D3AA79			defb	$97, $D3, $AA, $79, $DB
+	              DB
+ 274:     -	053F  9B5FE393			defb	$9B, $5F, $E3, $93, $0E
+	              0E
+ 275:     -	0544  E99C05EB			defb	$E9, $9C, $05, $EB, $93
+	              93
+ 276:     -	0549  DFF9A2FF			defb	$DF, $F9, $A2, $FF, $C0
+	              C0
+ 277:     -	054E  B640A2FF			defb	$B6, $40, $A2, $FF, $F8
+	              F8
+ 278:     -	0553  76800288			defb	$76, $80, $02, $88, $01
+	              01
+ 279:     -	0558  98BC0690			defb	$98, $BC, $06, $90, $42
+	              42
+ 280:     -	055D  A003A843			defb	$A0, $03, $A8, $43, $B0
+	              B0
+ 281:     -	0562  25B88CFF			defb	$25, $B8, $8C, $FF, $C7
+	              C7
+ 282:     -	0567  0B041605			defb	$0B, $04, $16, $05, $8E
+	              8E
+ 283:     -	056C  B206A220			defb	$B2, $06, $A2, $20, $C0
+	              C0
+ 284:     -	0571  B023C21C			defb	$B0, $23, $C2, $1C, $C4
+	              C4
+ 285:     -	0576  8510C7BB			defb	$85, $10, $C7, $BB, $FF
+	              FF
+ 286:     -	057B  CFD301A2			defb	$CF, $D3, $01, $A2, $0D
+	              0D
+ 287:     -	0580  03160B8E			defb	$03, $16, $0B, $8E, $FD
+	              FD
+ 288:     -	0585  098260C1			defb	$09, $82, $60, $C1, $2B
+	              2B
+ 289:     -	058A  C5ACFFE7			defb	$C5, $AC, $FF, $E7, $21
+	              21
+ 290:     -	058F  209DFFEF			defb	$20, $9D, $FF, $EF, $E7
+	              E7
+ 291:     -	0594  02A27E0A			defb	$02, $A2, $7E, $0A, $A2
+	              A2
+ 292:				
+ 293:				;------------------------------------------------------------------------------
+ 294:				; Extended instruction table (ED prefix)
+ 295:				;------------------------------------------------------------------------------
+ 296:     -	0599  FF0044  	GROUP3:		defb	$FF, $00, $44
+ 297:     -	059C  23452F4D			defb	$23, $45, $2F, $4D, $2E
+	              2E
+ 298:     -	05A1  4E006739			defb	$4E, $00, $67, $39, $6F
+	              6F
+ 299:     -	05A6  34700071			defb	$34, $70, $00, $71, $00
+	              00
+ 300:     -	05AB  A021A10A			defb	$A0, $21, $A1, $0A, $A2
+	              A2
+ 301:     -	05B0  1AA329A8			defb	$1A, $A3, $29, $A8, $1F
+	              1F
+ 302:     -	05B5  A908AA18			defb	$A9, $08, $AA, $18, $AB
+	              AB
+ 303:     -	05BA  28B020B1			defb	$28, $B0, $20, $B1, $09
+	              09
+ 304:     -	05BF  B219B327			defb	$B2, $19, $B3, $27, $B8
+	              B8
+ 305:     -	05C4  1EB907BA			defb	$1E, $B9, $07, $BA, $17
+	              17
+ 306:     -	05C9  BBA6FFC7			defb	$BB, $A6, $FF, $C7, $B8
+	              B8
+ 307:     -	05CE  409B8B41			defb	$40, $9B, $8B, $41, $AA
+	              AA
+ 308:     -	05D3  FFCFFD42			defb	$FF, $CF, $FD, $42, $3C
+	              3C
+ 309:     -	05D8  4A81AD43			defb	$4A, $81, $AD, $43, $A2
+	              A2
+ 310:     -	05DD  DA4BA2FF			defb	$DA, $4B, $A2, $FF, $E7
+	              E7
+ 311:     -	05E2  404695FF			defb	$40, $46, $95, $FF, $F7
+	              F7
+ 312:     -	05E7  C747A27C			defb	$C7, $47, $A2, $7C, $57
+	              57
+ 313:     -	05EC  A2FF00  			defb	$A2, $FF, $00
+ 314:				
+ 315:				;==============================================================================
+ 316:				; MNEMONIC TABLE
+ 317:				;==============================================================================
+ 318:     -	05EF  BF      	MONICS:		defb	$BF
+ 319:     -	05F0  4144C3  			defb	'A', 'D', 'C'+$80		; ADC 
+ 320:     -	05F3  4144C4  			defb	'A', 'D', 'D'+$80		; ADD 
+ 321:     -	05F6  414EC4  			defb	'A', 'N', 'D'+$80		; AND 
+ 322:     -	05F9  4249D4  			defb	'B', 'I', 'T'+$80		; BIT 
+ 323:     -	05FC  43414CCC			defb	'C', 'A', 'L', 'L'+$80		; CALL 
+ 324:     -	0600  4343C6  			defb	'C', 'C', 'F'+$80		; CCF
+ 325:     -	0603  435044D2			defb	'C', 'P', 'D', 'R'+$80		; CPDR
+ 326:     -	0607  4350C4  			defb	'C', 'P', 'D'+$80		; CPD
+ 327:     -	060A  435049D2			defb	'C', 'P', 'I', 'R'+$80		; CPIR
+ 328:     -	060E  4350C9  			defb	'C', 'P', 'I'+$80		; CPI
+ 329:     -	0611  4350CC  			defb	'C', 'P', 'L'+$80		; CPL
+ 330:     -	0614  43D0    			defb	'C', 'P'+$80			; CP 
+ 331:     -	0616  4441C1  			defb	'D', 'A', 'A'+$80		; DAA
+ 332:     -	0619  4445C3  			defb	'D', 'E', 'C'+$80		; DEC 
+ 333:     -	061C  44C9    			defb	'D', 'I'+$80			; DI
+ 334:     -	061E  444A4EDA			defb	'D', 'J', 'N', 'Z'+$80		; DJNZ 
+ 335:     -	0622  45C9    			defb	'E', 'I'+$80			; EI
+ 336:     -	0624  4558D8  			defb	'E', 'X', 'X'+$80		; EXX
+ 337:     -	0627  45D8    			defb	'E', 'X'+$80			; EX 
+ 338:     -	0629  48414CD4			defb	'H', 'A', 'L', 'T'+$80		; HALT
+ 339:     -	062D  49CD    			defb	'I', 'M'+$80			; IM 
+ 340:     -	062F  494EC3  			defb	'I', 'N', 'C'+$80		; INC 
+ 341:     -	0632  494E44D2			defb	'I', 'N', 'D', 'R'+$80		; INDR
+ 342:     -	0636  494EC4  			defb	'I', 'N', 'D'+$80		; IND
+ 343:     -	0639  494E49D2			defb	'I', 'N', 'I', 'R'+$80		; INIR
+ 344:     -	063D  494EC9  			defb	'I', 'N', 'I'+$80		; INI
+ 345:     -	0640  49CE    			defb	'I', 'N'+$80			; IN 
+ 346:     -	0642  4AD0    			defb	'J', 'P'+$80			; JP 
+ 347:     -	0644  4AD2    			defb	'J', 'R'+$80			; JR 
+ 348:     -	0646  4C4444D2			defb	'L', 'D', 'D', 'R'+$80		; LDDR
+ 349:     -	064A  4C44C4  			defb	'L', 'D', 'D'+$80		; LDD
+ 350:     -	064D  4C4449D2			defb	'L', 'D', 'I', 'R'+$80		; LDIR
+ 351:     -	0651  4C44C9  			defb	'L', 'D', 'I'+$80		; LDI
+ 352:     -	0654  4CC4    			defb	'L', 'D'+$80			; LD 
+ 353:     -	0656  4E45C7  			defb	'N', 'E', 'G'+$80		; NEG
+ 354:     -	0659  4E4FD0  			defb	'N', 'O', 'P'+$80		; NOP
+ 355:     -	065C  4FD2    			defb	'O', 'R'+$80			; OR 
+ 356:     -	065E  4F5444D2			defb	'O', 'T', 'D', 'R'+$80		; OTDR
+ 357:     -	0662  4F5449D2			defb	'O', 'T', 'I', 'R'+$80		; OTIR
+ 358:     -	0666  4F5554C4			defb	'O', 'U', 'T', 'D'+$80		; OUTD
+ 359:     -	066A  4F5554C9			defb	'O', 'U', 'T', 'I'+$80		; OUTI
+ 360:     -	066E  4F55D4  			defb	'O', 'U', 'T'+$80		; OUT 
+ 361:     -	0671  504FD0  			defb	'P', 'O', 'P'+$80		; POP 
+ 362:     -	0674  505553C8			defb	'P', 'U', 'S', 'H'+$80		; PUSH 
+ 363:     -	0678  5245D3  			defb	'R', 'E', 'S'+$80		; RES 
+ 364:     -	067B  524554C9			defb	'R', 'E', 'T', 'I'+$80		; RETI
+ 365:     -	067F  524554CE			defb	'R', 'E', 'T', 'N'+$80		; RETN
+ 366:     -	0683  5245D4  			defb	'R', 'E', 'T'+$80		; RET
+ 367:     -	0686  524CC1  			defb	'R', 'L', 'A'+$80		; RLA
+ 368:     -	0689  524C43C1			defb	'R', 'L', 'C', 'A'+$80		; RLCA
+ 369:     -	068D  524CC3  			defb	'R', 'L', 'C'+$80		; RLC 
+ 370:     -	0690  524CC4  			defb	'R', 'L', 'D'+$80		; RLD
+ 371:     -	0693  52CC    			defb	'R', 'L'+$80			; RL 
+ 372:     -	0695  5252C1  			defb	'R', 'R', 'A'+$80		; RRA
+ 373:     -	0698  525243C1			defb	'R', 'R', 'C', 'A'+$80		; RRCA
+ 374:     -	069C  5252C3  			defb	'R', 'R', 'C'+$80		; RRC 
+ 375:     -	069F  5252C4  			defb	'R', 'R', 'D'+$80		; RRD
+ 376:     -	06A2  52D2    			defb	'R', 'R'+$80			; RR 
+ 377:     -	06A4  5253D4  			defb	'R', 'S', 'T'+$80		; RST 
+ 378:     -	06A7  5342C3  			defb	'S', 'B', 'C'+$80		; SBC 
+ 379:     -	06AA  5343C6  			defb	'S', 'C', 'F'+$80		; SCF
+ 380:     -	06AD  5345D4  			defb	'S', 'E', 'T'+$80		; SET 
+ 381:     -	06B0  534CC1  			defb	'S', 'L', 'A'+$80		; SLA 
+ 382:     -	06B3  5352C1  			defb	'S', 'R', 'A'+$80		; SRA 
+ 383:     -	06B6  5352CC  			defb	'S', 'R', 'L'+$80		; SRL 
+ 384:     -	06B9  5355C2  			defb	'S', 'U', 'B'+$80		; SUB 
+ 385:     -	06BC  584FD2  			defb	'X', 'O', 'R'+$80		; XOR 
+ 386:				
+ 387:				;==============================================================================
+ 388:				; OPERAND PROCESSING ROUTINES
+ 389:				;==============================================================================
+ 390:				
+ 391:				;------------------------------------------------------------------------------
+ 392:				; Process first operand
+ 393:				;------------------------------------------------------------------------------
+ 394: 4054+8+5	06BF  1012    	OPRND1:		DJNZ	CONDIT
+ 395:				
+ 396: 4062+7	06C1  E638    	RSTADR:		AND	$38			; RST address calculation
+ 397: 4069+12	06C3  182A    			JR	DA
+ 398:				
+ 399:				;------------------------------------------------------------------------------
+ 400:				; Process second operand
+ 401:				;------------------------------------------------------------------------------
+ 402: 4081+8+5	06C5  101D    	OPRND2:		DJNZ	DAT8
+ 403:				
+ 404: 4089+17	06C7  CD2408  	RELADR:		CALL	FETCH			; Get relative address
+ 405: 4106+4	06CA  4F      			LD	C, A
+ 406: 4110+4	06CB  17      			RLA				; Sign extend
+ 407: 4114+4	06CC  9F      			SBC	A, A
+ 408: 4118+4	06CD  47      			LD	B, A
+ 409: 4122+4	06CE  EB      			EX	DE, HL
+ 410: 4126+11	06CF  E5      			PUSH	HL
+ 411: 4137+11	06D0  09      			ADD	HL, BC			; Calculate target address
+ 412: 4148+12	06D1  182D    			JR	DHL
+ 413:				
+ 414:				;------------------------------------------------------------------------------
+ 415:				; Condition code processing
+ 416:				;------------------------------------------------------------------------------
+ 417: 4160+4	06D3  1F      	CONDIT:		RRA
+ 418: 4164+4	06D4  1F      			RRA
+ 419: 4168+4	06D5  1F      			RRA
+ 420: 4172+8+5	06D6  1013    			DJNZ	BITNUM
+ 421:				
+ 422: 4180+8	06D8  CB67    			BIT	4, A
+ 423: 4188+7+5	06DA  2002    			JR	NZ, ABS
+ 424:				
+ 425: 4195+7	06DC  E603    			AND	3
+ 426:					
+ 427: 4202+7	06DE  E607    	ABS:		AND	7
+ 428: 4209+7	06E0  C614    			ADD	A, $14
+ 429: 4216+12	06E2  1836    			JR	PS1
+ 430:				
+ 431:				;------------------------------------------------------------------------------
+ 432:				; 8-bit data processing
+ 433:				;------------------------------------------------------------------------------
+ 434: 4228+8+5	06E4  100D    	DAT8:		DJNZ	DAT16
+ 435:				
+ 436: 4236+17	06E6  CD2408  	D8:		CALL	FETCH
+ 437: 4253+12	06E9  1804    			JR	DA
+ 438:				
+ 439:				;------------------------------------------------------------------------------
+ 440:				; Bit number processing
+ 441:				;------------------------------------------------------------------------------
+ 442: 4265+8+5	06EB  1027    	BITNUM:		DJNZ	INTMOD
+ 443: 4273+7	06ED  E607    			AND	7
+ 444:				
+ 445: 4280+4	06EF  4F      	DA:		LD	C, A
+ 446: 4284+4	06F0  97      			SUB	A
+ 447: 4288+12	06F1  1809    			JR	DAC
+ 448:				
+ 449:				;------------------------------------------------------------------------------
+ 450:				; 16-bit data processing
+ 451:				;------------------------------------------------------------------------------
+ 452: 4300+8+5	06F3  1038    	DAT16:		DJNZ	EXAF
+ 453:					
+ 454: 4308+17	06F5  CD2408  	D16:		CALL	FETCH			; Get low byte
+ 455: 4325+4	06F8  4F      			LD	C, A
+ 456: 4329+17	06F9  CD2408  			CALL	FETCH			; Get high byte
+ 457:				
+ 458: 4346+4	06FC  EB      	DAC:		EX	DE, HL
+ 459: 4350+11	06FD  E5      			PUSH	HL
+ 460: 4361+4	06FE  67      			LD	H, A
+ 461: 4365+4	06FF  69      			LD	L, C
+ 462:				
+ 463: 4369+7	0700  0EF8    	DHL:		LD	C, $F8			; Format as hexadecimal
+ 464: 4376+11	0702  E5      			PUSH	HL
+ 465: 4387+17	0703  CDEF07  			CALL	CONVHL
+ 466: 4404+10	0706  E1      			POP	HL
+ 467: 4414+10	0707  010A00  			LD	BC, $000A		; Check if < 10
+ 468: 4424+4	070A  B7      			OR	A
+ 469: 4428+15	070B  ED42    			SBC	HL, BC
+ 470: 4443+10	070D  E1      			POP	HL
+ 471: 4453+4	070E  EB      			EX	DE, HL
+ 472: 4457+5+6	070F  D8      			RET	C
+ 473:				
+ 474: 4462+10	0710  3648    			LD	(HL), 'H'		; Add 'H' suffix for hex
+ 475: 4472+6	0712  23      			INC	HL
+ 476: 4478+10	0713  C9      			RET
+ 477:				
+ 478:				;------------------------------------------------------------------------------
+ 479:				; Interrupt mode processing
+ 480:				;------------------------------------------------------------------------------
+ 481: 4488+8+5	0714  1006    	INTMOD:		DJNZ	STKTOP
+ 482: 4496+7	0716  E603    			AND	3
+ 483: 4503+7	0718  C61C    			ADD	A, $1C
+ 484:					
+ 485: 4510+12	071A  1852    	PS1:		JR	PS3
+ 486:				
+ 487:				;------------------------------------------------------------------------------
+ 488:				; Stack top operations
+ 489:				;------------------------------------------------------------------------------
+ 490: 4522+7	071C  0E13    	STKTOP:		LD	C, $13
+ 491: 4529+4	071E  05      			DEC	B
+ 492: 4533+7+5	071F  284C    			JR	Z, PS2
+ 493:				
+ 494:				;------------------------------------------------------------------------------
+ 495:				; 16-bit register pair processing
+ 496:				;------------------------------------------------------------------------------
+ 497: 4540+8+5	0721  1042    	REG16P:		DJNZ	COMMON
+ 498: 4548+4	0723  1F      			RRA
+ 499: 4552+7	0724  E603    			AND	3
+ 500: 4559+7	0726  FE03    			CP	3
+ 501: 4566+7+5	0728  2068    			JR	NZ, RX
+ 502:				
+ 503: 4573+4	072A  3D      			DEC	A
+ 504: 4577+12	072B  1869    			JR	RNX
+ 505:				
+ 506:				;------------------------------------------------------------------------------
+ 507:				; Exchange operations
+ 508:				;------------------------------------------------------------------------------
+ 509: 4589+7	072D  0E0A    	EXAF:		LD	C, $0A
+ 510: 4596+4	072F  05      			DEC	B
+ 511: 4600+7+5	0730  283B    			JR	Z, PS2
+ 512:				
+ 513: 4607+4	0732  0C      	EXDE:		INC	C
+ 514: 4611+4	0733  05      			DEC	B
+ 515: 4615+7+5	0734  2837    			JR	Z, PS2
+ 516:				
+ 517:				;------------------------------------------------------------------------------
+ 518:				; 8-bit register processing
+ 519:				;------------------------------------------------------------------------------
+ 520: 4622+8+5	0736  102A    	REG8S:		DJNZ	ACCUM
+ 521:				
+ 522: 4630+7	0738  E607    	R8:		AND	7
+ 523: 4637+7	073A  FE06    			CP	6			; Check for (HL)
+ 524: 4644+7+5	073C  2030    			JR	NZ, PS3
+ 525:				
+ 526: 4651+10	073E  3628    			LD	(HL), '('		; Format indexed addressing
+ 527: 4661+6	0740  23      			INC	HL
+ 528: 4667+17	0741  CDA607  			CALL	REGX
+ 529: 4684+19	0744  DD7E02  			LD	A, (IX+2)		; Check displacement
+ 530: 4703+4	0747  B7      			OR	A
+ 531: 4707+7+5	0748  2858    			JR	Z, RP
+ 532:				
+ 533: 4714+10	074A  362B    			LD	(HL), 43		; '+' sign
+ 534: 4724+4	074C  07      			RLCA
+ 535: 4728+4	074D  0F      			RRCA
+ 536: 4732+7+5	074E  3004    			JR	NC, POS
+ 537:				
+ 538: 4739+10	0750  362D    			LD	(HL), 45		; '-' sign
+ 539: 4749+8	0752  ED44    			NEG
+ 540:				
+ 541: 4757+6	0754  23      	POS:		INC	HL
+ 542: 4763+4	0755  EB      			EX	DE, HL
+ 543: 4767+11	0756  E5      			PUSH	HL
+ 544: 4778+4	0757  60      			LD	H, B
+ 545: 4782+4	0758  6F      			LD	L, A
+ 546: 4786+7	0759  0EFB    			LD	C, $FB
+ 547: 4793+17	075B  CDEF07  			CALL	CONVHL
+ 548: 4810+10	075E  E1      			POP	HL
+ 549: 4820+4	075F  EB      			EX	DE, HL
+ 550: 4824+12	0760  1840    			JR	RP
+ 551:				
+ 552:				;------------------------------------------------------------------------------
+ 553:				; Accumulator operations
+ 554:				;------------------------------------------------------------------------------
+ 555: 4836+4	0762  1F      	ACCUM:		RRA
+ 556: 4840+4	0763  1F      			RRA
+ 557: 4844+4	0764  1F      			RRA
+ 558:				
+ 559: 4848+7	0765  0E07    	COMMON:		LD	C, 7
+ 560: 4855+4	0767  05      			DEC	B
+ 561: 4859+7+5	0768  2803    			JR	Z, PS2
+ 562:				
+ 563:				;------------------------------------------------------------------------------
+ 564:				; Port operations
+ 565:				;------------------------------------------------------------------------------
+ 566: 4866+4	076A  0D      	PORTC:		DEC	C
+ 567: 4870+8+5	076B  1003    			DJNZ	IDAT8
+ 568:				
+ 569: 4878+4	076D  79      	PS2:		LD	A, C
+ 570: 4882+12	076E  183B    	PS3:		JR	PS4
+ 571:				
+ 572:				;------------------------------------------------------------------------------
+ 573:				; Indirect 8-bit data
+ 574:				;------------------------------------------------------------------------------
+ 575: 4894+8+5	0770  1008    	IDAT8:		DJNZ	IDAT16
+ 576: 4902+10	0772  3628    			LD	(HL), '('
+ 577: 4912+6	0774  23      			INC	HL
+ 578: 4918+17	0775  CDE606  			CALL	D8
+ 579: 4935+12	0778  1828    			JR	RP
+ 580:				
+ 581:				;------------------------------------------------------------------------------
+ 582:				; Indirect 16-bit data
+ 583:				;------------------------------------------------------------------------------
+ 584: 4947+8+5	077A  1008    	IDAT16:		DJNZ	REG8
+ 585: 4955+10	077C  3628    			LD	(HL), '('
+ 586: 4965+6	077E  23      			INC	HL
+ 587: 4971+17	077F  CDF506  			CALL	D16
+ 588: 4988+12	0782  181E    			JR	RP
+ 589:				
+ 590:				;------------------------------------------------------------------------------
+ 591:				; Register processing
+ 592:				;------------------------------------------------------------------------------
+ 593: 5000+4	0784  05      	REG8:		DEC	B
+ 594: 5004+7+5	0785  28B1    			JR	Z, R8
+ 595:				
+ 596: 5011+8+5	0787  1004    	IPAREF:		DJNZ	REG16
+ 597: 5019+7	0789  E609    			AND	9
+ 598: 5026+12	078B  181E    			JR	PS4
+ 599:				
+ 600: 5038+4	078D  1F      	REG16:		RRA
+ 601: 5042+8+5	078E  100A    			DJNZ	IREG16
+ 602:				
+ 603: 5050+7	0790  E603    	R16:		AND	3
+ 604: 5057+7	0792  FE02    	RX:		CP	2
+ 605: 5064+7+5	0794  2810    			JR	Z, REGX
+ 606:				
+ 607: 5071+7	0796  C60C    	RNX:		ADD	A, $0C
+ 608: 5078+12	0798  1811    			JR	PS4
+ 609:				
+ 610:				;------------------------------------------------------------------------------
+ 611:				; Indirect register processing
+ 612:				;------------------------------------------------------------------------------
+ 613: 5090+8+5	079A  100A    	IREG16:		DJNZ	REGX
+ 614: 5098+10	079C  3628    			LD	(HL), '('
+ 615: 5108+6	079E  23      			INC	HL
+ 616: 5114+17	079F  CD9007  			CALL	R16
+ 617:				
+ 618: 5131+10	07A2  3629    	RP:		LD	(HL), ')'		; Close parenthesis
+ 619: 5141+6	07A4  23      			INC	HL
+ 620: 5147+10	07A5  C9      			RET
+ 621:				
+ 622:				;------------------------------------------------------------------------------
+ 623:				; Index register processing
+ 624:				;------------------------------------------------------------------------------
+ 625: 5157+19	07A6  DD7E01  	REGX:		LD	A, (IX+1)		; Get index register type
+ 626: 5176+7	07A9  C610    			ADD	A, $10
+ 627:				
+ 628: 5183+4	07AB  EB      	PS4:		EX	DE, HL
+ 629: 5187+11	07AC  E5      			PUSH	HL
+ 630: 5198+10	07AD  21B607  			LD	HL, RGSTRS		; Point to register strings
+ 631: 5208+17	07B0  CD0F08  			CALL	XTRACT
+ 632: 5225+10	07B3  E1      			POP	HL
+ 633: 5235+4	07B4  EB      			EX	DE, HL
+ 634: 5239+10	07B5  C9      			RET
+ 635:				
+ 636:				;==============================================================================
+ 637:				; REGISTER NAME TABLE
+ 638:				;==============================================================================
+ 639:     -	07B6  C2      	RGSTRS:		defb	'B'+$80
+ 640:     -	07B7  C3      			defb	'C'+$80
+ 641:     -	07B8  C4      			defb	'D'+$80
+ 642:     -	07B9  C5      			defb	'E'+$80
+ 643:     -	07BA  C8      			defb	'H'+$80
+ 644:     -	07BB  CC      			defb	'L'+$80
+ 645:     -	07BC  2843A9  			defb	'(', 'C', ')'+$80
+ 646:     -	07BF  C1      			defb	'A'+$80
+ 647:     -	07C0  C9      			defb	'I'+$80
+ 648:     -	07C1  D2      			defb	'R'+$80
+ 649:     -	07C2  41462C41			defb	'A', 'F', ',', 'A', 'F', "'"+$80
+	              46A7
+ 650:     -	07C8  44452C48			defb	'D', 'E', ',', 'H', 'L'+$80
+	              CC
+ 651:     -	07CD  42C3    			defb	'B', 'C'+$80
+ 652:     -	07CF  44C5    			defb	'D', 'E'+$80
+ 653:     -	07D1  41C6    			defb	'A', 'F'+$80
+ 654:     -	07D3  53D0    			defb	'S', 'P'+$80
+ 655:     -	07D5  48CC    			defb	'H', 'L'+$80
+ 656:     -	07D7  49D8    			defb	'I', 'X'+$80
+ 657:     -	07D9  49D9    			defb	'I', 'Y'+$80
+ 658:     -	07DB  285350A9			defb	'(', 'S', 'P', ')'+$80
+ 659:     -	07DF  4EDA    			defb	'N', 'Z'+$80
+ 660:     -	07E1  DA      			defb	'Z'+$80
+ 661:     -	07E2  4EC3    			defb	'N', 'C'+$80
+ 662:     -	07E4  C3      			defb	'C'+$80
+ 663:     -	07E5  50CF    			defb	'P', 'O'+$80
+ 664:     -	07E7  50C5    			defb	'P', 'E'+$80
+ 665:     -	07E9  D0      			defb	'P'+$80
+ 666:     -	07EA  CD      			defb	'M'+$80
+ 667:     -	07EB  B0      			defb	'0'+$80
+ 668:     -	07EC  BF      			defb	'?'+$80
+ 669:     -	07ED  B1      			defb	'1'+$80
+ 670:     -	07EE  B2      			defb	'2'+$80
+ 671:				
+ 672:				;==============================================================================
+ 673:				; UTILITY ROUTINES
+ 674:				;==============================================================================
+ 675:				
+ 676:				;------------------------------------------------------------------------------
+ 677:				; Convert HL to decimal/hex string
+ 678:				;------------------------------------------------------------------------------
+ 679: 5249+4	07EF  97      	CONVHL:		SUB	A
+ 680:				
+ 681: 5253+11	07F0  F5      	CVHL1:		PUSH	AF
+ 682: 5264+4	07F1  97      			SUB	A
+ 683: 5268+7	07F2  0610    			LD	B, 16
+ 684:				
+ 685: 5275+4	07F4  81      	CVHL2:		ADD	A, C
+ 686: 5279+7+5	07F5  3801    			JR	C, CVHL3
+ 687: 5286+4	07F7  91      			SUB	C
+ 688:				
+ 689: 5290+15	07F8  ED6A    	CVHL3:		ADC	HL, HL
+ 690: 5305+4	07FA  17      			RLA
+ 691: 5309+8+5	07FB  10F7    			DJNZ	CVHL2
+ 692:				
+ 693: 5317+7+5	07FD  20F1    			JR	NZ, CVHL1
+ 694:				
+ 695: 5324+7	07FF  FE0A    			CP	10
+ 696: 5331+4	0801  04      			INC	B
+ 697: 5335+7+5	0802  30EC    			JR	NC, CVHL1
+ 698:				
+ 699: 5342+7	0804  FE0A    	CVHL4:		CP	10
+ 700: 5349+7	0806  DE69    			SBC	A, $69
+ 701: 5356+4	0808  27      			DAA
+ 702: 5360+7	0809  12      			LD	(DE), A
+ 703: 5367+6	080A  13      			INC	DE
+ 704: 5373+10	080B  F1      			POP	AF
+ 705: 5383+7+5	080C  20F6    			JR	NZ, CVHL4
+ 706:				
+ 707: 5390+10	080E  C9      			RET
+ 708:				
+ 709:				;------------------------------------------------------------------------------
+ 710:				; Extract string from table
+ 711:				;------------------------------------------------------------------------------
+ 712: 5400+4	080F  B7      	XTRACT:		OR	A
+ 713: 5404+7+5	0810  2808    			JR	Z, COPY
+ 714:				
+ 715: 5411+12	0812  CB7E    	SKIP:		BIT	7, (HL)			; Check end marker
+ 716: 5423+6	0814  23      			INC	HL
+ 717: 5429+7+5	0815  28FB    			JR	Z, SKIP
+ 718:				
+ 719: 5436+4	0817  3D      			DEC	A
+ 720: 5440+7+5	0818  20F8    			JR	NZ, SKIP
+ 721:				
+ 722: 5447+7	081A  7E      	COPY:		LD	A, (HL)			; Copy string
+ 723: 5454+4	081B  07      			RLCA
+ 724: 5458+8	081C  CB3F    			SRL	A
+ 725: 5466+7	081E  12      			LD	(DE), A
+ 726:				
+ 727: 5473+6	081F  13      			INC	DE
+ 728: 5479+6	0820  23      			INC	HL
+ 729: 5485+7+5	0821  30F7    			JR	NC, COPY
+ 730:				
+ 731: 5492+10	0823  C9      			RET
+ 732:				
+ 733:				;------------------------------------------------------------------------------
+ 734:				; Fetch byte and format address
+ 735:				;------------------------------------------------------------------------------
+ 736: 5502+7	0824  1A      	FETCH:		LD	A, (DE)			; Get byte from memory
+ 737: 5509+6	0825  13      			INC	DE
+ 738: 5515+23	0826  DD3400  			INC	(IX+0)			; Increment instruction length
+ 739: 5538+11	0829  F5      			PUSH	AF
+ 740: 5549+17	082A  CD3408  			CALL	BYTSP			; Display byte
+ 741: 5566+10	082D  F1      			POP	AF
+ 742: 5576+10	082E  C9      			RET
+ 743:				
+ 744: 5586+4	082F  7A      	ADRSP:		LD	A, D			; Display address
+ 745: 5590+17	0830  CD3B08  			CALL	BYTOP
+ 746: 5607+4	0833  7B      			LD	A, E
+ 747:				
+ 748: 5611+17	0834  CD3B08  	BYTSP:		CALL	BYTOP			; Display byte with space
+ 749: 5628+7	0837  3E20    			LD	A, $20
+ 750: 5635+12	0839  1810    			JR	CHROP
+ 751:				
+ 752: 5647+11	083B  F5      	BYTOP:		PUSH	AF			; Display byte in hex
+ 753: 5658+4	083C  1F      			RRA
+ 754: 5662+4	083D  1F      			RRA
+ 755: 5666+4	083E  1F      			RRA
+ 756: 5670+4	083F  1F      			RRA
+ 757: 5674+17	0840  CD4408  			CALL	HEXOP
+ 758: 5691+10	0843  F1      			POP	AF
+ 759:				
+ 760: 5701+7	0844  E60F    	HEXOP:		AND	$0F			; Convert nibble to hex
+ 761: 5708+7	0846  FE0A    			CP	10
+ 762: 5715+7	0848  DE69    			SBC	A, $69
+ 763: 5722+4	084A  27      			DAA
+ 764:				
+ 765:				;==============================================================================
+ 766:				; CHARACTER OUTPUT ROUTINE
+ 767:				;==============================================================================
+ 768: 5726+10	084B  C30702  	CHROP:		jp	seroutfn
+ 769:				
+ 770:				;Alternative CHROP implementation (commented out):
+ 771:				;CHROP:		PUSH	HL
+ 772:				;		PUSH	DE
+ 773:				;		PUSH	BC
+ 774:				;
+ 775:				;		ld	c, a
+ 776:				;		call	conout
+ 777:				;		
+ 778:				;		POP	BC
+ 779:				;		POP	DE
+ 780:				;		POP	HL
+**** ..\src\SALLYMON.MAC ****
+ 563:				;		RET
+ 564:						;include "zexdoc.asm"
+ 565:						
+
+
+
+Statistics:
+
+     4	passes
+     0	jr promotions
+   182	symbols
+  2126	bytes
+
+
+
+Symbol Table:
+
+ABS              6DE      1758
+ACCUM            762      1890
+ADRSP            82F      2095
+ATARI          =70        112
+ATROUT         =50        80
+BANKSW         =52        82
+BITNUM           6EB      1771
+BUFFER           411      1041
+BYTOP            83B      2107
+BYTSP            834      2100
+CDMUX          =57        87
+CHROP            84B      2123
+COMMON           765      1893
+CONDIT           6D3      1747
+CONFLG           434      1076
+CONVHL           7EF      2031
+COPY             81A      2074
+CR             =0D        13
+CTC0           =80        128
+CTC1           =81        129
+CTC2           =82        130
+CTC3           =83        131
+CTC_D0_CONTROL =01        1
+CTC_D0_VECTOR  =00        0
+CTC_D1_SW_RST  =02        2
+CTC_D2_TCNEXT  =04        4
+CTC_D3_AUTOTRG =00        0
+CTC_D3_CLKTRG  =08        8
+CTC_D4_FALLEDGE=00        0
+CTC_D4_RISEEDGE=10        16
+CTC_D5_PRESC256=20        32
+CTC_D5_PRESC_16=00        0
+CTC_D6_MODE_CNT=40        64
+CTC_D6_MODE_TIM=00        0
+CTC_D7_INT_DIS =00        0
+CTC_D7_INT_EN  =80        128
+CVHL1            7F0      2032
+CVHL2            7F4      2036
+CVHL3            7F8      2040
+CVHL4            804      2052
+D16              6F5      1781
+D8               6E6      1766
+DA               6EF      1775
+DAC              6FC      1788
+DAT16            6F3      1779
+DAT8             6E4      1764
+DHL              700      1792
+DISASM           408      1032
+DTR            =55        85
+DUMMYSYMBOL     01        1 (command line -D)
+EXAF             72D      1837
+EXDE             732      1842
+FETCH            824      2084
+GETDIS           455      1109
+GETNDX           480      1152
+GROUP1           4F1      1265
+GROUP2           4D6      1238
+GROUP3           599      1433
+HEXOP            844      2116
+IDAT16           77A      1914
+IDAT8            770      1904
+INDXCLR        =54        84
+INDXSET        =56        86
+INIT1           1C        28
+INIT2           15        21
+INITAB           3F2      1010
+INTMOD           714      1812
+IPAREF           787      1927
+IREG16           79A      1946
+ITBLEN         =16        22
+LATCH          =30        48
+LF             =0A        10
+MONICS           5EF      1519
+NEWMOD           470      1136
+NEWMSK           46A      1130
+NODISP           45B      1115
+NOHIGHSPEEDSIO =00        0
+NOTNDX           43C      1084
+NULL           =00        0
+NXBYTE           466      1126
+OPDONE           4B4      1204
+OPRND1           6BF      1727
+OPRND2           6C5      1733
+OUTEXT           4CB      1227
+PORTC            76A      1898
+POS              754      1876
+PRINTER        =20        32
+PS1              71A      1818
+PS2              76D      1901
+PS3              76E      1902
+PS4              7AB      1963
+PUTOUT           4CD      1229
+R16              790      1936
+R8               738      1848
+REG16            78D      1933
+REG16P           721      1825
+REG8             784      1924
+REG8S            736      1846
+REGX             7A6      1958
+RELADR           6C7      1735
+RGSTRS           7B6      1974
+RNX              796      1942
+RP               7A2      1954
+RSTADR           6C1      1729
+RX               792      1938
+SECOND           4AC      1196
+SERIN          =50        80
+SEROUT         =51        81
+SIOFAST        =08        8
+SIONORMAL      =28        40
+SKIP             812      2066
+SPACES           4C4      1220
+STKTOP           71C      1820
+STROBE         =53        83
+TABEND           484      1156
+TRKBUFFER      = 800      2048
+TRYMAT           475      1141
+TRYNDX           422      1058
+VARS           =FFF0      65520
+WD179X         =40        64
+XTRACT           80F      2063
+addr           =02        2
+addrtext         254      596
+changebyte      7D        125
+ctcvec           178      376
+disass          65        101
+disass1         6E        110
+download         152      338
+download1        155      341
+downtext         244      580
+dumpline         10D      269
+dumpmem          105      261
+dumpmem1         118      280
+dumpmem3         128      296
+dumpmem4         13E      318
+dumpmem5         132      306
+dumpmem6         13C      316
+echo           =00        0
+enterkey        3A        58
+enterkey1       4E        78
+enterkey2       44        68
+fillmem         8E        142
+filltext         277      631
+gethexbyte       178      376
+getnibble        18F      399
+getnibble2       1A0      416
+getupper         1FE      510
+goto            61        97
+init3           24        36
+lentext          26C      620
+menukey          289      649
+menutab          293      659
+menutext         2A5      677
+newaddress      F2        242
+newline          1EC      492
+print            1E9      489
+printaddr        1C1      449
+printhex         1D0      464
+printhl          1CB      459
+printmenu       28        40
+printnib         1DF      479
+printprompt     32        50
+printstr         1AB      427
+printstr1        1BF      447
+printstr2        1AC      428
+questionmark    5D        93
+rs232in          15D      349
+rs232in1         16A      362
+sallymon        09        9
+serin1           231      561
+serin2           228      552
+serinfn          227      551
+serout1          214      532
+seroutfn         207      519
+space            1F6      502
+sum            =01        1
+time19600        23E      574
+time19600a       240      576
+totext           272      626
+transfer        C3        195
+transtext        25D      605
+withtext         282      642

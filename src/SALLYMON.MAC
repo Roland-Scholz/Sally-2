@@ -1,0 +1,564 @@
+;--------------------------------------------------------------
+; Variables
+;--------------------------------------------------------------
+VARS		equ	0fff0h
+echo		equ	0
+sum		equ	1
+addr		equ	2
+
+;--------------------------------------------------------------
+; Constants
+;--------------------------------------------------------------
+LF		equ	0ah
+CR		equ	0dh
+
+		include "EQUS.MAC"
+
+;--------------------------------------------------------------
+		ORG	0
+;--------------------------------------------------------------
+		jp	sallymon
+		jp	seroutfn
+		jp	serinfn
+		
+sallymon:	di
+		
+		ld	ix, VARS
+		ld	sp, ix
+
+		LD	HL,INITAB
+		LD	B,ITBLEN/2				;SEND INITIAL POOP TO PROGRAMABLE I/O'S
+INIT2:		LD	C,(HL)
+		INC	HL
+		OUTI
+		JR	NZ,INIT2
+
+		XOR	A
+INIT1:		DEC	A
+		JR	NZ,INIT1				;DO NOTHING FOR 1 MILLISECOND
+
+		ld	b, 16
+		ld	hl, VARS
+init3:		ld	(hl), a
+		inc	hl
+		djnz	init3
+
+;--------------------------------------------------------------
+; print menu
+; print prompt
+; read upper key
+; check if key is found in menukey
+; read jmp-address and jump to subroutine
+;--------------------------------------------------------------
+printmenu:	ld	(ix + echo), 1		;set echo to 1
+		
+		ld      HL, menutext
+		call	printstr
+
+printprompt:		
+		call	newline
+		ld	c, '>'
+		call	printaddr
+	
+enterkey:	
+		ld	c, 0			;offset in jumptable
+		ld	hl, menukey		;number auf keys
+		ld	b, (hl)			;in b
+		inc	hl
+		call	getupper		;read upper key
+;		call	printhex
+enterkey2: 
+		cp	(HL)			;key found?
+		jr	Z, enterkey1		;yes ==>
+		inc	HL
+		inc	c
+		inc	c
+		djnz	enterkey2		;decrease b and jump
+		jr	enterkey
+enterkey1:	
+		ld	b, 0			;add offset in BC
+		ld	HL, menutab		;to base
+		add	HL, BC
+		ld	BC, printprompt		;push return-address
+		push	BC
+		ld	e, (HL)			;load jp address in DE
+		inc	HL
+		ld	d, (HL)
+		ex	DE, HL			;in HL now
+		jp	(HL)
+
+;--------------------------------------------------------------
+; jump to printmenu
+;--------------------------------------------------------------
+questionmark:
+		pop	BC
+		jp	printmenu
+		
+;--------------------------------------------------------------
+; jump to (addr)
+;--------------------------------------------------------------
+goto:		ld	HL, (VARS + addr)
+		jp	(HL)
+
+;--------------------------------------------------------------
+; Disassemble 22 lines starting from (addr)
+;--------------------------------------------------------------
+disass:
+		ld	B, 22
+		ld	DE, (VARS + addr)
+		call	newline
+disass1:
+		push	BC
+		call	DISASM
+		call	newline
+		pop	BC
+		djnz	disass1
+		
+		ld	(VARS + addr), DE	;save new address
+		ret
+		
+;--------------------------------------------------------------
+; change a byte in (addr)
+;--------------------------------------------------------------
+changebyte:
+		ld	HL, (VARS + addr)
+		ld	a, (HL)
+		call	printhex
+		ld	a, ':'
+		call	seroutfn
+		call	gethexbyte
+		ld	(HL), a
+		ret
+
+;--------------------------------------------------------------
+; 
+;--------------------------------------------------------------
+fillmem:
+		ld	HL, filltext
+		call	printstr
+		
+		call	gethexbyte		;get from-addr
+		ld	h, a
+		call	gethexbyte
+		ld	l, a
+		push	HL
+		push	HL
+		
+		ld	HL, lentext
+		call	printstr
+		call	gethexbyte		;get length
+		ld	b, a
+		call	gethexbyte
+		ld	c, a
+		
+		ld	a, b			; if BC = 0
+		or	a, c
+		ret	Z			; return	
+		dec	BC
+		
+		ld	HL, withtext
+		call	printstr
+		call	gethexbyte
+		
+		pop	DE			; DE = HL + 1
+		inc	DE
+		
+		pop	HL
+		ld	(HL), a 
+		
+		ld	a, b
+		or	a, c
+		ret	Z
+		
+		LDIR
+		
+		ret
+
+;--------------------------------------------------------------
+; 
+;--------------------------------------------------------------
+transfer:	
+		ld	HL, transtext
+		call	printstr
+		
+		call	gethexbyte		;get from-addr
+		ld	h, a
+		call	gethexbyte
+		ld	l, a
+		push	HL
+		
+		ld	HL, lentext
+		call	printstr
+		call	gethexbyte		;get length
+		ld	b, a
+		call	gethexbyte
+		ld	c, a
+
+		ld	HL, totext
+		call	printstr
+		call	gethexbyte		;get dest-addr
+		ld	d, a
+		call	gethexbyte
+		ld	e, a
+
+		pop	HL
+		
+		LDIR
+		
+		ret
+		
+;--------------------------------------------------------------
+; read new address from serinfn
+;--------------------------------------------------------------
+newaddress:
+		ld	HL, addrtext
+		call	printstr
+		call	gethexbyte
+		ld	(VARS + addr + 1), a
+		call	gethexbyte
+		ld	(VARS + addr), a
+		ret
+		
+;--------------------------------------------------------------
+; dump 256 bytes starting from (HL)
+;--------------------------------------------------------------
+dumpmem:
+		call	newline
+		ld	d, 16
+		ld	HL, (VARS + addr)
+	
+dumpline:
+		ld	c, ':'
+		call	printaddr
+		
+		call	space
+		push	HL
+		
+		ld	b, 16
+dumpmem1:
+		ld	a, (HL)
+		inc	HL
+		call	printhex
+		call	space
+		ld	a, b
+		cp	9
+		jr	NZ, dumpmem3
+		call	space
+dumpmem3:	
+		djnz	dumpmem1
+		
+		
+		ld	a, '|'
+		call	seroutfn
+		ld	b, 16
+		pop	HL
+	
+dumpmem5:
+		ld	a, (HL)
+		inc	HL
+		cp	32
+		jr	C, dumpmem6
+		cp	126
+		jr	C, dumpmem4
+dumpmem6:
+		ld	a, '.'
+dumpmem4:
+;		ld	c, a
+		call	seroutfn
+		djnz	dumpmem5
+		
+		ld	a, '|'
+		call	seroutfn
+		
+		call	newline
+		ld	(VARS + addr), hl
+		dec	d
+		jr	NZ, dumpline
+		ret
+		
+;--------------------------------------------------------------
+; binary download to 0f000h
+;--------------------------------------------------------------
+download:	ld	hl, 08000h
+;		ld	(VARS + addr), hl
+		
+download1:	call	rs232in
+		ld	(hl), a				;7
+		inc	hl				;6
+		jp	download1			;10
+			
+rs232in:	in	a, (SERIN)			;11	bit 7, wait for start-bit (0)
+		rla					;4
+		jr	c, rs232in			;12/7	22
+		nop
+		nop
+		ld	d, 8
+		ld	b, 22				;7
+		djnz	$				;13/8
+rs232in1:	in	a, (SERIN)			;11
+		rla					;11 + 4
+		rr	c				;15 + 8
+		ld	b, 13				;23 + 7
+		djnz	$				;30 + 169 13 * 13
+		dec	d				;169 + 4	
+		jr	nz, rs232in1			;173 + 12 12/7
+		ld	a, c				;4
+		ret
+
+ctcvec:
+
+
+;--------------------------------------------------------------
+; gethexbyte
+; returns 00-FF in A
+; uses E
+;--------------------------------------------------------------
+gethexbyte:
+		push	DE
+		call	getnibble
+		rlca
+		rlca
+		rlca
+		rlca
+		ld	e, a
+		call	getnibble
+		or	e
+		ld	e, a
+		add	a, (IX + sum)
+		ld	(VARS + sum), a
+		ld	a, e
+		pop	DE
+		ret
+	
+;--------------------------------------------------------------
+; calls serinfn
+; returns 0-F in A
+;--------------------------------------------------------------
+getnibble:
+		call	serinfn
+		push	AF
+		ld	a, (VARS + echo)
+		or	a
+		jr	Z, getnibble2
+		pop	AF
+		push	AF
+		push	BC
+;		ld	c, a
+		call	seroutfn
+		pop	BC
+getnibble2:
+		pop	AF	
+		sub	'0'
+		cp	10		; < 10 ?
+		ret	C		; yes, return
+		and	11011111b	; make uppercase
+		sub	7
+		ret
+
+;--------------------------------------------------------------
+; print text in (HL) uses
+; A
+;--------------------------------------------------------------
+printstr:
+		push	bc
+printstr2:
+		ld	a, (HL)
+		inc	HL
+		or	a
+		jr	z, printstr1
+		call	seroutfn
+		cp	CR
+		jr	NZ, printstr2
+		ld	a, LF
+		call	seroutfn
+		jr	printstr2
+printstr1:
+		pop	bc
+		ret
+		
+;--------------------------------------------------------------
+; 
+;--------------------------------------------------------------
+printaddr:	ld	hl, (VARS + addr)
+		call	printhl
+		ld	a, c
+		jp	seroutfn
+		
+;--------------------------------------------------------------
+; 
+;--------------------------------------------------------------
+printhl:
+		ld	a, h
+		call	printhex
+		ld	a, l
+
+;--------------------------------------------------------------
+; prints byte in A in hexadecimal format
+;--------------------------------------------------------------
+printhex:	push    af
+		push    af
+		rra
+		rra
+		rra
+		rra
+		call    printnib
+		pop     af
+		call    printnib
+		pop     af
+		ret
+printnib:
+		and     0fh
+		add     '0'		
+		cp      '9' + 1
+		jr      c, print
+		add     7
+print:		jp    	seroutfn
+		
+newline:
+		ld      a, CR
+		call    seroutfn
+		ld      a, LF
+		jp    	seroutfn
+
+space:
+		push	af
+		ld	a, ' '
+		call	seroutfn
+		pop	af
+		ret
+		
+getupper:
+		call	serinfn
+		cp	'a'
+		ret	c
+		sub	32
+		ret
+
+;--------------------------------------------------
+; RS232 out	208 T-States
+;--------------------------------------------------
+seroutfn:
+		PUSH	AF
+		PUSH	BC
+		LD	B, A
+		XOR	A
+		DI
+		OUT	(SEROUT), A				;startbit
+		CALL	time19600				;17
+	
+		LD	A, B	
+		LD	B, 8					;7
+serout1:	
+		OUT	(SEROUT), A				;11
+		CALL	time19600				;17
+		RRCA						;4
+		DJNZ	serout1					;8
+		EI	
+		LD	A, 1					;7
+		OUT	(SEROUT), A				;11
+		CALL	time19600				;17
+
+		POP	BC
+		POP	AF
+		RET
+
+
+;--------------------------------------------------
+; RS232 in	208 T-States = 52uS
+;--------------------------------------------------
+serinfn:
+		PUSH	BC
+serin2:
+		IN	A, (SERIN)
+		RLCA
+		JR	C, serin2
+
+		EX	(SP), HL				;19, 4.75uS
+		EX	(SP), HL				;19  9uS
+
+		LD	B, 80h
+serin1:
+		CALL	time19600
+		IN	A, (SERIN)
+		RLCA
+		RR	B
+		JR	NC, serin1
+
+		LD	A, B
+		POP	BC
+		RET
+
+time19600:
+		LD	C, 9					;4
+time19600a:
+		DEC	C					;4
+		JR	NZ, time19600a				;12/7
+		RET						;10
+	
+downtext:	DB	"downloading...", CR, 0
+;downendtext:	DB	"finished.", CR, 0
+addrtext:	DB	"address:", 0
+;errortext:	DB	"error!", 0
+transtext:	DB	"transfer from:", 0
+lentext:	DB	" len:", 0
+totext:		DB	" to:", 0
+filltext:	DB	"fill from:", 0
+withtext:	DB	" with:", 0
+;disktext:	DB	"enter disk number (0-9):",0
+;filetext:	DB	CR, "filename:",0		
+menukey:
+		DB	9
+		DB	"?CDFGLMNT"
+	
+menutab:
+		DW	questionmark
+		DW	changebyte
+		DW	download
+;		DW	closedisk
+		DW	fillmem
+		DW	goto
+		DW	disass
+		DW	dumpmem
+		DW	newaddress
+;		DW	opendisk
+;		DW	cpm
+		DW	transfer
+;		DW	vt102
+;		DW	exit
+menutext:
+		DB	32, 27, "[m", CR
+		DB	"****************************************************", CR
+		DB	"***  Z80 ", 27, "[1mSally 2", 27, "[m Monitor (c) 2025  by ", 27, "[1mR. Scholz", 27,"[m  ***", CR
+		DB	"****************************************************", CR
+		DB	"? - This text", CR
+		DB	"C - Change byte", CR
+		DB	"D - Download to 08000h", CR
+;		DB	"E - Close Disk", CR
+		DB	"F - Fill memory", CR
+		DB	"G - Goto address", CR
+		DB	"L - Disassemble", CR
+		DB	"M - Memory dump", CR
+		DB	"N - New address", CR
+;		DB	"O - Open Disk", CR
+;		DB	"P - CP/M", CR
+		DB	"T - Transfer memory", CR
+;		DB	"V - VT102 test", CR
+;		DB	"X - eXit", CR
+		DB	0
+		
+INITAB:		DEFB	ATROUT,1				;SET ATART OUTPUT TO MARK STATE
+		DEFB	SEROUT,1				;SET RS232 OUTPUT TO MARK STATE
+		DEFB	CTC0, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
+		DEFB	CTC0, low ctcvec			;SET CTC0 BASE INTERRUPT VECTOR
+		DEFB	CTC1, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL	;PUT CTC1 IN TIMER MODE + SET TIME CONSTANT
+		DEFB	CTC1, 1					;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
+		DEFB	CTC2, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC2
+		DEFB	CTC3, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC3
+		DEFB	CDMUX, 1				;SET MUX TO PASS ATARI DATA
+		DB	LATCH, 050h				;DRIVE CONTROL reset FDC
+		DB	LATCH, 040h				;DRIVE CONTROL 8Mhz
+ITBLEN		EQU	$-INITAB
+
+		include "disz80.asm"
+		;include "zexdoc.asm"
+		

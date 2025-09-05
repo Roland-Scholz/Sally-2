@@ -91,14 +91,14 @@ module shell_bottom() {
     
     //feet, set PCB on top
     translate([20,35,0])
-        foot(3, 22);
+        foot_small(3, 22);
     translate([xmax-20,35,0])
-        foot(3, 22);
+        foot_small(3, 22);
         
     translate([21.5,35+118,0])
-        foot(3, 22);
+        foot_big(3, 22);
     translate([xmax-21.5,35+118,0])
-        foot(3, 22);
+        foot_big(3, 22);
 }
 
 
@@ -168,10 +168,18 @@ module screw(r) {
     }
 }
 
-module foot(r, h) {    
+module foot_big(r, h) {    
     difference() {
         cylinder(h,r*2,r*1.5);
             cylinder(h, 2.1, 2.1);
+//        cylinder(5,6,6);
+    }
+}
+
+module foot_small(r, h) {    
+    difference() {
+        cylinder(h,r*2,r*1.5);
+            cylinder(h, r/2+0.2,r/2+0.2);
 //        cylinder(5,6,6);
     }
 }

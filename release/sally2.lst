@@ -4321,10 +4321,10 @@
   89:				;		DB  'ROLLI 1 Rev 1.00'
   90:						include version.asm
 **** ..\src\version.asm ****
-   1:     -	13E5  73616C6C	SVERSION DB "sally-1.0.4-1-gb" 
+   1:     -	13E5  73616C6C	SVERSION DB "sally-1.0.4-2-ge" 
 	              792D312E
 	              302E342D
-	              312D6762
+	              322D6765
 **** ..\src\sally2.asm ****
   91:				ELSE
  102:				ENDIF	;SALLYBUILD

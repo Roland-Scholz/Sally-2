@@ -58,6 +58,27 @@ set ASM_EXTENSION=MAC
 call :compile ROM DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
 
+rem ****************************************************
+rem * compile SALLYMON
+rem ****************************************************
+set ASM_EXTENSION=MAC
+call :compile SALLYMON DUMMYSYMBOL
+if not %ERRORLEVEL%==0 goto error
+
+rem ****************************************************
+rem * compile ZEXDOC
+rem ****************************************************
+set ASM_EXTENSION=MAC
+call :compile zexdoc DUMMYSYMBOL
+if not %ERRORLEVEL%==0 goto error
+
+rem ****************************************************
+rem * compile ZEXALL
+rem ****************************************************
+set ASM_EXTENSION=MAC
+call :compile zexall DUMMYSYMBOL
+if not %ERRORLEVEL%==0 goto error
+
 ECHO Success!!
 goto ende
 
