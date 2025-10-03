@@ -1,4 +1,4 @@
-use <C:/Users/rolan/Downloads/Atarian/SF Atarian System.ttf>
+//use <C:/Users/rolan/Downloads/Atarian/SF Atarian System.ttf>
 
 thick = 2;
 xmax = 250;

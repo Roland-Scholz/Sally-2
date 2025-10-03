@@ -12,13 +12,10 @@ ledy = 12;
 
 edge=5;
 
-translate([0, 0, 1.6])
-rotate([180,0,0]) {
-    shape();
-}
-
-//translate([0, 0, -1.8])
-//beschriftung();
+//rotate([180,0,0]) {
+//    shape();
+//}
+beschriftung();
 
 module shape() {
     
@@ -61,7 +58,7 @@ module shape() {
         translate([ledx+3*15, ledy+15, 0])
             led3();
         
-        translate([25, 10+10.5, 0])
+        translate([25, 10+10, 0])
             led3();
     }
     
@@ -119,12 +116,20 @@ module base_shape_2d(th) {
 
 module beschriftung() {
     
-    translate([49,-29.5, 0])
-    cube([25, 0.6, 1]);
-    translate([49,-11.75, 0])
-    cube([25, 0.6, 1]);
     
+       
+    translate([49,-29.5, 0])
+    cube([25, 0.6, 0.2]);
+    translate([49,-11.75, 0])
+        cube([25, 0.6, 0.2]);
+  
     linear_extrude(0.2){
+    
+    translate([47,-11.5, 0])
+    mirror([0,1,0])
+    scale([0.1,0.1,0.1])
+    import(file = "SALLY-Logo.svg");
+            
     translate([127, -25.5, -2 ])
     rotate([180, 0, 0])
     {
@@ -132,7 +137,7 @@ module beschriftung() {
     , "Arial:style=Bold"  );
     }
     
-    translate([145, -10.5, -2 ])
+    translate([145, -10, -2 ])
     rotate([180, 0, 0])
     {
         text("DD        FM        Side B", 3
@@ -153,10 +158,10 @@ module beschriftung() {
     , "Arial:style=Bold"  );
     }
 
-    translate([22.25, -10.5, -2 ])
+    translate([20.00, -10.5, -2 ])
     rotate([180, 0, 0])
     {
-        text("Off -", 3
+        text("OFF -", 3
     , "Arial:style=Bold"  );
     }
     
@@ -167,4 +172,5 @@ module beschriftung() {
     , "Arial:style=Bold"  );
     }
 }
+    
 }

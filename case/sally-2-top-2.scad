@@ -1,4 +1,4 @@
-use <C:/Users/rolan/Downloads/Atarian/SF Atarian System.ttf>
+use <SF Atarian System.ttf>
 
 thick = 2;
 xmax = 250;
@@ -25,11 +25,18 @@ module ataritext() {
         mirror([1,0,0])
         text("ABBUC", 10, "SF Atarian System:style=Regular");
 
-    translate([-40, 1, 0])
+    translate([-63, 0, 0])
     linear_extrude(0.2)
         mirror([1,0,0])
-    text("Sally 2 ", 8
+    text("2         Michael Meincke Edition", 10
     , "Brush Script MT:style=Italic"  );
+
+    
+translate([-34, -4  , 0])
+linear_extrude(0.2)
+    mirror([1,0,0])
+    scale([0.1,0.1,0.1])
+    import(file = "SALLY-Logo.svg");    
  
 }
 
