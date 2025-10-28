@@ -63,8 +63,8 @@ Additionally we have added:
 ![Sally-2-case-b](/pictures/Sally-2-case-b.jpg)
 ![Sally-2-case-front-black](/pictures/Sally-2-front-black.jpg)
 First try, all-in-one print, label and case
-![sally-2-abbuc-a](/pictures/sally-2-abbuc-a.jpg)
-![sally-2-abbuc-b](/pictures/sally-2-abbuc-b.jpg)
+![sally-cpm](/pictures/sally-cpm.png)
+![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
 
 # first attempts
 ![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
