@@ -65,9 +65,6 @@ Additionally we have added:
 First try, all-in-one print, label and case
 ![sally-2-abbuc-a](/pictures/sally-2-abbuc-a.jpg)
 ![sally-2-abbuc-b](/pictures/sally-2-abbuc-b.jpg)
-Second try, separate label in higher quality, also changed beige to white
-![sally-cpm](/pictures/sally-cpm.png)
-![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
 
 # first attempts
 ![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
