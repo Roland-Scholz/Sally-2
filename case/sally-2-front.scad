@@ -61,7 +61,7 @@ module shape() {
         translate([ledx+3*15, ledy+15, 0])
             led3();
         
-        translate([25, 10+10.5, 0])
+        translate([24, 10+10.5, 0])
             led3();
     }
     

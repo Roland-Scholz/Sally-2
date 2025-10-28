@@ -6,7 +6,7 @@ set ASSEMBLER_PATH=zmac
 set ASSEMBLER_EXE="%ASSEMBLER_PATH%/zmac.exe"
 set ASM_EXTENSION=asm
 set SOURCE_DIR=..\src
-set OUTPUT_DIR=..\release
+set OUTPUT_DIR=..\release\firmware
 
 rem ****************************************************
 rem * Clean (if requested)
@@ -30,54 +30,65 @@ IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
 @echo off
 
 rem ****************************************************
-rem * compile sally2
+rem * compile sally2 firmware
 rem ****************************************************
 for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
 echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
 
 call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
 
 rem ****************************************************
 rem * compile DDINIT for Sally 2
 rem ****************************************************
-call :compile ddinit SALLYBUILD
+set MODULE=ddinit
+call :compile %MODULE% SALLYBUILD
 if not %ERRORLEVEL%==0 goto :error
-move %OUTPUT_DIR%\ddinit.com %OUTPUT_DIR%\ddinits2.com
+move %OUTPUT_DIR%\%MODULE%.com %OUTPUT_DIR%\ddinits2.com
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\CPM
 
 rem ****************************************************
 rem * compile DDINIT for ATR8000
 rem ****************************************************
-call :compile ddinit DUMMYSYMBOL
-if not %ERRORLEVEL%==0 goto :error
+rem call :compile ddinit DUMMYSYMBOL
+rem if not %ERRORLEVEL%==0 goto :error
 
 rem ****************************************************
 rem * compile ATR8000 (4k) ROM
 rem ****************************************************
 set ASM_EXTENSION=MAC
-call :compile ROM DUMMYSYMBOL
+set MODULE=ROM
+call :compile %MODULE% DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\ATR8000
 
 rem ****************************************************
 rem * compile SALLYMON
 rem ****************************************************
 set ASM_EXTENSION=MAC
-call :compile SALLYMON DUMMYSYMBOL
+set MODULE=SALLYMON
+call :compile %MODULE% DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\misc
 
 rem ****************************************************
 rem * compile ZEXDOC
 rem ****************************************************
 set ASM_EXTENSION=MAC
-call :compile zexdoc DUMMYSYMBOL
+set MODULE=zexdoc
+call :compile %MODULE% DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\CPM
 
 rem ****************************************************
 rem * compile ZEXALL
 rem ****************************************************
 set ASM_EXTENSION=MAC
-call :compile zexall DUMMYSYMBOL
+set MODULE=zexall
+call :compile %MODULE% DUMMYSYMBOL
 if not %ERRORLEVEL%==0 goto error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\CPM
 
 ECHO Success!!
 goto ende
@@ -113,4 +124,5 @@ goto ende
 	ECHO Error during build.
 	pause
 :ende
+pause
 endlocal

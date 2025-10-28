@@ -70,10 +70,11 @@ LAST	EQU	$
 ; **** Hack to make sure data fits in 4K ROM ****
 	IF ($+16) GT (1000H)
 		.ERROR /4K ROM BOUNDARY CROSSED/
-	ELSE
-		DEFS (1000H-16)-LAST
 		DB  'ATR8000 ver 3.02'
 	ENDIF
+	ELSE
+		DB 0,0,0,0,0,0,0,0,0,0,0
+		DB  'SALLY 1 Rev 2.00'
 	ENDIF
 
 END

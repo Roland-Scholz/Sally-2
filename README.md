@@ -12,13 +12,23 @@ WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used 
 can be overclocked to that speed. Only use WD1772PH-02-02 version and at your own risk.
 If you can get hold on an AJAX chip used in e.g. ATARI STE, use this one as it is rated for HD and even ED speed (16/32 Mhz).
 
+Build your own device: All required files and components can be found in the release drawer 
+https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
+
+You also could become an ABBUC member and buy a DIY kit at https://www.abbuc.de
+Join the illustrous community and take part in conventions and discussions.
+
+After some testing and debugging, the vRetro VR177x FDC replacement can now be recommended for use with this interface.
+See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
+
+
 # Key features:
 
 - Operates either as standalone CP/M system or versatile ATARI 8-bit interface (up to 4 floppies, Centronics, RS232)
 - Z80-CPU at 4Mhz
 - 128k static RAM (64k usable)
-- 8k EPROM
-- WD1772 FDC (or AJAX FDC)
+- 8k EPROM, use any 8 / 16 / 32 / 64k device (burn sally2.hex at $8000)
+- WD1772 FDC (or AJAX FDC or VR177x)
 - Z80-CTC timer/counter 
 
 Additionally we have added:
@@ -29,9 +39,6 @@ Additionally we have added:
 
 # ToDo:
 
-- another (better) case and Shugart connector at the back.
-- PCB-layout for other case
-- improve 3 1/2" HD format
 - read/write 512-bytes (MS-DOS) sectors for my Atari FAT-16 DOS 
 - add SD-card?
 
@@ -46,6 +53,11 @@ First version of Sally 2 PCB and a case
 
 ![Atr8000-cpm](pictures/atr8000-cpm.png)
 ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, which is apart from the messages identical to the ATR8000) 
+
+# final product ready as of October 2025
+
+![Sally-2-final-a](/pictures/sally-2-final-a.jpg)
+![Sally-2-final-b](/pictures/sally-2-final-b.jpg)
 
 # further progress as of April 2025:
 
@@ -67,8 +79,3 @@ First try, all-in-one print, label and case
 Second try, separate label in higher quality, also changed beige to white
 ![sally-cpm](/pictures/sally-cpm.png)
 ![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
-
-
-
-
-

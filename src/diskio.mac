@@ -907,19 +907,31 @@ TMRIRQ:
 	RETI
 ;
 ;
-HDDISK:		res	6, a				;non HD-DISK
-		bit	SIZE, (IY+MEDIA)
-		jz	HDDISK1	
-		res	6, a
-HDDISK1:	LD	(OUTCPY),A
-		PUSH	hl
-		LD	hl, 0ffffh
-		LD	(drive), hl
-		POP	hl
-		ret
+; purpose was to check for HD Disk in order to get it formatted if another format was inserted before
+;
+;HDDISK:		res	6, a				;non HD-DISK
+;		bit	SIZE, (IY+MEDIA)
+;		jz	HDDISK1	
+;		res	6, a
+;HDDISK1:	LD	(OUTCPY),A
+;		PUSH	hl
+;		LD	hl, 0ffffh
+;		LD	(drive), hl
+;		POP	hl
+;		ret
 
 IF WD1772
+	db	0,0,0
+	db	0,0,0,0
+	db	0,0,0
+	db	0,0,0
+	db	0
+	db	0,0,0
+	db	0,0,0
+	db	0
+	db	0
 	
+	nop
 	nop
 	nop
 	nop

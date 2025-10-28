@@ -28,7 +28,7 @@ module ataritext() {
     translate([-63, 0, 0])
     linear_extrude(0.2)
         mirror([1,0,0])
-    text("2         Michael Meincke Edition", 10
+    text("2", 10
     , "Brush Script MT:style=Italic"  );
 
     
