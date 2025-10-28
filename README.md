@@ -42,19 +42,8 @@ Additionally we have added:
 - read/write 512-bytes (MS-DOS) sectors for my Atari FAT-16 DOS 
 - add SD-card?
 
-![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
-![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
-Original Sally 1 repaired (5 ICs were out of order) and tested with a 40Trk single sides drive.
 
-![Sally-2-front](pictures/Sally-2-front.png)
-![Sally-2-back](pictures/Sally-2-back.png)
-![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
-First version of Sally 2 PCB and a case
-
-![Atr8000-cpm](pictures/atr8000-cpm.png)
-ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, which is apart from the messages identical to the ATR8000) 
-
-# final product ready as of October 2025
+# Final product ready as of October 2025
 
 ![Sally-2-final-a](/pictures/sally-2-final-a.jpg)
 ![Sally-2-final-b](/pictures/sally-2-final-b.jpg)
@@ -79,3 +68,16 @@ First try, all-in-one print, label and case
 Second try, separate label in higher quality, also changed beige to white
 ![sally-cpm](/pictures/sally-cpm.png)
 ![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
+
+# first attempts
+![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
+![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
+Original Sally 1 repaired (5 ICs were out of order) and tested with a 40Trk single sides drive.
+
+![Sally-2-front](pictures/Sally-2-front.png)
+![Sally-2-back](pictures/Sally-2-back.png)
+![Sally-2-pcb](pictures/Sally-2-pcb.jpg)
+First version of Sally 2 PCB and a case
+
+![Atr8000-cpm](pictures/atr8000-cpm.png)
+ATR8000 CP/M running on Sally 1 (todo: Add picture of the Sally CP/M version, which is apart from the messages identical to the ATR8000) 
