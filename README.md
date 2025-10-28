@@ -12,7 +12,7 @@ WD1772 variant. Caveat: This chip is not designed for HD (500kbit/s) speed used 
 can be overclocked to that speed. Only use WD1772PH-02-02 version and at your own risk.
 If you can get hold on an AJAX chip used in e.g. ATARI STE, use this one as it is rated for HD and even ED speed (16/32 Mhz).
 
-Build your own device: All required files and components can be found in the release drawer 
+Build your own device: All required files, components and documentations can be found in the release drawer 
 https://github.com/Roland-Scholz/Sally-2/tree/main/release
 
 You also could become an ABBUC member and buy a DIY kit at https://www.abbuc.de

@@ -1,0 +1,696 @@
+
+                      *** SMODEM ***
+
+              PUBLIC DOMAIN CP/M MODEM PROGRAM
+              ================================
+                        Version 3.6
+                  Adapted by Walter Blady
+	Upgraded to version 3.7 by Jim Mills, CACHE.
+
+      A MODEM UTILITY PROGRAM SPECIALLY CONFIGURED FOR
+       THE ATR8000 COMPUTER WITH 64K RAM AND CP/M 2.2
+
+
+                          FOREWORD
+
+     This program was originally MODEM7.MAC written by 
+Ward Christensen and revised by M.Zeiger and J.Mills for the
+PMMI modem board.  Full credits for expertise and talent 
+that made this program possible, belong solely to these 
+people.
+
+     Many other individuals contributed to the developement 
+of this program,  but mentioning them and their 
+contributions here would make this file somewhat 
+unmanagable.  Rightful credits are documented in various 
+versions of MODEM.  My appologies.
+
+     Many additional routines included are copyrighted 
+(1980) by Mark M.Zeiger and J.Mills.  Permission is granted 
+to use, but not to sell these routnes.
+
+
+     Enhancements were added to the original program to 
+take advantage of Smartmodem's Auto Dial feature, Escape to 
+Command Mode and On Hook features.
+
+These features include...
+
+     - Kill a disk file.
+     - Terminal mode/Echo mode toggle.
+     - List device toggle, (terminal mode).
+     - Send/receive object-code informal file (terminal mode).
+     - CRC - (cycle redundancy check option).
+     - Auto line-feed is generated in the Echo mode.	
+     - Greatly enhanced menu.
+     - Display number of file sectors in decimal and hex
+       during SEND/RECEIVE file.
+     - XON-XOFF recognition in transfer informal file mode.
+     - Telephone directory
+     - The telephone directory is a separate file.  This allows
+       fast editing without the need to recompile the modem
+       program.  Also, many directories may be accessed.
+     - Auto-dial from internal directory to SMARTMODEM.
+     - Direct dial from program intiation or from menu.
+
+
+                    *** SMODEM MENU ***
+
+COMMANDS - IN MENU MODE
+=======================
+WRT  - Write informal file to disk
+DEL  - Erase informal file from disk
+RET  - Return to terminal mode (no data loss)
+SET  - Set modem port baudrate and parity
+CAL  - Auto dial from list (SMARTMODEM)
+XPR  - Expert mode (Toggle menu on/off)
+DIR  - Directory <drive>
+CPM  - Exit to CP/M
+K    - Kill disk file [fn.ext]
+S... - Send CP/M file [fn.ext]      SECONDARY OPTIONS
+R... - Receive CP/M file [fn.ext]   =================
+T    - Terminal mode <fn.ext>    ...B  - Batch file mode
+E    - terminal mode with Echo   ...S  - show as Sent
+                                 ...R  - show as Received
+COMMANDS - IN TERMINAL MODE      ...V  - View as sent/received
+===========================      ...Q  - Quiet, no messages
+^O   - Off line/exit to menu     ...T  - return to Terminal mod
+^Z   - END of file               ...E  - return to Echo mode
+^S   - XOFF character            ...D  - Disconnect phone
+^Q   - XON character             ...C  - CRC check/not checksum
+^P   - Printer (toggle on/off)           (receive option only)
+^T   - Transmit informal file    ...A  - Answer Mode (& offhook)
+^R   - Receive informal file     ...O  - Orig. Mode (& offhook)
+^E   - Terminal/Echo (toggle on/off)
+^D   - Disconnect phone (SMARTMODEM)
+^X   - Cancel send/receive
+
+
+                   COMMANDS IN MENU MODE
+                    DETAILED EXPLANATION
+
+                           *****
+
+WRITE INFORMAL FILE TO DISK - 'WRT'
+-----------------------------------
+     For the porpose of definition, an 'Informal file' is 
+one which is set-up for recieving or transmitting data,
+without data validity checks, in the terminal mode.
+
+     When data has been saved to an 'Informal file', the 
+file must be closed before continuing with other options.  
+The 'WRT' command writes all remaining buffered data to the 
+disk and then closes the file.  Information will be lost 
+if this is not done.
+
+
+DELETE INFORMAL FILE - 'DEL'
+----------------------------
+     This command will delete the 'Informal file' and it 
+won't be saved on the disk.  All information held in memory 
+from previous saves will be erased.
+
+
+RETURN TO TERMINAL MODE - 'RET'
+-------------------------------
+     The 'RET' command is used to re-enter the terminal mode 
+with no data loss.
+
+     If information has been saved to an 'Informal file', 
+the user may re-enter the menu mode, but all saved data 
+will be lost if a return to the terminal mode is made with 
+the 'T or E' options. Using the 'RET' allows re-entry to the 
+terminal mode and preserves all saved information.
+
+
+SET BAUDRATE AND PARITY - 'SET'
+-------------------------------
+     This command allows the user to set the baudrate and
+parity of the modem port. To use the command simply type 'SET'
+followed by a carriage return. The current baudrate will be
+displayed on the screen, at which time the user can display the
+next value by typing on the space bar. When the desired new baudrate
+is displayed it can be selected permanently by typing a carriage
+return. The parity setting is handled in the same way.
+     The parity setting only affects transmitted data. Received
+data always has the parity bit forced to a zero if odd or even
+parity is selected. Select the no parity option when using the
+'formal' file send/receive functions of SMODEM.
+
+
+AUTO-DIAL (SMARTMODEM) - 'CAL, C'
+---------------------------------
+     The Auto-dial feature allows the user to call a number
+automatically from one of several phone directories.
+
+     Auto-dial primary option may be used in three different 
+ways when initiating SMODEM:
+
+eg. Initiate and ask for directory name.
+
+    SMODEM C		
+            ^
+       (primary option)
+
+eg. Initiate and load the default directory 'PHONE.001', then
+dial the number associated with the directory letter 'M'.
+
+    SMODEM C M
+              ^  
+      (directory-letter)
+
+eg. Initiate and dial the given number.
+
+    SMODEM C 231-1898
+                 ^
+            (any number)
+
+     Auto-dial may also be used from the MENU mode with 'CAL',
+The commands are exactly the same except the code 'CAL' is
+used instead of the 'C' primary option.
+
+     If the command 'CAL' is used alone, SMODEM will ask for
+a directory name.
+
+     When the phone directory is up, any number in 
+the directory may be dialed by entering a 'directory-letter 
+and pressing return.  Or any number may be typed in the 
+command line.  The dial command 'ATD' and the selected 
+number are automatically sent to the SMARTMODEM.
+
+     If you wish to cancel a call while the phone is ringing,
+press return. The 'NO CARRIER' message will be sent and 
+SMARTMODEM will go to an on hook (hang-up) state.  To redial
+the same number, give the command 'A/'.  All the standard 
+HAYES commands can be issued while in the terminal mode.
+
+     A second option for dialing a number is from the terminal
+mode, using the standard SMARTMODEM dial command.  Simply type 
+ATD <phone number>
+
+
+TELEPHONE DIRECTORY
+-------------------
+     Directories may be given any name and kept on any disk, 
+but there must always be a 'Default directory' with the name
+'PHONE.001' on the default drive.  SMODEM automatically loads
+this file if a direct dial is called for.
+
+     Phone directories may be set-up in two different ways; 
+(see the models below).  These models could be saved to  
+separate files and used as actual directories.  More may be 
+set up by duplicating the model over and over.  Only the 
+entries need be changed.
+
+
+EXPERT MODE - 'XPR, X'
+----------------------
+     If the 'X' option is included in the command line when 
+SMODEM is initiated, it will come up with the menu display 
+turned off.  The menu may be toggled on and off during run-
+time with the 'XPR' option. Therefore it is best to run with
+the menu off and toggling to it only when necessary, this 
+action permits messages to be seen that would otherwise be
+lost due to the menus clear screen function.
+
+
+DIRECTORY - 'DIR <d:>'
+----------------------
+     This option prints the specified disk directory to the 
+screen.
+
+
+RE-ENTER CP/M - 'CPM'
+---------------------
+     This option terminates the modem program and returns to 
+the cp/m operating system.
+
+
+KILL A DISK FILE - 'K file.name'
+--------------------------------
+     Files may be deleted from the disk without leaving the 
+modem program.  CP/M rules apply.
+
+eg. >>K file.name,  >>K *.ASM,  >>K B:file.A?M
+
+
+               PRIMARY AND SECONDARY OPTIONS
+                    DETAILED EXPLANATION
+
+                           *****
+
+     There are eight primary options in SMODEM.
+
+     Originate and Answer options are not used since 
+SMARTMODEM handles these automatically.  
+
+     A primary option may be included in a command line when 
+initiating SMODEM, or while in the menu mode, but only ONE is 
+allowed.  The exception is with 'T', 'M' and 'E'.  They may be
+used as secondary options during 'send' or 'receive'
+
+     S... Send a file       R... Receive a file 
+
+     T... Terminal mode     E    Echo mode 
+
+     X    Expert mode       C... Auto-dial mode 
+
+     M    Menu mode         K... Kill a CP/M file
+
+     There are twelve secondary options. These options may 
+be entered in a command line when initiating SMODEM or
+while in the menu mode.  
+
+     More than one secondary option may be included in a 
+command line.  If the (CRC) option is used, then a maximum of 
+six may be included.  As you can see, 'T', 'M' and 'E' are 
+also used as secondary options.
+
+
+...S Print to screen/sending	...R Print to screen/receiving
+
+...V Print send & receive	...Q Don't print messages
+
+...T Return to Terminal mode	...E Return to Echo mode
+
+...D Disconnect			...B Batch files mode
+
+...C (CRC) request		...M Return to Menu mode	
+     cyc. redundancy check
+     (option in receive only)     
+
+...A Answer Tone connect	...O Originate Tone connect
+	to phone line.		to phone line.
+
+               SENDING/RECEIVING WITH SMODEM
+
+                           *****
+
+              (Sending/Receiving FORMAL Files)
+
+
+     The clasification 'FORMAL' means that all transmitted
+data are checked for validity against received data.  There
+are two data-check options available. (See information below.)
+
+     If a primary option is used in a command line when 
+initiating SMODEM, it must be the first character following 
+the name SMODEM, with one space preceeding it.  Secondary 
+options immediately follow the primary, with no spaces.
+Secondary options may be entered in any order.
+
+     eg. SMODEM SQT B:file.name
+                 ^
+        (primary option) 
+
+The above command line means:
+  
+  SMODEM...Initiate SMODEM
+        S...Send a file
+        Q...Don't print any system messages on the screen
+        T...After the file is sent, go to the terminal mode
+       B:...The file is on drive B:
+file.name...The name of the file to be sent
+            (File names may contain ambiguous references,
+            according to the rules of CP/M)
+
+     The 'B' batch file secondary option may ONLY be used 
+from the menu mode.  It may not be included in a command 
+line during initiation of SMODEM.
+
+     Command lines entered from the menu mode are virtually 
+the same, except the word 'SMODEM' is not typed.
+
+     eg. >>RRD file.name
+           ^
+    (primary option)
+
+The above command line means:
+
+        R...Receive a file
+        R...Type the file to screen as it is being received
+        D...Disconnect the phone after the file is received
+file.name...The name of the received file.  
+            (The file.name doesn't have to match the sender's.
+            Ambiguous reference in file.name is NOT allowed 
+            with the receive option.)
+
+     When sending a batch of files, ambiguous references may 
+be used according to the rules of CP/M.  
+
+     eg. >>SBST *.BAS
+
+        S...Send files
+        B...Batch mode
+        S...Print files to the screen as they're being sent
+        T...When through, enter the terminal mode
+    *.BAS...Send all the files on the default disk with the 
+            extention of 'BAS'.
+
+     eg. >>SBCM file.name1 file.name2...n
+
+        S...Send files
+        B...Batch mode
+        M...Enter the menu mode after all files are sent
+file.name...The list of files to be sent.
+
+
+     When receiving files in Batch mode, the file names are 
+NOT specified.  They are sent by the sender.  SMODEM 
+automatically receives and uses these names on the disk.
+ 
+     eg. >>RBCE
+
+        R...Receive files
+        B...Batch mode
+        C...Send a (CRC) character redundancy request to the 
+            sender specifying a (CRC) check of data instead   
+            of the default CHECKSUM method.
+        E...Go to the Echo mode after all files have been
+            received.
+
+
+             (Sending/Receiving INFORMAL Files)
+
+
+     Files may be sent or received from the Terminal mode.
+The clasification 'INFORMAL' simply means that data validity
+checks are NOT made on transmitted data. (You takes your 
+chances.)
+
+     To save data to an informal file, a file.name must first 
+be specified in the menu mode while giving the 'T' terminal 
+command.  The user is the asked if the received data is 
+object code.  (All data is either object code or ASCII.)
+
+     eg. >>T file.name
+
+     Once in the terminal mode, any incoming data may
+be saved to this file by simply pressing the '^R' receive
+toggle.  Data may be intermitantly saved by toggling on or 
+off.  As soon as all desired data is saved, the file must be 
+closed with the 'WRT' command, from the menu mode.  Incoming 
+material may be temporarily stopped and started by issuing the
+'^S' XOFF' and '^Q XON' commands.
+
+     To send an informal file, the '^T' transmit command is
+given from the terminal mode.
+
+     eg. ^T
+
+     Following this command the user is asked if the file
+to be sent is 'object code', then prompted for the file.name.
+The data is sent immediately following a carriage return, so 
+care must be taken that the receiver has enough time to
+prepare.
+
+
+                       OPTION SUMMARY
+
+                           *****
+
+                      PRIMARY OPTIONS
+                      ===============
+
+SEND A FILE - 'S...'
+--------------------
+     Send CP/M files individually or in batch mode using 
+CHECKSUMS or CRC checks.
+
+
+RECEIVE A FILE - 'R...'
+-----------------------
+     Receive CP/M files individually or in batch mode using 
+CHECKSUMS or CRC checks.
+
+
+TERMINAL MODE - 'T <file.name>'
+-------------------------------
+     Enter terminal mode (without echo.).  If <file.name> is
+specified, then an informal file is set up and data may be
+saved to this file using the (Receive) ^R' toggle.
+
+
+ECHO MODE - 'E'
+---------------
+     Enter echo mode.  Echo all characters back to the 
+sender.  Auto line feeds are sent following each carriage 
+return.  Both terminals may NOT be in echo mode at the same 
+time or SMODEM will go boobs up.
+
+
+EXPERT MODE - 'X'
+-----------------
+     This mode surpresses the menu display upon initiation 
+of SMODEM.
+
+
+AUTO-DIAL (SMARTMODEM) - 'C <command>'
+--------------------------------------
+     Dial a number directly or display the telephone 
+directory and wait for command.
+
+
+                     SECONDARY OPTIONS
+                     =================
+
+ANSWER TONE - 'A'
+-----------------
+     Selecting this option tells the smartmodem to go online
+using answer (higher frequency) tones.
+
+ORIGINATE TONE - 'O'
+--------------------
+     Selecting this option tells the smartmodem to go online
+using originate (lower frequency) tones.  If neither 'A' or 'O'
+are specified, SMODEM will assume you are already online and
+begin whatever command you gave it.
+
+SHOW FILE AS SENT - 'S'
+-----------------------
+     Selecting this option will display the file being sent, 
+on the screen.
+
+
+SHOW FILE AS RECEIVED - 'R'
+---------------------------
+     This option will display the file being received, on 
+the screen.
+
+
+SHOW FILE - 'V'
+---------------
+     Display sent or received file on the screen.
+
+
+QUIET MODE - 'Q'
+----------------
+     Surpress all system messages; (don't display on the 
+screen).
+
+
+TERMINAL MODE - 'T'
+-------------------
+     Enter the terminal mode.  <file.name> may not be 
+specified when when using 'T' as a secondary option.
+
+
+DISCONNECT (SMARTMODEM) - 'D'
+-----------------------------
+     Issue the 'Escape' code to the HAYES SMARTMODEM, then 
+hang up the telephone and re-enter the menu mode. 
+
+
+BATCH MODE - 'B'
+----------------
+     This option is used to send multiple files.
+
+     File names can be individually specified in the command 
+line, or they can be specified using ambiguous file names 
+(CP/M convention).  Individual file names are sent to the 
+receiver first, then the file contents, until all files are 
+sent.
+
+
+(CRC) cycle redundancy check - 'C'
+----------------------------------
+     SMODEM defaults to a 'checksum' method of checking data 
+validity during send/receive.  Although quite accurate, it 
+is not virtually error free.  The secondary option 'C' may 
+be included in the command line to force a (CRC) check of 
+data. The (CRC) methode is 99.99% error proof.  The only 
+restrictions are:
+
+   - Both sender and receiver must use one of the MODEM series
+     programmes that have the (CRC) option.
+
+   - The (CRC) option may only be included in a RECEIVE 
+     command line.
+
+     If SMODEM detects a request for (CRC) during a 
+SEND file, it automatically switches over and informs the 
+operater with a screen message.
+
+
+                   TERMINAL MODE OPTIONS
+
+                           *****
+
+OFF-LINE - ^O
+-------------
+     This command will allow re-entry to the menu mode 
+without disconnecting the phone.
+
+
+END OF FILE - ^Z
+----------------
+     This command sends an end of file ASCII character.
+
+
+XOFF - ^S
+---------
+     The XOFF character tells the sending computer to stop 
+data transmission temporarily.  (The sender must recognize
+XON/XOFF protocol).  XOFF is used in conjunction with the XON.
+
+
+XON - ^Q 
+--------
+     The XON character tells the sending computer to resume 
+data transmission.
+
+
+TERMINAL/ECHO (TOGGLE) - ^E
+---------------------------
+     Switching between Terminal mode and Echo mode can be 
+accomplished by pressing ^E.  A message is printed to warn if 
+ECHO ON or ECHO OFF.
+
+
+PRINTER (TOGGLE) - ^P
+---------------------
+      All incoming data may be sent to the printer while in 
+terminal mode. This feature does NOT operate while receiving 
+a file using the 'R' (receive) primary option.  A message is 
+printed warning if PRINTER ON or PRINTER OFF.  
+
+
+TRANSMIT INFORMAL FILE - ^T
+---------------------------
+     This command will send a disk file informally (without 
+error checking).
+
+     After pressing ^T, the user is prompted for the 
+file.name, and if the file being sent is object code.  
+The file is immediately sent following a carriage return.
+The transmission can be terminated with the cancel key ^X.  
+
+
+OBJECT CODE (SCREEN PROMT)
+--------------------------
+     Object code files may be SAVED or SENT while in the 
+terminal mode.  The user is prompted during informal file 
+transfer/receive as to whether an object code file is being 
+transmitted.  There are no checks to ensure data validity, 
+therefore this feature should only be used when it is not 
+possible to use the 'R' (receive) or 'S' (send) primary 
+options.
+
+
+RECEIVE INFORMAL FILE (TOGGLE) - ^R
+-----------------------------------
+     The receive toggle may be used only if a <file.name> was 
+specified when entering the terminal mode.
+
+eg.  T <file.name>
+
+     Alternately pressing 'R' turns the save feature ON and 
+OFF and the user is prompted with 'SAVE ON' or 'SAVE OFF' 
+message.  When the save function is ON, data is 
+simultainiously saved and printed on the screen, and each 
+printed line is preceded by a colon ':' (The colon is not
+sent to the file.)
+
+ECHO MODE (TOGGLE) - ^E
+-----------------------
+     Alternately pressing this key toggles between the 
+terminal mode and echo mode.  The user is prompted with an 
+'ECHO ON' or 'ECHO OFF' message.
+
+
+DISCONNECT (SMARTMODEM) - ^D
+----------------------------
+     This key sends the SMARTMODEM default escape code '+++'  
+then issues the command 'ATH' causing the modem to go to 
+an ON-HOOK state (hang up).  
+
+
+CANCEL SEND/RECEIVE - ^X
+------------------------
+     This key may be used to cancel files being sent or 
+received in the informal mode, or files being sent using the 
+primary option 'S'.  Files being received with the primary 
+option 'R' can't be cancelled by the receiver.  This ensures 
+that line noise doesn't inadvertantly stop transmission.     
+
+
+                      PHONE DIRECTORY
+
+                           *****
+
+     Two types of directory formats may be set up.
+
+(a) TWO ENTRIES PER LINE
+------------------------
+
+     The directory itself begins with the letter 'A' and
+ends with the'$'.  'A' MUST BE THE FIRST CHARACTER IN THE 
+FILE. (No CR/LF pairs preceding it.)  Do not include the 
+spacing guide below.
+
+123456789012345678901234567890123456789012345678901234567890++
+
+A Apple CBBS.........499-2908  B Tony Bagshaw.......881-1532
+C Conn TRS Pick......839-4561  D Conn TRS Miss......266-9110
+E Conn TRS North Y...667-9981  F Frank Aylesworth...633-7497
+G Bill Groskuth IRN..421-1922  H Heathkit BBS ......273-3011
+I                              J K.Jeejeebhoy ......924-1517
+K Microm CBBS........226-7430  L Les Popelyak ......495-2086
+M Missisaga CBBS.....826-5394  N                            
+O                              P P.M.I.CBBS(Punter).624-5431
+Q Queens BBSNY.1-212-441-3755  R Robert L. .........621-8788
+S Sorcerer BBS 1-313-535-9186  T Tony Loutenbach ...223-9238
+U                              V                            
+W Walter Blady ......231-1898  X                            
+Y                              Z                            
+$	                     ^                              ^
+^			     |				    |
+|                      (two spaces)          (carriage return
+|                                             line feed pair
+(the $ MUST be the last character)        not seen, but there)
+
+
+(b) ONE ENTRY PER LINE
+----------------------
+
+     THERE MUST BE EXACTLY 31 CHARACTERS per line, including
+the CR/LF pair.  Other than that, the rules are the same
+as the directory above.
+
+1234567890123456789012345678901
+
+A Alphons Stretch....423-1191
+B Bernice streetcar..222-0198
+C etc...n                    ^^
+$                            ||
+              (last 2 spaces rep.CR/LF pairs)
+
+
+CAUTION:
+--------
+     All NUMBERS in the directory line will be sent to 
+SMARTMODEM.  Only the numbers to be dialed should be present.
+
+
+
+
