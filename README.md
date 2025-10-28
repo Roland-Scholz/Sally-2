@@ -13,7 +13,7 @@ can be overclocked to that speed. Only use WD1772PH-02-02 version and at your ow
 If you can get hold on an AJAX chip used in e.g. ATARI STE, use this one as it is rated for HD and even ED speed (16/32 Mhz).
 
 Build your own device: All required files and components can be found in the release drawer 
-https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
+https://github.com/Roland-Scholz/Sally-2/tree/main/release
 
 You also could become an ABBUC member and buy a DIY kit at https://www.abbuc.de
 Join the illustrous community and take part in conventions and discussions.
