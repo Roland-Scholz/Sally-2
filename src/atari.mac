@@ -410,6 +410,9 @@ DWRT3:	LD	A,(DE)
 	djnz	DWRT3		;fall through last time with acc=0
 
 DWRT4:	CALL	SETSTAT		;DO STATUS SETTING STUFF
+	XOR	a
+DWRT4a:	dec	a
+	JR	nz, DWRT4a
 	LD	A,E
 	JP	SENDCHAR	;SEND 'COMPLETE' OR 'ERROR' TO ATARI
 ;	ret
