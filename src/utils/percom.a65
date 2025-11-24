@@ -1,0 +1,265 @@
+PTR		=	0
+DDEVIC		=	$300
+DUNIT		=	$301
+DCOMND		=	$302
+DSTATS		=	$303
+DBUFLO		=	$304
+DBUFHI		=	$305
+DTIMLO		=	$306
+DBYTLO		=	$308
+DBYTHI		=	$309
+DAUX1		=	$30A
+DAUX2		=	$30B
+
+ICCOM		=	$342
+ICBLL		=	$348
+ICBLH		=	$349
+
+		
+CIOV		=	$E456
+SIOV		=	$E459
+		
+CPUTB		=	11
+EOL		=	$9B
+;		
+		.org	$2000
+;		
+START:		lda	#<SALLYMSG
+		sta	PTR
+		lda	#>SALLYMSG
+		sta	PTR+1
+		jsr	PRTSTR
+
+;		lda	#<PERTXT0
+;		sta	PTR
+;		lda	#>PERTXT0
+;		sta	PTR+1
+		jsr	PRTSTR
+		
+		jsr	GETKEY
+		jsr	PRINT
+		
+		cmp	#'1'
+		bcc	RETURN
+		cmp	#'8'+1
+		bcs	RETURN
+		sbc	#'1'-2
+		jsr	SHOWPER
+		jmp	START
+RETURN:		rts	
+		
+SHOWPER:	sta	DUNIT
+		jsr	READPER
+		tya	
+		bmi	SHOWPEX
+		
+		jsr	PRTSTR
+		lda	DUNIT				;DUNIT
+		ldx	#0
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;TRKS
+		lda	PERCOM
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;STEP
+		lda	PERCOM+1
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;SEC/TRK
+		lda	PERCOM+3
+		ldx	PERCOM+2
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;SIDES
+		lda	PERCOM+4
+		clc	
+		adc	#1
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;DESITY
+		lda	PERCOM+5
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;BYT/SEC
+		lda	PERCOM+7
+		ldx	PERCOM+6
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;SELECTED
+		lda	PERCOM+8
+		jsr	PRTWORD
+		
+		jsr	PRTSTR				;SERRATE
+		lda	PERCOM+9
+		jsr	PRTWORD
+		
+SHOWPEX:	rts	
+		
+		
+		
+		
+		
+READPER:	lda	#'N'
+		sta	DCOMND
+		lda	#<PERCOM
+		sta	DBUFLO
+		lda	#>PERCOM
+		sta	DBUFHI
+		lda	#'1'
+		sta	DDEVIC
+		lda	#<12
+		sta	DBYTLO
+		lda	#>12
+		sta	DBYTHI
+		lda	#$40
+		sta	DSTATS
+		jmp	SIOV
+		
+PRTSTR:		ldy	#0
+		lda	(PTR),Y
+		beq	INCPTR
+		jsr	PRINT
+		jsr	INCPTR
+		jmp	PRTSTR
+		
+INCPTR:		inc	PTR
+		bne	INCPTR1
+		inc	PTR+1
+INCPTR1:	rts	
+		
+		
+;				
+NEWLINE:	lda	#EOL
+PRINT:		pha	
+		txa	
+		pha	
+		tya	
+		pha	
+		ldx	#CPUTB
+		stx	ICCOM
+		tsx	
+		lda	$103,X
+		ldx	#0
+		stx	ICBLL
+		stx	ICBLH
+		jsr	CIOV
+		pla	
+		tay	
+		pla	
+		tax	
+		pla	
+		rts	
+		
+GETKEY:		lda	$E425
+		pha	
+		lda	$E424
+		pha	
+		rts	
+;		
+PRTWORD:	jsr	WORD2D
+		ldx	#0
+		ldy	#0
+PRTWRD1:	lda	PACKDEC,Y
+		lsr	
+		lsr	
+		lsr	
+		lsr	
+		jsr	PRTNIB
+		cpy	#2
+		bne	PRTWRD2
+		inx	
+PRTWRD2:	lda	PACKDEC,Y
+		and	#15
+		jsr	PRTNIB
+		iny	
+		cpy	#3
+		bne	PRTWRD1
+		ldx	#0
+		jmp	NEWLINE
+		
+PRTNIB:		bne	PRTNIB1
+		cpx	#0
+		bne	PRTNIB1
+		rts	
+		
+PRTNIB1:	inx	
+		clc	
+		adc	#'0'
+		jmp	PRINT
+		
+		
+WORD2D:		stx	WORD+1
+		sta	WORD
+		
+		ldx	#2
+		lda	#0
+WORD2D1:	sta	PACKDEC,X
+		dex	
+		bpl	WORD2D1
+		
+		sed	
+		ldx	#16
+		
+WORD2D3:	asl	WORD
+		rol	WORD+1
+		
+		ldy	#2
+WORD2D2:	lda	PACKDEC,Y
+		adc	PACKDEC,Y
+		sta	PACKDEC,Y
+		dey	
+		bpl	WORD2D2
+		
+		dex	
+		bne	WORD2D3
+		
+		cld	
+		rts	
+;		
+; VAR + CONST	
+;		
+		
+PERCOM:		.word	0,0,0,0,0,0
+WORD:		.word	0
+PACKDEC:	.byte	0,0,0
+		
+SALLYMSG:	.byte	"******************", EOL
+		.byte	"* Sally 2 tools  *", EOL
+		.byte	"******************", EOL
+		.byte	EOL
+		.byte	"P - Percom Block Config",EOL
+		.byte	"V - Show Sally 2 version", EOL
+		.byte	0
+		
+PERTXT0:	.byte	EOL
+		.byte	"Display PERCOM for"
+		.byte	" Unit (1-8)?"
+		.byte	0
+		
+PERTXT1:	.byte	EOL
+		.byte	"****************"
+		.byte	EOL
+		.byte	"* PERCOM BLOCK *"
+		.byte	EOL
+		.byte	"****************"
+		.byte	EOL
+		.byte	"Unit   : "
+		.byte	0
+		
+		.byte	"Tracks : "
+		.byte	0
+		.byte	"Step   : "
+		.byte	0
+		.byte	"Sec/Trk: "
+		.byte	0
+		.byte	"Sides  : "
+		.byte	0
+		.byte	"Density: "
+		.byte	0
+		.byte	"Byt/Sec: "
+		.byte	0
+		.byte	"Select : "
+		.byte	0
+		.byte	"SerRate: "
+		.byte	0

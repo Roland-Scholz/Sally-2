@@ -1,0 +1,288 @@
+ca65 V2.17 - Git 59ab140
+Main file   : ..\src\utils\percom.a65
+Current file: ..\src\utils\percom.a65
+
+000000r 1               PTR		=	0
+000000r 1               DDEVIC		=	$300
+000000r 1               DUNIT		=	$301
+000000r 1               DCOMND		=	$302
+000000r 1               DSTATS		=	$303
+000000r 1               DBUFLO		=	$304
+000000r 1               DBUFHI		=	$305
+000000r 1               DTIMLO		=	$306
+000000r 1               DBYTLO		=	$308
+000000r 1               DBYTHI		=	$309
+000000r 1               DAUX1		=	$30A
+000000r 1               DAUX2		=	$30B
+000000r 1               
+000000r 1               ICCOM		=	$342
+000000r 1               ICBLL		=	$348
+000000r 1               ICBLH		=	$349
+000000r 1               
+000000r 1               
+000000r 1               CIOV		=	$E456
+000000r 1               SIOV		=	$E459
+000000r 1               
+000000r 1               CPUTB		=	11
+000000r 1               EOL		=	$9B
+000000r 1               ;
+000000r 1               		.org	$A800
+00A800  1               ;
+00A800  1  A9 65        START:		lda	#<PERTXT0
+00A802  1  85 00        		sta	PTR
+00A804  1  A9 A9        		lda	#>PERTXT0
+00A806  1  85 01        		sta	PTR+1
+00A808  1  20 AE A8     		jsr	PRTSTR
+00A80B  1               
+00A80B  1  20 E6 A8     		jsr	GETKEY
+00A80E  1  20 C6 A8     		jsr	PRINT
+00A811  1               
+00A811  1  C9 31        		cmp	#'1'
+00A813  1  90 0C        		bcc	RETURN
+00A815  1  C9 39        		cmp	#'8'+1
+00A817  1  B0 08        		bcs	RETURN
+00A819  1  E9 2F        		sbc	#'1'-2
+00A81B  1  20 22 A8     		jsr	SHOWPER
+00A81E  1  4C 00 A8     		jmp	START
+00A821  1  60           RETURN:		rts
+00A822  1               
+00A822  1  8D 01 03     SHOWPER:	sta	DUNIT
+00A825  1  20 88 A8     		jsr	READPER
+00A828  1  98           		tya
+00A829  1  30 5C        		bmi	SHOWPEX
+00A82B  1               
+00A82B  1  20 AE A8     		jsr	PRTSTR
+00A82E  1  AD 01 03     		lda	DUNIT				;DUNIT
+00A831  1  A2 00        		ldx	#0
+00A833  1  20 EF A8     		jsr	PRTWORD
+00A836  1               
+00A836  1  20 AE A8     		jsr	PRTSTR				;TRKS
+00A839  1  AD 51 A9     		lda	PERCOM
+00A83C  1  20 EF A8     		jsr	PRTWORD
+00A83F  1               
+00A83F  1  20 AE A8     		jsr	PRTSTR				;STEP
+00A842  1  AD 52 A9     		lda	PERCOM+1
+00A845  1  20 EF A8     		jsr	PRTWORD
+00A848  1               
+00A848  1  20 AE A8     		jsr	PRTSTR				;SEC/TRK
+00A84B  1  AD 54 A9     		lda	PERCOM+3
+00A84E  1  AE 53 A9     		ldx	PERCOM+2
+00A851  1  20 EF A8     		jsr	PRTWORD
+00A854  1               
+00A854  1  20 AE A8     		jsr	PRTSTR				;SIDES
+00A857  1  AD 55 A9     		lda	PERCOM+4
+00A85A  1  18           		clc
+00A85B  1  69 01        		adc	#1
+00A85D  1  20 EF A8     		jsr	PRTWORD
+00A860  1               
+00A860  1  20 AE A8     		jsr	PRTSTR				;DESITY
+00A863  1  AD 56 A9     		lda	PERCOM+5
+00A866  1  20 EF A8     		jsr	PRTWORD
+00A869  1               
+00A869  1  20 AE A8     		jsr	PRTSTR				;BYT/SEC
+00A86C  1  AD 58 A9     		lda	PERCOM+7
+00A86F  1  AE 57 A9     		ldx	PERCOM+6
+00A872  1  20 EF A8     		jsr	PRTWORD
+00A875  1               
+00A875  1  20 AE A8     		jsr	PRTSTR				;SELECTED
+00A878  1  AD 59 A9     		lda	PERCOM+8
+00A87B  1  20 EF A8     		jsr	PRTWORD
+00A87E  1               
+00A87E  1  20 AE A8     		jsr	PRTSTR				;SERRATE
+00A881  1  AD 5A A9     		lda	PERCOM+9
+00A884  1  20 EF A8     		jsr	PRTWORD
+00A887  1               
+00A887  1  60           SHOWPEX:	rts
+00A888  1               
+00A888  1               
+00A888  1               
+00A888  1               
+00A888  1               
+00A888  1  A9 4E        READPER:	lda	#'N'
+00A88A  1  8D 02 03     		sta	DCOMND
+00A88D  1  A9 51        		lda	#<PERCOM
+00A88F  1  8D 04 03     		sta	DBUFLO
+00A892  1  A9 A9        		lda	#>PERCOM
+00A894  1  8D 05 03     		sta	DBUFHI
+00A897  1  A9 31        		lda	#'1'
+00A899  1  8D 00 03     		sta	DDEVIC
+00A89C  1  A9 0C        		lda	#<12
+00A89E  1  8D 08 03     		sta	DBYTLO
+00A8A1  1  A9 00        		lda	#>12
+00A8A3  1  8D 09 03     		sta	DBYTHI
+00A8A6  1  A9 40        		lda	#$40
+00A8A8  1  8D 03 03     		sta	DSTATS
+00A8AB  1  4C 59 E4     		jmp	SIOV
+00A8AE  1               
+00A8AE  1  A0 00        PRTSTR:		ldy	#0
+00A8B0  1  B1 00        		lda	(PTR),Y
+00A8B2  1  F0 09        		beq	INCPTR
+00A8B4  1  20 C6 A8     		jsr	PRINT
+00A8B7  1  20 BD A8     		jsr	INCPTR
+00A8BA  1  4C AE A8     		jmp	PRTSTR
+00A8BD  1               
+00A8BD  1  E6 00        INCPTR:		inc	PTR
+00A8BF  1  D0 02        		bne	INCPTR1
+00A8C1  1  E6 01        		inc	PTR+1
+00A8C3  1  60           INCPTR1:	rts
+00A8C4  1               
+00A8C4  1               
+00A8C4  1               ;
+00A8C4  1  A9 9B        NEWLINE:	lda	#EOL
+00A8C6  1  48           PRINT:		pha
+00A8C7  1  8A           		txa
+00A8C8  1  48           		pha
+00A8C9  1  98           		tya
+00A8CA  1  48           		pha
+00A8CB  1  A9 00        		lda	#0
+00A8CD  1  AA           		tax
+00A8CE  1  9D 48 03     		sta	ICBLL,x
+00A8D1  1  9D 49 03     		sta	ICBLH,x
+00A8D4  1  A9 0B        		lda	#CPUTB
+00A8D6  1  9D 42 03     		sta	ICCOM,x
+00A8D9  1  BA           		tsx
+00A8DA  1  BD 03 01     		lda	$103,X
+00A8DD  1  20 56 E4     		jsr	CIOV
+00A8E0  1  68           		pla
+00A8E1  1  A8           		tay
+00A8E2  1  68           		pla
+00A8E3  1  AA           		tax
+00A8E4  1  68           		pla
+00A8E5  1  60           		rts
+00A8E6  1               
+00A8E6  1  AD 25 E4     GETKEY:		lda	$E425
+00A8E9  1  48           		pha
+00A8EA  1  AD 24 E4     		lda	$E424
+00A8ED  1  48           		pha
+00A8EE  1  60           		rts
+00A8EF  1               ;
+00A8EF  1  20 25 A9     PRTWORD:	jsr	WORD2D
+00A8F2  1  A2 00        		ldx	#0
+00A8F4  1  A0 00        		ldy	#0
+00A8F6  1  B9 5F A9     PRTWRD1:	lda	PACKDEC,Y
+00A8F9  1  4A           		lsr
+00A8FA  1  4A           		lsr
+00A8FB  1  4A           		lsr
+00A8FC  1  4A           		lsr
+00A8FD  1  20 17 A9     		jsr	PRTNIB
+00A900  1  C0 02        		cpy	#2
+00A902  1  D0 01        		bne	PRTWRD2
+00A904  1  E8           		inx
+00A905  1  B9 5F A9     PRTWRD2:	lda	PACKDEC,Y
+00A908  1  29 0F        		and	#15
+00A90A  1  20 17 A9     		jsr	PRTNIB
+00A90D  1  C8           		iny
+00A90E  1  C0 03        		cpy	#3
+00A910  1  D0 E4        		bne	PRTWRD1
+00A912  1  A2 00        		ldx	#0
+00A914  1  4C C4 A8     		jmp	NEWLINE
+00A917  1               
+00A917  1  D0 05        PRTNIB:		bne	PRTNIB1
+00A919  1  E0 00        		cpx	#0
+00A91B  1  D0 01        		bne	PRTNIB1
+00A91D  1  60           		rts
+00A91E  1               
+00A91E  1  E8           PRTNIB1:	inx
+00A91F  1  18           		clc
+00A920  1  69 30        		adc	#'0'
+00A922  1  4C C6 A8     		jmp	PRINT
+00A925  1               
+00A925  1               
+00A925  1  8E 5E A9     WORD2D:		stx	WORD+1
+00A928  1  8D 5D A9     		sta	WORD
+00A92B  1               
+00A92B  1  A2 02        		ldx	#2
+00A92D  1  A9 00        		lda	#0
+00A92F  1  9D 5F A9     WORD2D1:	sta	PACKDEC,X
+00A932  1  CA           		dex
+00A933  1  10 FA        		bpl	WORD2D1
+00A935  1               
+00A935  1  F8           		sed
+00A936  1  A2 10        		ldx	#16
+00A938  1               
+00A938  1  0E 5D A9     WORD2D3:	asl	WORD
+00A93B  1  2E 5E A9     		rol	WORD+1
+00A93E  1               
+00A93E  1  A0 02        		ldy	#2
+00A940  1  B9 5F A9     WORD2D2:	lda	PACKDEC,Y
+00A943  1  79 5F A9     		adc	PACKDEC,Y
+00A946  1  99 5F A9     		sta	PACKDEC,Y
+00A949  1  88           		dey
+00A94A  1  10 F4        		bpl	WORD2D2
+00A94C  1               
+00A94C  1  CA           		dex
+00A94D  1  D0 E9        		bne	WORD2D3
+00A94F  1               
+00A94F  1  D8           		cld
+00A950  1  60           		rts
+00A951  1               ;
+00A951  1               ; VAR + CONST
+00A951  1               ;
+00A951  1               
+00A951  1  00 00 00 00  PERCOM:		.word	0,0,0,0,0,0
+00A955  1  00 00 00 00  
+00A959  1  00 00 00 00  
+00A95D  1  00 00        WORD:		.word	0
+00A95F  1  00 00 00     PACKDEC:	.byte	0,0,0
+00A962  1  4C 00 00     OUTCH:		jmp	0
+00A965  1               
+00A965  1  9B           PERTXT0:	.byte	EOL
+00A966  1  44 69 73 70  		.byte	"Display PERCOM for"
+00A96A  1  6C 61 79 20  
+00A96E  1  50 45 52 43  
+00A978  1  20 55 6E 69  		.byte	" Unit (1-8)?"
+00A97C  1  74 20 28 31  
+00A980  1  2D 38 29 3F  
+00A984  1  00           		.byte	0
+00A985  1               
+00A985  1  9B           PERTXT1:	.byte	EOL
+00A986  1  2A 2A 2A 2A  		.byte	"****************"
+00A98A  1  2A 2A 2A 2A  
+00A98E  1  2A 2A 2A 2A  
+00A996  1  9B           		.byte	EOL
+00A997  1  3B 20 50 45  		.byte	"; PERCOM BLOCK ;"
+00A99B  1  52 43 4F 4D  
+00A99F  1  20 42 4C 4F  
+00A9A7  1  9B           		.byte	EOL
+00A9A8  1  2A 2A 2A 2A  		.byte	"****************"
+00A9AC  1  2A 2A 2A 2A  
+00A9B0  1  2A 2A 2A 2A  
+00A9B8  1  9B           		.byte	EOL
+00A9B9  1  55 6E 69 74  		.byte	"Unit   : "
+00A9BD  1  20 20 20 3A  
+00A9C1  1  20           
+00A9C2  1  00           		.byte	0
+00A9C3  1               
+00A9C3  1  54 72 61 63  		.byte	"Tracks : "
+00A9C7  1  6B 73 20 3A  
+00A9CB  1  20           
+00A9CC  1  00           		.byte	0
+00A9CD  1  53 74 65 70  		.byte	"Step   : "
+00A9D1  1  20 20 20 3A  
+00A9D5  1  20           
+00A9D6  1  00           		.byte	0
+00A9D7  1  53 65 63 2F  		.byte	"Sec/Trk: "
+00A9DB  1  54 72 6B 3A  
+00A9DF  1  20           
+00A9E0  1  00           		.byte	0
+00A9E1  1  53 69 64 65  		.byte	"Sides  : "
+00A9E5  1  73 20 20 3A  
+00A9E9  1  20           
+00A9EA  1  00           		.byte	0
+00A9EB  1  44 65 6E 73  		.byte	"Density: "
+00A9EF  1  69 74 79 3A  
+00A9F3  1  20           
+00A9F4  1  00           		.byte	0
+00A9F5  1  42 79 74 2F  		.byte	"Byt/Sec: "
+00A9F9  1  53 65 63 3A  
+00A9FD  1  20           
+00A9FE  1  00           		.byte	0
+00A9FF  1  53 65 6C 65  		.byte	"Select : "
+00AA03  1  63 74 20 3A  
+00AA07  1  20           
+00AA08  1  00           		.byte	0
+00AA09  1  53 65 72 52  		.byte	"SerRate: "
+00AA0D  1  61 74 65 3A  
+00AA11  1  20           
+00AA12  1  00           		.byte	0
+00AA12  1               
