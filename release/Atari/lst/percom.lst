@@ -42,13 +42,13 @@ Current file: ..\src\utils\percom.a65
 002000  1               ;
 002000  1  A9 00        START:		lda	#0
 002002  1  85 52        		sta	LFTMARGIN
-002004  1  A9 2B        		lda	#<SALLYMSG
+002004  1  A9 9A        		lda	#<SALLYMSG
 002006  1  85 00        		sta	PTR
 002008  1  A9 25        		lda	#>SALLYMSG
 00200A  1  85 01        		sta	PTR+1
-00200C  1  20 6E 23     		jsr	PRTSTR
+00200C  1  20 D1 23     		jsr	PRTSTR
 00200F  1               
-00200F  1  20 AF 24     		jsr	GETKEY
+00200F  1  20 1E 25     		jsr	GETKEY
 002012  1  C9 44        		cmp	#'D'
 002014  1  F0 17        		beq	DODUMP
 002016  1  C9 47        		cmp	#'G'
@@ -64,19 +64,19 @@ Current file: ..\src\utils\percom.a65
 00202A  1  D0 D4        		bne	START
 00202C  1  60           EXIT:		rts
 00202D  1               
-00202D  1  4C 84 23     DODUMP:		jmp	DUMP
-002030  1  4C 0C 22     DOGOTO:		jmp	GOTO
-002033  1  4C 65 22     DOUPLOAD:	jmp	UPLOAD
-002036  1  4C 28 22     DOVERSION:	jmp	VERSION
+00202D  1  4C E7 23     DODUMP:		jmp	DUMP
+002030  1  4C 28 22     DOGOTO:		jmp	GOTO
+002033  1  4C 85 22     DOUPLOAD:	jmp	UPLOAD
+002036  1  4C 50 22     DOVERSION:	jmp	VERSION
 002039  1               
-002039  1  A9 D8        DOPERCOM:	lda	#<PERTXT0
+002039  1  A9 47        DOPERCOM:	lda	#<PERTXT0
 00203B  1  85 00        		sta	PTR
-00203D  1  A9 25        		lda	#>PERTXT0
+00203D  1  A9 26        		lda	#>PERTXT0
 00203F  1  85 01        		sta	PTR+1
-002041  1  20 6E 23     		jsr	PRTSTR
+002041  1  20 D1 23     		jsr	PRTSTR
 002044  1               
-002044  1  20 AF 24     		jsr	GETKEY
-002047  1  20 90 24     		jsr	PRINT
+002044  1  20 1E 25     		jsr	GETKEY
+002047  1  20 FF 24     		jsr	PRINT
 00204A  1               
 00204A  1  C9 31        		cmp	#'1'
 00204C  1  90 B2        		bcc	START
@@ -90,7 +90,7 @@ Current file: ..\src\utils\percom.a65
 00205D  1               
 00205D  1  20 E3 20     DOPERCOM1:	jsr	SHOWPER				;display percom block
 002060  1               
-002060  1  20 AF 24     		jsr	GETKEY
+002060  1  20 1E 25     		jsr	GETKEY
 002063  1  C9 54        		cmp	#'T'
 002065  1  F0 20        		beq	TRACKS
 002067  1  C9 53        		cmp	#'S'
@@ -113,95 +113,95 @@ Current file: ..\src\utils\percom.a65
 002081  1  20 4A 21     WRITEPERC:	jsr	WRITEPER
 002084  1  4C 5D 20     		jmp	DOPERCOM1
 002087  1               
-002087  1  A9 36        TRACKS:		lda	#<MSGTRK
+002087  1  A9 A5        TRACKS:		lda	#<MSGTRK
 002089  1  85 00        		sta	PTR
 00208B  1  A9 26        		lda	#>MSGTRK
 00208D  1  85 01        		sta	PTR+1
-00208F  1  20 6E 23     		jsr	PRTSTR
-002092  1  20 17 24     		jsr	getbyte
-002095  1  8D 1A 25     		sta	PERTRK
+00208F  1  20 D1 23     		jsr	PRTSTR
+002092  1  20 82 24     		jsr	getbyte
+002095  1  8D 89 25     		sta	PERTRK
 002098  1  4C 5D 20     		jmp	DOPERCOM1
 00209B  1               
-00209B  1  A9 4A        SECS:		lda	#<MSGSEC
+00209B  1  A9 B9        SECS:		lda	#<MSGSEC
 00209D  1  85 00        		sta	PTR
 00209F  1  A9 26        		lda	#>MSGSEC
 0020A1  1  85 01        		sta	PTR+1
-0020A3  1  20 6E 23     		jsr	PRTSTR
-0020A6  1  20 17 24     		jsr	getbyte
-0020A9  1  8D 1D 25     		sta	PERSEC+1
-0020AC  1  AD 27 25     		lda	WORD+1
-0020AF  1  8D 1C 25     		sta	PERSEC
+0020A3  1  20 D1 23     		jsr	PRTSTR
+0020A6  1  20 82 24     		jsr	getbyte
+0020A9  1  8D 8C 25     		sta	PERSEC+1
+0020AC  1  AD 96 25     		lda	WORD+1
+0020AF  1  8D 8B 25     		sta	PERSEC
 0020B2  1  4C 5D 20     		jmp	DOPERCOM1
 0020B5  1               
-0020B5  1  A9 54        HEADS:		lda	#<MSGHEA
+0020B5  1  A9 C3        HEADS:		lda	#<MSGHEA
 0020B7  1  85 00        		sta	PTR
 0020B9  1  A9 26        		lda	#>MSGHEA
 0020BB  1  85 01        		sta	PTR+1
-0020BD  1  20 6E 23     		jsr	PRTSTR
-0020C0  1  20 17 24     		jsr	getbyte
-0020C3  1  8D 1E 25     		sta	PERHEA
+0020BD  1  20 D1 23     		jsr	PRTSTR
+0020C0  1  20 82 24     		jsr	getbyte
+0020C3  1  8D 8D 25     		sta	PERHEA
 0020C6  1  4C 5D 20     		jmp	DOPERCOM1
 0020C9  1               DENSITY:
-0020C9  1  A9 68        BYTES:		lda	#<MSGBYT
+0020C9  1  A9 D7        BYTES:		lda	#<MSGBYT
 0020CB  1  85 00        		sta	PTR
 0020CD  1  A9 26        		lda	#>MSGBYT
 0020CF  1  85 01        		sta	PTR+1
-0020D1  1  20 6E 23     		jsr	PRTSTR
-0020D4  1  20 17 24     		jsr	getbyte
-0020D7  1  8D 21 25     		sta	PERBYT+1
-0020DA  1  AD 27 25     		lda	WORD+1
-0020DD  1  8D 20 25     		sta	PERBYT
+0020D1  1  20 D1 23     		jsr	PRTSTR
+0020D4  1  20 82 24     		jsr	getbyte
+0020D7  1  8D 90 25     		sta	PERBYT+1
+0020DA  1  AD 96 25     		lda	WORD+1
+0020DD  1  8D 8F 25     		sta	PERBYT
 0020E0  1  4C 5D 20     		jmp	DOPERCOM1
 0020E3  1               ;
 0020E3  1               ;
 0020E3  1               ;
-0020E3  1  A9 F8        SHOWPER:	lda	#<PERTXT1
+0020E3  1  A9 67        SHOWPER:	lda	#<PERTXT1
 0020E5  1  85 00        		sta	PTR
-0020E7  1  A9 25        		lda	#>PERTXT1
+0020E7  1  A9 26        		lda	#>PERTXT1
 0020E9  1  85 01        		sta	PTR+1
-0020EB  1  20 6E 23     		jsr	PRTSTR
+0020EB  1  20 D1 23     		jsr	PRTSTR
 0020EE  1               
 0020EE  1  AD 01 03     		lda	DUNIT				;DUNIT
 0020F1  1  A2 00        		ldx	#0
-0020F3  1  20 B8 24     		jsr	PRTWORD
+0020F3  1  20 27 25     		jsr	PRTWORD
 0020F6  1               
-0020F6  1  20 6E 23     		jsr	PRTSTR				;TRKS
-0020F9  1  AD 1A 25     		lda	PERCOM
-0020FC  1  20 B8 24     		jsr	PRTWORD
+0020F6  1  20 D1 23     		jsr	PRTSTR				;TRKS
+0020F9  1  AD 89 25     		lda	PERCOM
+0020FC  1  20 27 25     		jsr	PRTWORD
 0020FF  1               
-0020FF  1  20 6E 23     		jsr	PRTSTR				;STEP
-002102  1  AD 1B 25     		lda	PERCOM+1
-002105  1  20 B8 24     		jsr	PRTWORD
+0020FF  1  20 D1 23     		jsr	PRTSTR				;STEP
+002102  1  AD 8A 25     		lda	PERCOM+1
+002105  1  20 27 25     		jsr	PRTWORD
 002108  1               
-002108  1  20 6E 23     		jsr	PRTSTR				;SEC/TRK
-00210B  1  AD 1D 25     		lda	PERCOM+3
-00210E  1  AE 1C 25     		ldx	PERCOM+2
-002111  1  20 B8 24     		jsr	PRTWORD
+002108  1  20 D1 23     		jsr	PRTSTR				;SEC/TRK
+00210B  1  AD 8C 25     		lda	PERCOM+3
+00210E  1  AE 8B 25     		ldx	PERCOM+2
+002111  1  20 27 25     		jsr	PRTWORD
 002114  1               
-002114  1  20 6E 23     		jsr	PRTSTR				;SIDES
-002117  1  AD 1E 25     		lda	PERCOM+4
+002114  1  20 D1 23     		jsr	PRTSTR				;SIDES
+002117  1  AD 8D 25     		lda	PERCOM+4
 00211A  1  18           		clc
 00211B  1  69 01        		adc	#1
-00211D  1  20 B8 24     		jsr	PRTWORD
+00211D  1  20 27 25     		jsr	PRTWORD
 002120  1               
-002120  1  20 6E 23     		jsr	PRTSTR				;DESITY
-002123  1  AD 1F 25     		lda	PERCOM+5
-002126  1  20 B8 24     		jsr	PRTWORD
+002120  1  20 D1 23     		jsr	PRTSTR				;DESITY
+002123  1  AD 8E 25     		lda	PERCOM+5
+002126  1  20 27 25     		jsr	PRTWORD
 002129  1               
-002129  1  20 6E 23     		jsr	PRTSTR				;BYT/SEC
-00212C  1  AD 21 25     		lda	PERCOM+7
-00212F  1  AE 20 25     		ldx	PERCOM+6
-002132  1  20 B8 24     		jsr	PRTWORD
+002129  1  20 D1 23     		jsr	PRTSTR				;BYT/SEC
+00212C  1  AD 90 25     		lda	PERCOM+7
+00212F  1  AE 8F 25     		ldx	PERCOM+6
+002132  1  20 27 25     		jsr	PRTWORD
 002135  1               
-002135  1  20 6E 23     		jsr	PRTSTR				;SELECTED
-002138  1  AD 22 25     		lda	PERCOM+8
-00213B  1  20 B8 24     		jsr	PRTWORD
+002135  1  20 D1 23     		jsr	PRTSTR				;SELECTED
+002138  1  AD 91 25     		lda	PERCOM+8
+00213B  1  20 27 25     		jsr	PRTWORD
 00213E  1               
-00213E  1  20 6E 23     		jsr	PRTSTR				;SERRATE
-002141  1  AD 23 25     		lda	PERCOM+9
-002144  1  20 B8 24     		jsr	PRTWORD
+00213E  1  20 D1 23     		jsr	PRTSTR				;SERRATE
+002141  1  AD 92 25     		lda	PERCOM+9
+002144  1  20 27 25     		jsr	PRTWORD
 002147  1               
-002147  1  4C 6E 23     		jmp	PRTSTR
+002147  1  4C D1 23     		jmp	PRTSTR
 00214A  1               
 00214A  1               
 00214A  1  A9 80        WRITEPER:	lda	#$80
@@ -212,7 +212,7 @@ Current file: ..\src\utils\percom.a65
 002155  1  8D 03 03     		sta	DSTATS
 002158  1  A9 4E        		lda	#'N'
 00215A  1  8D 02 03     READPER1:	sta	DCOMND
-00215D  1  A9 1A        		lda	#<PERCOM
+00215D  1  A9 89        		lda	#<PERCOM
 00215F  1  8D 04 03     		sta	DBUFLO
 002162  1  A9 25        		lda	#>PERCOM
 002164  1  8D 05 03     		sta	DBUFHI
@@ -232,596 +232,646 @@ Current file: ..\src\utils\percom.a65
 002185  1  8D 00 03     		sta	DDEVIC
 002188  1  A9 01        		lda	#1
 00218A  1  8D 01 03     		sta	DUNIT
-00218D  1  A9 D2        		lda	#<BUFFER
+00218D  1  A9 41        		lda	#<BUFFER
 00218F  1  8D 04 03     		sta	DBUFLO
-002192  1  A9 26        		lda	#>BUFFER
+002192  1  A9 27        		lda	#>BUFFER
 002194  1  8D 05 03     		sta	DBUFHI
-002197  1  A9 03        		lda	#3
+002197  1  A9 00        		lda	#0
 002199  1  8D 08 03     		sta	DBYTLO
-00219C  1  A9 00        		lda	#0
-00219E  1  8D 09 03     		sta	DBYTHI
-0021A1  1  AD CB 26     		lda	SALLYADR
-0021A4  1  8D 0A 03     		sta	DAUX1
-0021A7  1  AD CC 26     		lda	SALLYADR+1
-0021AA  1  8D 0B 03     		sta	DAUX2
-0021AD  1  4C 59 E4     		jmp	SIOV
-0021B0  1               
-0021B0  1  A9 57        PUTRAM:		lda	#'W'
-0021B2  1  8D 02 03     		sta	DCOMND
-0021B5  1  A9 80        		lda	#128
-0021B7  1  8D 03 03     		sta	DSTATS
-0021BA  1  AD C9 26     		lda	ATADR
-0021BD  1  8D 04 03     		sta	DBUFLO
-0021C0  1  AD CA 26     		lda	ATADR+1
-0021C3  1  8D 05 03     		sta	DBUFHI
-0021C6  1  A9 00        		lda	#0
-0021C8  1  8D 0A 03     		sta	DAUX1
-0021CB  1  8D 08 03     		sta	DBYTLO
-0021CE  1  A9 01        		lda	#1
-0021D0  1  8D 0B 03     		sta	DAUX2
-0021D3  1  8D 09 03     		sta	DBYTHI
-0021D6  1  4C 59 E4     		jmp	SIOV
-0021D9  1               
-0021D9  1  A9 52        GETRAM:		lda	#'R'
-0021DB  1  8D 02 03     		sta	DCOMND
-0021DE  1  A9 40        		lda	#64
-0021E0  1  8D 03 03     		sta	DSTATS
-0021E3  1  A9 00        		lda	#0
-0021E5  1  8D 0A 03     		sta	DAUX1
-0021E8  1  8D 08 03     		sta	DBYTLO
-0021EB  1  A9 01        		lda	#1
-0021ED  1  8D 0B 03     		sta	DAUX2
-0021F0  1  8D 09 03     		sta	DBYTHI
-0021F3  1  4C 59 E4     		jmp	SIOV
-0021F6  1               
-0021F6  1  A9 47        GOTOADR:	lda	#'G'
-0021F8  1  8D 02 03     		sta	DCOMND
-0021FB  1  A9 00        		lda	#0
-0021FD  1  8D 0A 03     		sta	DAUX1
-002200  1  8D 08 03     		sta	DBYTLO
-002203  1  8D 0B 03     		sta	DAUX2
-002206  1  8D 09 03     		sta	DBYTHI
-002209  1  4C 59 E4     		jmp	SIOV
-00220C  1               ;
-00220C  1               ;
-00220C  1               ;
-00220C  1  20 B3 23     GOTO:		jsr	getadr
-00220F  1  C9 58        		cmp	#'X'
-002211  1  F0 12        		beq	GOTOEND
-002213  1  AD 26 25     		lda	WORD
-002216  1  8D CB 26     		sta	SALLYADR
-002219  1  AD 27 25     		lda	WORD+1
-00221C  1  8D CC 26     		sta	SALLYADR+1
-00221F  1  20 79 21     		jsr	SETADR
-002222  1  20 F6 21     		jsr	GOTOADR
-002225  1  4C 00 20     GOTOEND:	jmp	START
+00219C  1  8D 09 03     		sta	DBYTHI
+00219F  1  AD 3A 27     		lda	SALLYADR
+0021A2  1  8D 0A 03     		sta	DAUX1
+0021A5  1  AD 3B 27     		lda	SALLYADR+1
+0021A8  1  8D 0B 03     		sta	DAUX2
+0021AB  1  4C 59 E4     		jmp	SIOV
+0021AE  1               
+0021AE  1  20 79 21     PUTRAM:		jsr	SETADR
+0021B1  1  A9 57        		lda	#'W'
+0021B3  1  8D 02 03     		sta	DCOMND
+0021B6  1  A9 80        		lda	#128
+0021B8  1  8D 03 03     		sta	DSTATS
+0021BB  1  AD 38 27     		lda	ATADR
+0021BE  1  8D 04 03     		sta	DBUFLO
+0021C1  1  AD 39 27     		lda	ATADR+1
+0021C4  1  8D 05 03     		sta	DBUFHI
+0021C7  1  A9 00        		lda	#0
+0021C9  1  8D 0A 03     		sta	DAUX1
+0021CC  1  8D 08 03     		sta	DBYTLO
+0021CF  1  A9 01        		lda	#1
+0021D1  1  8D 0B 03     		sta	DAUX2
+0021D4  1  8D 09 03     		sta	DBYTHI
+0021D7  1  4C 59 E4     		jmp	SIOV
+0021DA  1               
+0021DA  1  20 79 21     GETRAM:		jsr	SETADR
+0021DD  1  A9 52        		lda	#'R'
+0021DF  1  8D 02 03     		sta	DCOMND
+0021E2  1  A9 40        		lda	#64
+0021E4  1  8D 03 03     		sta	DSTATS
+0021E7  1  A9 00        		lda	#0
+0021E9  1  8D 0A 03     		sta	DAUX1
+0021EC  1  8D 08 03     		sta	DBYTLO
+0021EF  1  A9 01        		lda	#1
+0021F1  1  8D 0B 03     		sta	DAUX2
+0021F4  1  8D 09 03     		sta	DBYTHI
+0021F7  1  4C 59 E4     		jmp	SIOV
+0021FA  1               
+0021FA  1  20 79 21     GOTOADR:	jsr	SETADR
+0021FD  1  A9 5A        		lda	#'Z'
+0021FF  1  8D 00 03     		sta	DDEVIC
+002202  1  A9 01        		lda	#1
+002204  1  8D 01 03     		sta	DUNIT
+002207  1  A9 47        		lda	#'G'
+002209  1  8D 02 03     		sta	DCOMND
+00220C  1  A9 00        		lda	#0
+00220E  1  8D 03 03     		sta	DSTATS
+002211  1  AD 3A 27     		lda	SALLYADR
+002214  1  8D 0A 03     		sta	DAUX1
+002217  1  AD 3B 27     		lda	SALLYADR+1
+00221A  1  8D 0B 03     		sta	DAUX2
+00221D  1  A9 00        		lda	#0
+00221F  1  8D 08 03     		sta	DBYTLO
+002222  1  8D 09 03     		sta	DBYTHI
+002225  1  4C 59 E4     		jmp	SIOV
 002228  1               ;
 002228  1               ;
 002228  1               ;
-002228  1  A9 00        VERSION:	lda	#0
-00222A  1  8D CB 26     		sta	SALLYADR
-00222D  1  8D CC 26     		sta	SALLYADR+1
-002230  1  20 79 21     		jsr	SETADR
-002233  1  20 D9 21     		jsr	GETRAM
-002236  1               
-002236  1  18           		clc
-002237  1  AD 0C 27     		lda	BUFFER+$3a
-00223A  1  6D 12 27     		adc	BUFFER+$40
-00223D  1  8D CB 26     		sta	SALLYADR
-002240  1  AD 0D 27     		lda	BUFFER+$3b
-002243  1  6D 13 27     		adc	BUFFER+$41
-002246  1  8D CC 26     		sta	SALLYADR+1
-002249  1  20 79 21     		jsr	SETADR
-00224C  1  20 D9 21     		jsr	GETRAM
-00224F  1               
-00224F  1  A2 0C        		ldx	#12
-002251  1  BD D2 26     VERSION1:	lda	BUFFER,x
-002254  1  20 90 24     		jsr	PRINT
-002257  1  E8           		inx
-002258  1  E0 1C        		cpx	#12+16
-00225A  1  D0 F5        		bne	VERSION1
-00225C  1  20 8E 24     		jsr	NEWLINE
-00225F  1  20 AF 24     		jsr	GETKEY
-002262  1  4C 00 20     		jmp	START
-002265  1               
-002265  1               ;
-002265  1               ;
-002265  1               ;
-002265  1  20 BD 22     UPLOAD:		jsr	openfile
-002268  1               ;		tya
-002268  1               ;		jsr	puthex
-002268  1               
-002268  1  20 E5 22     		jsr	readfile
-00226B  1               ;		tya
-00226B  1               ;		jsr	puthex
-00226B  1               
-00226B  1  20 0D 23     		jsr	closefile
-00226E  1               ;		tya
-00226E  1               ;		jsr	puthex
-00226E  1               
-00226E  1  A2 10        		ldx	#$10
-002270  1  BD 49 03     		lda	ICBLH,x
-002273  1  8D CE 26     		sta	SALLYLEN+1
-002276  1  BD 48 03     		lda	ICBLL,x
-002279  1  8D CD 26     		sta	SALLYLEN
-00227C  1               
-00227C  1  A9 00        		lda	#0
-00227E  1  8D CB 26     		sta	SALLYADR
-002281  1  8D C9 26     		sta	ATADR
-002284  1  A9 20        		lda	#$20
-002286  1  8D CC 26     		sta	SALLYADR+1
-002289  1  A9 30        		lda	#$30
-00228B  1  8D CA 26     		sta	ATADR+1
+002228  1  20 1E 24     GOTO:		jsr	getadr
+00222B  1  C9 58        		cmp	#'X'
+00222D  1  F0 1E        		beq	GOTOEND
+00222F  1  AD 95 25     		lda	WORD
+002232  1  8D 3A 27     		sta	SALLYADR
+002235  1  AD 96 25     		lda	WORD+1
+002238  1  8D 3B 27     		sta	SALLYADR+1
+00223B  1  20 FA 21     		jsr	GOTOADR
+00223E  1  AD 3B 27     		lda	SALLYADR+1
+002241  1  20 DD 24     		jsr	puthex
+002244  1  AD 3A 27     		lda	SALLYADR
+002247  1  20 DD 24     		jsr	puthex
+00224A  1  20 1E 25     		jsr	GETKEY
+00224D  1  4C 00 20     GOTOEND:	jmp	START
+002250  1               ;
+002250  1               ;
+002250  1               ;
+002250  1  A9 00        VERSION:	lda	#0
+002252  1  8D 3A 27     		sta	SALLYADR
+002255  1  8D 3B 27     		sta	SALLYADR+1
+002258  1  20 DA 21     		jsr	GETRAM
+00225B  1               
+00225B  1  38           		sec
+00225C  1  AD 70 27     		lda	BUFFER+$2f
+00225F  1  E9 1F        		sbc	#$1f
+002261  1  8D 3A 27     		sta	SALLYADR
+002264  1  AD 71 27     		lda	BUFFER+$30
+002267  1  E9 00        		sbc	#0
+002269  1  8D 3B 27     		sta	SALLYADR+1
+00226C  1  20 DA 21     		jsr	GETRAM
+00226F  1               
+00226F  1  A2 00        		ldx	#0
+002271  1  BD 41 27     VERSION1:	lda	BUFFER,x
+002274  1  20 FF 24     		jsr	PRINT
+002277  1  E8           		inx
+002278  1  E0 10        		cpx	#16
+00227A  1  D0 F5        		bne	VERSION1
+00227C  1  20 FD 24     		jsr	NEWLINE
+00227F  1  20 1E 25     		jsr	GETKEY
+002282  1  4C 00 20     		jmp	START
+002285  1               
+002285  1               ;
+002285  1               ;
+002285  1               ;
+002285  1  20 00 23     UPLOAD:		jsr	openfile
+002288  1  20 28 23     		jsr	readfile
+00228B  1  20 50 23     		jsr	closefile
 00228E  1               
-00228E  1  AD CE 26     upoload1:	lda	SALLYLEN+1
-002291  1  20 72 24     		jsr	puthex
-002294  1  AD CD 26     		lda	SALLYLEN
-002297  1  20 72 24     		jsr	puthex
-00229A  1  A9 20        		lda	#32
-00229C  1  20 90 24     		jsr	PRINT
-00229F  1               
-00229F  1  20 79 21     		jsr	SETADR
-0022A2  1  20 B0 21     		jsr	PUTRAM
-0022A5  1  98           		tya
-0022A6  1  20 72 24     		jsr	puthex
-0022A9  1  20 8E 24     		jsr	NEWLINE
-0022AC  1               
-0022AC  1  EE CC 26     		inc	SALLYADR+1
-0022AF  1  EE CA 26     		inc	ATADR+1
-0022B2  1  CE CE 26     		dec	SALLYLEN+1
-0022B5  1  10 D7        		bpl	upoload1
-0022B7  1               
-0022B7  1  20 AF 24     		jsr	GETKEY
-0022BA  1  4C 00 20     		jmp	START
-0022BD  1               
-0022BD  1               ;
-0022BD  1               ;
-0022BD  1               ;
-0022BD  1  A2 10        openfile:	ldx	#$10
-0022BF  1  A9 03        		lda	#CCOPEN
-0022C1  1  9D 42 03     		sta	ICCOM,x
-0022C4  1  A9 B3        		lda	#<sallycom
-0022C6  1  9D 44 03     		sta	ICBAL,x
-0022C9  1  A9 26        		lda	#>sallycom
-0022CB  1  9D 45 03     		sta	ICBAH,x
-0022CE  1  A9 00        		lda	#0
-0022D0  1  9D 48 03     		sta	ICBLL,x
-0022D3  1  A9 01        		lda	#1
-0022D5  1  9D 49 03     		sta	ICBLH,x
-0022D8  1  A9 04        		lda	#4
-0022DA  1  9D 4A 03     		sta	ICAX1,x
-0022DD  1  A9 00        		lda	#0
-0022DF  1  9D 4B 03     		sta	ICAX2,x
-0022E2  1  4C 56 E4     		jmp	CIOV
-0022E5  1               
-0022E5  1  A2 10        readfile:	ldx	#$10
-0022E7  1  A9 07        		lda	#CGETB
-0022E9  1  9D 42 03     		sta	ICCOM,x
-0022EC  1  A9 00        		lda	#$00
-0022EE  1  9D 44 03     		sta	ICBAL,x
-0022F1  1  A9 30        		lda	#$30
-0022F3  1  9D 45 03     		sta	ICBAH,x
-0022F6  1  A9 FF        		lda	#$ff
-0022F8  1  9D 48 03     		sta	ICBLL,x
-0022FB  1  A9 FF        		lda	#$ff
-0022FD  1  9D 49 03     		sta	ICBLH,x
-002300  1  A9 04        		lda	#4
-002302  1  9D 4A 03     		sta	ICAX1,x
-002305  1  A9 00        		lda	#0
-002307  1  9D 4B 03     		sta	ICAX2,x
-00230A  1  4C 56 E4     		jmp	CIOV
-00230D  1               
-00230D  1  A2 10        closefile:	ldx	#$10
-00230F  1  A9 0C        		lda	#CCLOSE
-002311  1  9D 42 03     		sta	ICCOM,x
-002314  1  4C 56 E4     		jmp	CIOV
-002317  1               
-002317  1               ;
-002317  1               ;
-002317  1               ;
-002317  1  A2 00        dumpbuf:	ldx	#0
-002319  1  A0 10        		ldy	#16
-00231B  1  8C 26 25     		sty	WORD
-00231E  1               
-00231E  1  AD CB 26     		lda	SALLYADR
-002321  1  8D CF 26     		sta	DUMPADR
-002324  1  AD CC 26     		lda	SALLYADR+1
-002327  1  8D D0 26     		sta	DUMPADR+1
-00232A  1               
-00232A  1  20 4E 23     dumpbuf2:	jsr	dumpadr
-00232D  1  BD D2 26     dumpbuf1:	lda	BUFFER,x
-002330  1  20 72 24     		jsr	puthex
-002333  1  E8           		inx
-002334  1  8A           		txa
-002335  1  29 0F        		and	#15
-002337  1  C9 08        		cmp	#8
-002339  1  D0 05        		bne	dumpbuf3
-00233B  1  A9 20        		lda	#32
-00233D  1  20 90 24     		jsr	PRINT
-002340  1  88           dumpbuf3:	dey
-002341  1  D0 EA        		bne	dumpbuf1
-002343  1  20 8E 24     		jsr	NEWLINE
-002346  1  A0 10        		ldy	#16
-002348  1  CE 26 25     		dec	WORD
-00234B  1  D0 DD        		bne	dumpbuf2
-00234D  1  60           		rts
-00234E  1               
-00234E  1  AD D0 26     dumpadr:	lda	DUMPADR+1
-002351  1  20 72 24     		jsr	puthex
-002354  1  AD CF 26     		lda	DUMPADR
-002357  1  20 72 24     		jsr	puthex
-00235A  1  A9 3A        		lda	#':'
-00235C  1  20 90 24     		jsr	PRINT
-00235F  1  18           		clc
-002360  1  AD CF 26     		lda	DUMPADR
-002363  1  69 10        		adc	#16
-002365  1  8D CF 26     		sta	DUMPADR
-002368  1  90 03        		bcc	dumpadr1
-00236A  1  EE D0 26     		inc	DUMPADR+1
-00236D  1  60           dumpadr1:	rts
-00236E  1               
-00236E  1  A0 00        PRTSTR:		ldy	#0
-002370  1  B1 00        		lda	(PTR),Y
-002372  1  F0 09        		beq	INCPTR
-002374  1  20 90 24     		jsr	PRINT
-002377  1  20 7D 23     		jsr	INCPTR
-00237A  1  4C 6E 23     		jmp	PRTSTR
-00237D  1               
-00237D  1  E6 00        INCPTR:		inc	PTR
-00237F  1  D0 02        		bne	INCPTR1
-002381  1  E6 01        		inc	PTR+1
-002383  1  60           INCPTR1:	rts
+00228E  1  A2 10        		ldx	#$10
+002290  1  BD 49 03     		lda	ICBLH,x
+002293  1  8D 3D 27     		sta	SALLYLEN+1
+002296  1  BD 48 03     		lda	ICBLL,x
+002299  1  8D 3C 27     		sta	SALLYLEN
+00229C  1               
+00229C  1  A9 00        		lda	#0
+00229E  1  8D 3A 27     		sta	SALLYADR
+0022A1  1  8D 38 27     		sta	ATADR
+0022A4  1  A9 20        		lda	#$20
+0022A6  1  8D 3B 27     		sta	SALLYADR+1
+0022A9  1  A9 30        		lda	#$30
+0022AB  1  8D 39 27     		sta	ATADR+1
+0022AE  1               
+0022AE  1  AD 3D 27     upoload1:	lda	SALLYLEN+1
+0022B1  1  20 DD 24     		jsr	puthex
+0022B4  1  AD 3C 27     		lda	SALLYLEN
+0022B7  1  20 DD 24     		jsr	puthex
+0022BA  1  A9 20        		lda	#32
+0022BC  1  20 FF 24     		jsr	PRINT
+0022BF  1               
+0022BF  1  20 AE 21     		jsr	PUTRAM
+0022C2  1  98           		tya
+0022C3  1  20 DD 24     		jsr	puthex
+0022C6  1  A8           		tay
+0022C7  1  30 34        		bmi	uploadex
+0022C9  1  20 FD 24     		jsr	NEWLINE
+0022CC  1               
+0022CC  1  EE 3B 27     		inc	SALLYADR+1
+0022CF  1  EE 39 27     		inc	ATADR+1
+0022D2  1  CE 3D 27     		dec	SALLYLEN+1
+0022D5  1  10 D7        		bpl	upoload1
+0022D7  1               
+0022D7  1  A9 00        		lda	#0
+0022D9  1  8D 3A 27     		sta	SALLYADR
+0022DC  1  A9 20        		lda	#$20
+0022DE  1  8D 3B 27     		sta	SALLYADR+1
+0022E1  1  20 DA 21     		jsr	GETRAM
+0022E4  1               
+0022E4  1  38           		sec
+0022E5  1  AD 70 27     		lda	BUFFER+$2f
+0022E8  1  E9 0F        		sbc	#$0f
+0022EA  1  8D 3A 27     		sta	SALLYADR
+0022ED  1  AD 71 27     		lda	BUFFER+$30
+0022F0  1  E9 00        		sbc	#0
+0022F2  1  69 1F        		adc	#$20-1
+0022F4  1  8D 3B 27     		sta	SALLYADR+1
+0022F7  1               
+0022F7  1  20 1E 25     		jsr	GETKEY
+0022FA  1  20 FA 21     		jsr	GOTOADR
+0022FD  1               
+0022FD  1  4C 00 20     uploadex:	jmp	START
+002300  1               
+002300  1               ;
+002300  1               ;
+002300  1               ;
+002300  1  A2 10        openfile:	ldx	#$10
+002302  1  A9 03        		lda	#CCOPEN
+002304  1  9D 42 03     		sta	ICCOM,x
+002307  1  A9 22        		lda	#<sallycom
+002309  1  9D 44 03     		sta	ICBAL,x
+00230C  1  A9 27        		lda	#>sallycom
+00230E  1  9D 45 03     		sta	ICBAH,x
+002311  1  A9 00        		lda	#0
+002313  1  9D 48 03     		sta	ICBLL,x
+002316  1  A9 01        		lda	#1
+002318  1  9D 49 03     		sta	ICBLH,x
+00231B  1  A9 04        		lda	#4
+00231D  1  9D 4A 03     		sta	ICAX1,x
+002320  1  A9 00        		lda	#0
+002322  1  9D 4B 03     		sta	ICAX2,x
+002325  1  4C 56 E4     		jmp	CIOV
+002328  1               
+002328  1  A2 10        readfile:	ldx	#$10
+00232A  1  A9 07        		lda	#CGETB
+00232C  1  9D 42 03     		sta	ICCOM,x
+00232F  1  A9 00        		lda	#$00
+002331  1  9D 44 03     		sta	ICBAL,x
+002334  1  A9 30        		lda	#$30
+002336  1  9D 45 03     		sta	ICBAH,x
+002339  1  A9 FF        		lda	#$ff
+00233B  1  9D 48 03     		sta	ICBLL,x
+00233E  1  A9 FF        		lda	#$ff
+002340  1  9D 49 03     		sta	ICBLH,x
+002343  1  A9 04        		lda	#4
+002345  1  9D 4A 03     		sta	ICAX1,x
+002348  1  A9 00        		lda	#0
+00234A  1  9D 4B 03     		sta	ICAX2,x
+00234D  1  4C 56 E4     		jmp	CIOV
+002350  1               
+002350  1  A2 10        closefile:	ldx	#$10
+002352  1  A9 0C        		lda	#CCLOSE
+002354  1  9D 42 03     		sta	ICCOM,x
+002357  1  4C 56 E4     		jmp	CIOV
+00235A  1               
+00235A  1               ;
+00235A  1               ;
+00235A  1               ;
+00235A  1  A2 00        dumpbuf:	ldx	#0
+00235C  1  A0 08        		ldy	#8
+00235E  1  A9 10        		lda	#16
+002360  1  8D 95 25     		sta	WORD
+002363  1               
+002363  1  AD 3A 27     		lda	SALLYADR
+002366  1  8D 3E 27     		sta	DUMPADR
+002369  1  AD 3B 27     		lda	SALLYADR+1
+00236C  1  8D 3F 27     		sta	DUMPADR+1
+00236F  1               
+00236F  1  20 B1 23     dumpbuf2:	jsr	dumpadr
+002372  1  BD 41 27     dumpbuf1:	lda	BUFFER,x
+002375  1  20 DD 24     		jsr	puthex
+002378  1  E8           		inx
+002379  1  20 F9 24     		jsr	SPACE
+00237C  1  88           dumpbuf3:	dey
+00237D  1  D0 F3        		bne	dumpbuf1
+00237F  1               
+00237F  1  8A           		txa
+002380  1  38           		sec
+002381  1  E9 08        		sbc	#8
+002383  1  AA           		tax
 002384  1               
-002384  1               ;
-002384  1               ;
-002384  1               ;
-002384  1  20 B3 23     DUMP:		jsr	getadr
-002387  1  C9 58        		cmp	#'X'
-002389  1  D0 03        		bne	DUMP1
-00238B  1  4C 00 20     		jmp	START
-00238E  1  C9 9B        DUMP1:		cmp	#EOL
-002390  1  D0 06        		bne	DUMP2
-002392  1  EE CC 26     		inc	SALLYADR+1
-002395  1  4C A4 23     		jmp	DUMP3
-002398  1  AD 26 25     DUMP2:		lda	WORD
-00239B  1  8D CB 26     		sta	SALLYADR
-00239E  1  AD 27 25     		lda	WORD+1
-0023A1  1  8D CC 26     		sta	SALLYADR+1
-0023A4  1  20 8E 24     DUMP3:		jsr	NEWLINE
-0023A7  1  20 79 21     		jsr	SETADR
-0023AA  1  20 D9 21     		jsr	GETRAM
-0023AD  1  20 17 23     		jsr	dumpbuf
-0023B0  1  4C 84 23     		jmp	DUMP
-0023B3  1               
-0023B3  1  A9 C0        getadr:		lda	#<msgadr
-0023B5  1  85 00        		sta	PTR
-0023B7  1  A9 26        		lda	#>msgadr
-0023B9  1  85 01        		sta	PTR+1
-0023BB  1  20 6E 23     		jsr	PRTSTR
-0023BE  1               
-0023BE  1  A9 00        		lda	#0
-0023C0  1  8D 26 25     		sta	WORD
-0023C3  1  8D 27 25     		sta	WORD+1
-0023C6  1  A9 04        		lda	#4
-0023C8  1  8D D1 26     		sta	CNT
-0023CB  1               
-0023CB  1  20 EE 23     getadr2:	jsr	getnibble
-0023CE  1  C9 10        		cmp	#16
-0023D0  1  B0 1B        		bcs	getadr3
-0023D2  1  A2 03        		ldx	#3
-0023D4  1  0E 26 25     getadr4:	asl	WORD
-0023D7  1  2E 27 25     		rol	WORD+1
-0023DA  1  CA           		dex
-0023DB  1  10 F7        		bpl	getadr4
-0023DD  1  6D 26 25     		adc	WORD
-0023E0  1  8D 26 25     		sta	WORD
-0023E3  1  90 03        		bcc	getadr1
-0023E5  1  EE 27 25     		inc	WORD+1
-0023E8  1  CE D1 26     getadr1:	dec	CNT
-0023EB  1  D0 DE        		bne	getadr2
-0023ED  1  60           getadr3:	rts
-0023EE  1               
-0023EE  1  20 AF 24     getnibble:	jsr	GETKEY
-0023F1  1  C9 9B        		cmp	#EOL
-0023F3  1  F0 21        		beq	getnibex
-0023F5  1  C9 58        		cmp	#'X'
-0023F7  1  F0 1D        		beq	getnibex
-0023F9  1  C9 30        		cmp	#'0'
-0023FB  1  90 F1        		bcc	getnibble
-0023FD  1  C9 3A        		cmp	#'9'+1
-0023FF  1  90 0F        		bcc	getnib09
-002401  1               
-002401  1  C9 41        		cmp	#'A'
-002403  1  90 E9        		bcc	getnibble
-002405  1  C9 47        		cmp	#'F'+1
-002407  1  B0 E5        		bcs	getnibble
-002409  1  20 90 24     		jsr	PRINT
-00240C  1  38           		sec
-00240D  1  E9 37        		sbc	#'A'-10
-00240F  1  60           		rts
-002410  1  20 90 24     getnib09:	jsr	PRINT
-002413  1  38           		sec
-002414  1  E9 30        		sbc	#'0'
-002416  1  60           getnibex:	rts
-002417  1               
-002417  1               ;
-002417  1               ; reads a byte value given in decimal
-002417  1               ;
-002417  1  A2 03        getbyte:	ldx	#3
-002419  1  8E 28 25     		stx	PACKDEC
-00241C  1  A9 00        		lda	#0
-00241E  1  8D 26 25     		sta	WORD
-002421  1  8D 27 25     		sta	WORD+1
-002424  1  20 5B 24     getbyte1:	jsr	getnum
-002427  1  30 2E        		bmi	getbyteex
-002429  1  AD 26 25     		lda	WORD
-00242C  1  0A           		asl
-00242D  1  2E 27 25     		rol	WORD+1
-002430  1  0A           		asl
-002431  1  2E 27 25     		rol	WORD+1
-002434  1  6D 26 25     		adc	WORD
-002437  1  8D 26 25     		sta	WORD
-00243A  1  90 03        		bcc	getbyte2
-00243C  1  EE 27 25     		inc	WORD+1
-00243F  1  0A           getbyte2:	asl
-002440  1  8D 26 25     		sta	WORD
-002443  1  2E 27 25     		rol	WORD+1
-002446  1  98           		tya
-002447  1  6D 26 25     		adc	WORD
-00244A  1  8D 26 25     		sta	WORD
-00244D  1  90 03        		bcc	getbyte3
-00244F  1  EE 27 25     		inc	WORD+1
-002452  1  CE 28 25     getbyte3:	dec	PACKDEC
-002455  1  D0 CD        		bne	getbyte1
-002457  1  AD 26 25     getbyteex:	lda	WORD
-00245A  1  60           		rts
-00245B  1               
-00245B  1  20 AF 24     getnum:		jsr	GETKEY
-00245E  1  C9 9B        		cmp	#EOL
-002460  1  F0 0E        		beq	getnumex
-002462  1  C9 30        		cmp	#'0'
-002464  1  90 F5        		bcc	getnum
-002466  1  C9 3A        		cmp	#'9'+1
-002468  1  B0 F1        		bcs	getnum
-00246A  1  20 90 24     		jsr	PRINT
-00246D  1  38           		sec
-00246E  1  E9 30        		sbc	#'0'
-002470  1  A8           getnumex:	tay
-002471  1  60           		rts
-002472  1               
-002472  1               ;
-002472  1  48           puthex:		pha
-002473  1  48           		pha
-002474  1  4A           		lsr
-002475  1  4A           		lsr
-002476  1  4A           		lsr
-002477  1  4A           		lsr
-002478  1  20 83 24     		jsr	putnib
-00247B  1  68           		pla
-00247C  1  29 0F        		and	#$0f
-00247E  1  20 83 24     		jsr	putnib
-002481  1  68           		pla
-002482  1  60           		rts
-002483  1               
-002483  1  C9 0A        putnib:		cmp	#10
-002485  1  90 02        		bcc	putnib1
-002487  1  69 06        		adc	#6
-002489  1  69 30        putnib1:	adc	#'0'
-00248B  1  4C 90 24     		jmp	PRINT
-00248E  1               
-00248E  1  A9 9B        NEWLINE:	lda	#EOL
-002490  1  48           PRINT:		pha
-002491  1  8A           		txa
-002492  1  48           		pha
-002493  1  98           		tya
-002494  1  48           		pha
-002495  1  A2 0B        		ldx	#CPUTB
-002497  1  8E 42 03     		stx	ICCOM
-00249A  1  BA           		tsx
-00249B  1  BD 03 01     		lda	$103,X
-00249E  1  A2 00        		ldx	#0
-0024A0  1  8E 48 03     		stx	ICBLL
-0024A3  1  8E 49 03     		stx	ICBLH
-0024A6  1  20 56 E4     		jsr	CIOV
-0024A9  1  68           		pla
-0024AA  1  A8           		tay
-0024AB  1  68           		pla
-0024AC  1  AA           		tax
-0024AD  1  68           		pla
-0024AE  1  60           		rts
-0024AF  1               
-0024AF  1  AD 25 E4     GETKEY:		lda	$E425
-0024B2  1  48           		pha
-0024B3  1  AD 24 E4     		lda	$E424
-0024B6  1  48           		pha
-0024B7  1  60           		rts
-0024B8  1               ;
-0024B8  1  20 EE 24     PRTWORD:	jsr	WORD2D
-0024BB  1  A2 00        		ldx	#0
-0024BD  1  A0 00        		ldy	#0
-0024BF  1  B9 28 25     PRTWRD1:	lda	PACKDEC,Y
-0024C2  1  4A           		lsr
-0024C3  1  4A           		lsr
-0024C4  1  4A           		lsr
-0024C5  1  4A           		lsr
-0024C6  1  20 E0 24     		jsr	PRTNIB
-0024C9  1  C0 02        		cpy	#2
-0024CB  1  D0 01        		bne	PRTWRD2
-0024CD  1  E8           		inx
-0024CE  1  B9 28 25     PRTWRD2:	lda	PACKDEC,Y
-0024D1  1  29 0F        		and	#15
-0024D3  1  20 E0 24     		jsr	PRTNIB
-0024D6  1  C8           		iny
-0024D7  1  C0 03        		cpy	#3
-0024D9  1  D0 E4        		bne	PRTWRD1
-0024DB  1  A2 00        		ldx	#0
-0024DD  1  4C 8E 24     		jmp	NEWLINE
-0024E0  1               
-0024E0  1  D0 05        PRTNIB:		bne	PRTNIB1
-0024E2  1  E0 00        		cpx	#0
-0024E4  1  D0 01        		bne	PRTNIB1
-0024E6  1  60           		rts
-0024E7  1               
-0024E7  1  E8           PRTNIB1:	inx
-0024E8  1  18           		clc
-0024E9  1  69 30        		adc	#'0'
-0024EB  1  4C 90 24     		jmp	PRINT
+002384  1  A0 08        		ldy	#8
+002386  1  A9 7C        		lda	#'|'
+002388  1  20 FF 24     		jsr	PRINT
+00238B  1               
+00238B  1  BD 41 27     dumpbuf5:	lda	BUFFER,x
+00238E  1  29 7F        		and	#$7f
+002390  1  C9 20        		cmp	#32
+002392  1  90 04        		bcc	dumpbuf4
+002394  1  C9 7D        		cmp	#$7d
+002396  1  90 02        		bcc	dumpbuf6
+002398  1  A9 2E        dumpbuf4:	lda	#'.'
+00239A  1  20 FF 24     dumpbuf6:	jsr	PRINT
+00239D  1  E8           		inx
+00239E  1  88           		dey
+00239F  1  D0 EA        		bne	dumpbuf5
+0023A1  1               
+0023A1  1  A9 7C        		lda	#'|'
+0023A3  1  20 FF 24     		jsr	PRINT
+0023A6  1  20 FD 24     		jsr	NEWLINE
+0023A9  1               
+0023A9  1  A0 08        		ldy	#8
+0023AB  1  CE 95 25     		dec	WORD
+0023AE  1  D0 BF        		bne	dumpbuf2
+0023B0  1  60           		rts
+0023B1  1               
+0023B1  1  AD 3F 27     dumpadr:	lda	DUMPADR+1
+0023B4  1  20 DD 24     		jsr	puthex
+0023B7  1  AD 3E 27     		lda	DUMPADR
+0023BA  1  20 DD 24     		jsr	puthex
+0023BD  1  A9 3A        		lda	#':'
+0023BF  1  20 FF 24     		jsr	PRINT
+0023C2  1  18           		clc
+0023C3  1  AD 3E 27     		lda	DUMPADR
+0023C6  1  69 08        		adc	#8
+0023C8  1  8D 3E 27     		sta	DUMPADR
+0023CB  1  90 03        		bcc	dumpadr1
+0023CD  1  EE 3F 27     		inc	DUMPADR+1
+0023D0  1  60           dumpadr1:	rts
+0023D1  1               
+0023D1  1  A0 00        PRTSTR:		ldy	#0
+0023D3  1  B1 00        		lda	(PTR),Y
+0023D5  1  F0 09        		beq	INCPTR
+0023D7  1  20 FF 24     		jsr	PRINT
+0023DA  1  20 E0 23     		jsr	INCPTR
+0023DD  1  4C D1 23     		jmp	PRTSTR
+0023E0  1               
+0023E0  1  E6 00        INCPTR:		inc	PTR
+0023E2  1  D0 02        		bne	INCPTR1
+0023E4  1  E6 01        		inc	PTR+1
+0023E6  1  60           INCPTR1:	rts
+0023E7  1               
+0023E7  1               ;
+0023E7  1               ;
+0023E7  1               ;
+0023E7  1  20 1E 24     DUMP:		jsr	getadr
+0023EA  1  C9 58        		cmp	#'X'
+0023EC  1  D0 03        		bne	DUMP1
+0023EE  1  4C 00 20     		jmp	START
+0023F1  1  C9 9B        DUMP1:		cmp	#EOL
+0023F3  1  D0 11        		bne	DUMP2
+0023F5  1  18           		clc
+0023F6  1  AD 3A 27     		lda	SALLYADR
+0023F9  1  69 80        		adc	#128
+0023FB  1  8D 3A 27     		sta	SALLYADR
+0023FE  1  90 03        		bcc	DUMP4
+002400  1  EE 3B 27     		inc	SALLYADR+1
+002403  1  4C 12 24     DUMP4:		jmp	DUMP3
+002406  1               
+002406  1  AD 95 25     DUMP2:		lda	WORD
+002409  1  8D 3A 27     		sta	SALLYADR
+00240C  1  AD 96 25     		lda	WORD+1
+00240F  1  8D 3B 27     		sta	SALLYADR+1
+002412  1  20 FD 24     DUMP3:		jsr	NEWLINE
+002415  1  20 DA 21     		jsr	GETRAM
+002418  1  20 5A 23     		jsr	dumpbuf
+00241B  1  4C E7 23     		jmp	DUMP
+00241E  1               
+00241E  1  A9 2F        getadr:		lda	#<msgadr
+002420  1  85 00        		sta	PTR
+002422  1  A9 27        		lda	#>msgadr
+002424  1  85 01        		sta	PTR+1
+002426  1  20 D1 23     		jsr	PRTSTR
+002429  1               
+002429  1  A9 00        		lda	#0
+00242B  1  8D 95 25     		sta	WORD
+00242E  1  8D 96 25     		sta	WORD+1
+002431  1  A9 04        		lda	#4
+002433  1  8D 40 27     		sta	CNT
+002436  1               
+002436  1  20 59 24     getadr2:	jsr	getnibble
+002439  1  C9 10        		cmp	#16
+00243B  1  B0 1B        		bcs	getadr3
+00243D  1  A2 03        		ldx	#3
+00243F  1  0E 95 25     getadr4:	asl	WORD
+002442  1  2E 96 25     		rol	WORD+1
+002445  1  CA           		dex
+002446  1  10 F7        		bpl	getadr4
+002448  1  6D 95 25     		adc	WORD
+00244B  1  8D 95 25     		sta	WORD
+00244E  1  90 03        		bcc	getadr1
+002450  1  EE 96 25     		inc	WORD+1
+002453  1  CE 40 27     getadr1:	dec	CNT
+002456  1  D0 DE        		bne	getadr2
+002458  1  60           getadr3:	rts
+002459  1               
+002459  1  20 1E 25     getnibble:	jsr	GETKEY
+00245C  1  C9 9B        		cmp	#EOL
+00245E  1  F0 21        		beq	getnibex
+002460  1  C9 58        		cmp	#'X'
+002462  1  F0 1D        		beq	getnibex
+002464  1  C9 30        		cmp	#'0'
+002466  1  90 F1        		bcc	getnibble
+002468  1  C9 3A        		cmp	#'9'+1
+00246A  1  90 0F        		bcc	getnib09
+00246C  1               
+00246C  1  C9 41        		cmp	#'A'
+00246E  1  90 E9        		bcc	getnibble
+002470  1  C9 47        		cmp	#'F'+1
+002472  1  B0 E5        		bcs	getnibble
+002474  1  20 FF 24     		jsr	PRINT
+002477  1  38           		sec
+002478  1  E9 37        		sbc	#'A'-10
+00247A  1  60           		rts
+00247B  1  20 FF 24     getnib09:	jsr	PRINT
+00247E  1  38           		sec
+00247F  1  E9 30        		sbc	#'0'
+002481  1  60           getnibex:	rts
+002482  1               
+002482  1               ;
+002482  1               ; reads a byte value given in decimal
+002482  1               ;
+002482  1  A2 03        getbyte:	ldx	#3
+002484  1  8E 97 25     		stx	PACKDEC
+002487  1  A9 00        		lda	#0
+002489  1  8D 95 25     		sta	WORD
+00248C  1  8D 96 25     		sta	WORD+1
+00248F  1  20 C6 24     getbyte1:	jsr	getnum
+002492  1  30 2E        		bmi	getbyteex
+002494  1  AD 95 25     		lda	WORD
+002497  1  0A           		asl
+002498  1  2E 96 25     		rol	WORD+1
+00249B  1  0A           		asl
+00249C  1  2E 96 25     		rol	WORD+1
+00249F  1  6D 95 25     		adc	WORD
+0024A2  1  8D 95 25     		sta	WORD
+0024A5  1  90 03        		bcc	getbyte2
+0024A7  1  EE 96 25     		inc	WORD+1
+0024AA  1  0A           getbyte2:	asl
+0024AB  1  8D 95 25     		sta	WORD
+0024AE  1  2E 96 25     		rol	WORD+1
+0024B1  1  98           		tya
+0024B2  1  6D 95 25     		adc	WORD
+0024B5  1  8D 95 25     		sta	WORD
+0024B8  1  90 03        		bcc	getbyte3
+0024BA  1  EE 96 25     		inc	WORD+1
+0024BD  1  CE 97 25     getbyte3:	dec	PACKDEC
+0024C0  1  D0 CD        		bne	getbyte1
+0024C2  1  AD 95 25     getbyteex:	lda	WORD
+0024C5  1  60           		rts
+0024C6  1               
+0024C6  1  20 1E 25     getnum:		jsr	GETKEY
+0024C9  1  C9 9B        		cmp	#EOL
+0024CB  1  F0 0E        		beq	getnumex
+0024CD  1  C9 30        		cmp	#'0'
+0024CF  1  90 F5        		bcc	getnum
+0024D1  1  C9 3A        		cmp	#'9'+1
+0024D3  1  B0 F1        		bcs	getnum
+0024D5  1  20 FF 24     		jsr	PRINT
+0024D8  1  38           		sec
+0024D9  1  E9 30        		sbc	#'0'
+0024DB  1  A8           getnumex:	tay
+0024DC  1  60           		rts
+0024DD  1               
+0024DD  1               ;
+0024DD  1  48           puthex:		pha
+0024DE  1  48           		pha
+0024DF  1  4A           		lsr
+0024E0  1  4A           		lsr
+0024E1  1  4A           		lsr
+0024E2  1  4A           		lsr
+0024E3  1  20 EE 24     		jsr	putnib
+0024E6  1  68           		pla
+0024E7  1  29 0F        		and	#$0f
+0024E9  1  20 EE 24     		jsr	putnib
+0024EC  1  68           		pla
+0024ED  1  60           		rts
 0024EE  1               
-0024EE  1               
-0024EE  1  8E 27 25     WORD2D:		stx	WORD+1
-0024F1  1  8D 26 25     		sta	WORD
-0024F4  1               
-0024F4  1  A2 02        		ldx	#2
-0024F6  1  A9 00        		lda	#0
-0024F8  1  9D 28 25     WORD2D1:	sta	PACKDEC,X
-0024FB  1  CA           		dex
-0024FC  1  10 FA        		bpl	WORD2D1
-0024FE  1               
-0024FE  1  F8           		sed
-0024FF  1  A2 10        		ldx	#16
-002501  1               
-002501  1  0E 26 25     WORD2D3:	asl	WORD
-002504  1  2E 27 25     		rol	WORD+1
-002507  1               
-002507  1  A0 02        		ldy	#2
-002509  1  B9 28 25     WORD2D2:	lda	PACKDEC,Y
-00250C  1  79 28 25     		adc	PACKDEC,Y
-00250F  1  99 28 25     		sta	PACKDEC,Y
-002512  1  88           		dey
-002513  1  10 F4        		bpl	WORD2D2
-002515  1               
-002515  1  CA           		dex
-002516  1  D0 E9        		bne	WORD2D3
-002518  1               
-002518  1  D8           		cld
-002519  1  60           		rts
-00251A  1               ;
-00251A  1               ; VAR + CONST
-00251A  1               ;
-00251A  1               
-00251A  1               PERCOM:
-00251A  1  00           PERTRK:		.byte	0
-00251B  1  00           PERSTP:		.byte	0
-00251C  1  00 00        PERSEC:		.word	0
-00251E  1  00           PERHEA:		.byte	0
-00251F  1  00           PERDEN:		.byte	0
-002520  1  00 00        PERBYT:		.word	0
-002522  1  00           PERSTA:		.byte	0
-002523  1  00           PERRAT:		.byte	0
-002524  1  00           PERX01:		.byte	0
-002525  1  00           PERX02:		.byte	0
-002526  1               
-002526  1  00 00        WORD:		.word	0
-002528  1  00 00 00     PACKDEC:	.byte	0,0,0
-00252B  1               
-00252B  1  7D           SALLYMSG:	.byte	CLS
-00252C  1  2A 2A 2A 2A  		.byte	"******************", EOL
-002530  1  2A 2A 2A 2A  
-002534  1  2A 2A 2A 2A  
-00253F  1  2A 20 53 61  		.byte	"* Sally 2 tools  *", EOL
-002543  1  6C 6C 79 20  
-002547  1  32 20 74 6F  
-002552  1  2A 2A 2A 2A  		.byte	"******************", EOL
-002556  1  2A 2A 2A 2A  
-00255A  1  2A 2A 2A 2A  
-002565  1  9B           		.byte	EOL
-002566  1  44 20 2D 20  		.byte	"D - Dump memory",EOL
-00256A  1  44 75 6D 70  
-00256E  1  20 6D 65 6D  
-002576  1  47 20 2D 20  		.byte	"G - Goto address",EOL
-00257A  1  47 6F 74 6F  
-00257E  1  20 61 64 64  
-002587  1  50 20 2D 20  		.byte	"P - Percom Block Config",EOL
-00258B  1  50 65 72 63  
-00258F  1  6F 6D 20 42  
-00259F  1  55 20 2D 20  		.byte	"U - upload sally2.com",EOL
-0025A3  1  75 70 6C 6F  
-0025A7  1  61 64 20 73  
-0025B5  1  56 20 2D 20  		.byte	"V - Show Sally 2 version", EOL
-0025B9  1  53 68 6F 77  
-0025BD  1  20 53 61 6C  
-0025CE  1  58 20 2D 20  		.byte	"X - EXIT", EOL
-0025D2  1  45 58 49 54  
-0025D6  1  9B           
-0025D7  1  00           		.byte	0
-0025D8  1               
-0025D8  1  9B           PERTXT0:	.byte	EOL
-0025D9  1  44 69 73 70  		.byte	"Display PERCOM for"
-0025DD  1  6C 61 79 20  
-0025E1  1  50 45 52 43  
-0025EB  1  20 55 6E 69  		.byte	" Unit (1-8)?"
-0025EF  1  74 20 28 31  
-0025F3  1  2D 38 29 3F  
-0025F7  1  00           		.byte	0
-0025F8  1               
-0025F8  1  9B           PERTXT1:	.byte	EOL
-0025F9  1  2A 2A 2A 2A  		.byte	"****************"
-0025FD  1  2A 2A 2A 2A  
-002601  1  2A 2A 2A 2A  
-002609  1  9B           		.byte	EOL
-00260A  1  2A 20 50 45  		.byte	"* PERCOM BLOCK *"
-00260E  1  52 43 4F 4D  
-002612  1  20 42 4C 4F  
-00261A  1  9B           		.byte	EOL
-00261B  1  2A 2A 2A 2A  		.byte	"****************"
-00261F  1  2A 2A 2A 2A  
-002623  1  2A 2A 2A 2A  
-00262B  1  9B           		.byte	EOL
-00262C  1  55 6E 69 74  		.byte	"Unit   : "
-002630  1  20 20 20 3A  
-002634  1  20           
-002635  1  00           		.byte	0
-002636  1               
-002636  1  54 72 61 63  MSGTRK:		.byte	"Tracks : "
-00263A  1  6B 73 20 3A  
-00263E  1  20           
-00263F  1  00           		.byte	0
-002640  1  53 74 65 70  		.byte	"Step   : "
-002644  1  20 20 20 3A  
-002648  1  20           
-002649  1  00           		.byte	0
-00264A  1  53 65 63 2F  MSGSEC:		.byte	"Sec/Trk: "
-00264E  1  54 72 6B 3A  
-002652  1  20           
-002653  1  00           		.byte	0
-002654  1  48 65 61 64  MSGHEA:		.byte	"Heads  : "
-002658  1  73 20 20 3A  
-00265C  1  20           
-00265D  1  00           		.byte	0
-00265E  1  44 65 6E 73  MSGDEN:		.byte	"Density: "
-002662  1  69 74 79 3A  
-002666  1  20           
-002667  1  00           		.byte	0
-002668  1  42 79 74 2F  MSGBYT:		.byte	"Byt/Sec: "
-00266C  1  53 65 63 3A  
-002670  1  20           
-002671  1  00           		.byte	0
-002672  1  53 65 6C 65  		.byte	"Select : "
-002676  1  63 74 20 3A  
-00267A  1  20           
-00267B  1  00           		.byte	0
-00267C  1  53 65 72 52  		.byte	"SerRate: "
-002680  1  61 74 65 3A  
-002684  1  20           
-002685  1  00           		.byte	0
-002686  1  D4 72 61 63  		.byte	'T'+128, "racks ", 'S'+128, "ecs ", 'H'+128, "eads ", 'D'+128, "ensity ", 'B'+128, "ytes", EOL
-00268A  1  6B 73 20 D3  
-00268E  1  65 63 73 20  
-0026A6  1  D7 72 69 74  		.byte	'W'+128, "rite  ", 'X'+128, "xit", EOL
-0026AA  1  65 20 20 D8  
-0026AE  1  78 69 74 9B  
-0026B2  1  00           		.byte	0
-0026B3  1               
-0026B3  1  44 3A 53 41  sallycom:	.byte	"D:SALLY2.COM",EOL
-0026B7  1  4C 4C 59 32  
-0026BB  1  2E 43 4F 4D  
-0026C0  1  61 64 64 72  msgadr:		.byte	"address:",0
-0026C4  1  65 73 73 3A  
-0026C8  1  00           
-0026C9  1  00 00        ATADR:		.word	0
-0026CB  1  00 00        SALLYADR:	.word	0
-0026CD  1  00 00        SALLYLEN:	.word	0
-0026CF  1  00 00        DUMPADR:	.word	0
-0026D1  1  00           CNT:		.byte	0
-0026D2  1  00           BUFFER:		.byte	0
-0026D2  1               
+0024EE  1  C9 0A        putnib:		cmp	#10
+0024F0  1  90 02        		bcc	putnib1
+0024F2  1  69 06        		adc	#6
+0024F4  1  69 30        putnib1:	adc	#'0'
+0024F6  1  4C FF 24     		jmp	PRINT
+0024F9  1               
+0024F9  1  A9 20        SPACE:		lda	#32
+0024FB  1  D0 02        		bne	PRINT
+0024FD  1  A9 9B        NEWLINE:	lda	#EOL
+0024FF  1  48           PRINT:		pha
+002500  1  8A           		txa
+002501  1  48           		pha
+002502  1  98           		tya
+002503  1  48           		pha
+002504  1  A2 0B        		ldx	#CPUTB
+002506  1  8E 42 03     		stx	ICCOM
+002509  1  BA           		tsx
+00250A  1  BD 03 01     		lda	$103,X
+00250D  1  A2 00        		ldx	#0
+00250F  1  8E 48 03     		stx	ICBLL
+002512  1  8E 49 03     		stx	ICBLH
+002515  1  20 56 E4     		jsr	CIOV
+002518  1  68           		pla
+002519  1  A8           		tay
+00251A  1  68           		pla
+00251B  1  AA           		tax
+00251C  1  68           		pla
+00251D  1  60           		rts
+00251E  1               
+00251E  1  AD 25 E4     GETKEY:		lda	$E425
+002521  1  48           		pha
+002522  1  AD 24 E4     		lda	$E424
+002525  1  48           		pha
+002526  1  60           		rts
+002527  1               ;
+002527  1  20 5D 25     PRTWORD:	jsr	WORD2D
+00252A  1  A2 00        		ldx	#0
+00252C  1  A0 00        		ldy	#0
+00252E  1  B9 97 25     PRTWRD1:	lda	PACKDEC,Y
+002531  1  4A           		lsr
+002532  1  4A           		lsr
+002533  1  4A           		lsr
+002534  1  4A           		lsr
+002535  1  20 4F 25     		jsr	PRTNIB
+002538  1  C0 02        		cpy	#2
+00253A  1  D0 01        		bne	PRTWRD2
+00253C  1  E8           		inx
+00253D  1  B9 97 25     PRTWRD2:	lda	PACKDEC,Y
+002540  1  29 0F        		and	#15
+002542  1  20 4F 25     		jsr	PRTNIB
+002545  1  C8           		iny
+002546  1  C0 03        		cpy	#3
+002548  1  D0 E4        		bne	PRTWRD1
+00254A  1  A2 00        		ldx	#0
+00254C  1  4C FD 24     		jmp	NEWLINE
+00254F  1               
+00254F  1  D0 05        PRTNIB:		bne	PRTNIB1
+002551  1  E0 00        		cpx	#0
+002553  1  D0 01        		bne	PRTNIB1
+002555  1  60           		rts
+002556  1               
+002556  1  E8           PRTNIB1:	inx
+002557  1  18           		clc
+002558  1  69 30        		adc	#'0'
+00255A  1  4C FF 24     		jmp	PRINT
+00255D  1               
+00255D  1               
+00255D  1  8E 96 25     WORD2D:		stx	WORD+1
+002560  1  8D 95 25     		sta	WORD
+002563  1               
+002563  1  A2 02        		ldx	#2
+002565  1  A9 00        		lda	#0
+002567  1  9D 97 25     WORD2D1:	sta	PACKDEC,X
+00256A  1  CA           		dex
+00256B  1  10 FA        		bpl	WORD2D1
+00256D  1               
+00256D  1  F8           		sed
+00256E  1  A2 10        		ldx	#16
+002570  1               
+002570  1  0E 95 25     WORD2D3:	asl	WORD
+002573  1  2E 96 25     		rol	WORD+1
+002576  1               
+002576  1  A0 02        		ldy	#2
+002578  1  B9 97 25     WORD2D2:	lda	PACKDEC,Y
+00257B  1  79 97 25     		adc	PACKDEC,Y
+00257E  1  99 97 25     		sta	PACKDEC,Y
+002581  1  88           		dey
+002582  1  10 F4        		bpl	WORD2D2
+002584  1               
+002584  1  CA           		dex
+002585  1  D0 E9        		bne	WORD2D3
+002587  1               
+002587  1  D8           		cld
+002588  1  60           		rts
+002589  1               ;
+002589  1               ; VAR + CONST
+002589  1               ;
+002589  1               
+002589  1               PERCOM:
+002589  1  00           PERTRK:		.byte	0
+00258A  1  00           PERSTP:		.byte	0
+00258B  1  00 00        PERSEC:		.word	0
+00258D  1  00           PERHEA:		.byte	0
+00258E  1  00           PERDEN:		.byte	0
+00258F  1  00 00        PERBYT:		.word	0
+002591  1  00           PERSTA:		.byte	0
+002592  1  00           PERRAT:		.byte	0
+002593  1  00           PERX01:		.byte	0
+002594  1  00           PERX02:		.byte	0
+002595  1               
+002595  1  00 00        WORD:		.word	0
+002597  1  00 00 00     PACKDEC:	.byte	0,0,0
+00259A  1               
+00259A  1  7D           SALLYMSG:	.byte	CLS
+00259B  1  2A 2A 2A 2A  		.byte	"******************", EOL
+00259F  1  2A 2A 2A 2A  
+0025A3  1  2A 2A 2A 2A  
+0025AE  1  2A 20 53 61  		.byte	"* Sally 2 tools  *", EOL
+0025B2  1  6C 6C 79 20  
+0025B6  1  32 20 74 6F  
+0025C1  1  2A 2A 2A 2A  		.byte	"******************", EOL
+0025C5  1  2A 2A 2A 2A  
+0025C9  1  2A 2A 2A 2A  
+0025D4  1  9B           		.byte	EOL
+0025D5  1  44 20 2D 20  		.byte	"D - Dump memory",EOL
+0025D9  1  44 75 6D 70  
+0025DD  1  20 6D 65 6D  
+0025E5  1  47 20 2D 20  		.byte	"G - Goto address",EOL
+0025E9  1  47 6F 74 6F  
+0025ED  1  20 61 64 64  
+0025F6  1  50 20 2D 20  		.byte	"P - Percom Block Config",EOL
+0025FA  1  50 65 72 63  
+0025FE  1  6F 6D 20 42  
+00260E  1  55 20 2D 20  		.byte	"U - upload sally2.com",EOL
+002612  1  75 70 6C 6F  
+002616  1  61 64 20 73  
+002624  1  56 20 2D 20  		.byte	"V - Show Sally 2 version", EOL
+002628  1  53 68 6F 77  
+00262C  1  20 53 61 6C  
+00263D  1  58 20 2D 20  		.byte	"X - EXIT", EOL
+002641  1  45 58 49 54  
+002645  1  9B           
+002646  1  00           		.byte	0
+002647  1               
+002647  1  9B           PERTXT0:	.byte	EOL
+002648  1  44 69 73 70  		.byte	"Display PERCOM for"
+00264C  1  6C 61 79 20  
+002650  1  50 45 52 43  
+00265A  1  20 55 6E 69  		.byte	" Unit (1-8)?"
+00265E  1  74 20 28 31  
+002662  1  2D 38 29 3F  
+002666  1  00           		.byte	0
+002667  1               
+002667  1  9B           PERTXT1:	.byte	EOL
+002668  1  2A 2A 2A 2A  		.byte	"****************"
+00266C  1  2A 2A 2A 2A  
+002670  1  2A 2A 2A 2A  
+002678  1  9B           		.byte	EOL
+002679  1  2A 20 50 45  		.byte	"* PERCOM BLOCK *"
+00267D  1  52 43 4F 4D  
+002681  1  20 42 4C 4F  
+002689  1  9B           		.byte	EOL
+00268A  1  2A 2A 2A 2A  		.byte	"****************"
+00268E  1  2A 2A 2A 2A  
+002692  1  2A 2A 2A 2A  
+00269A  1  9B           		.byte	EOL
+00269B  1  55 6E 69 74  		.byte	"Unit   : "
+00269F  1  20 20 20 3A  
+0026A3  1  20           
+0026A4  1  00           		.byte	0
+0026A5  1               
+0026A5  1  54 72 61 63  MSGTRK:		.byte	"Tracks : "
+0026A9  1  6B 73 20 3A  
+0026AD  1  20           
+0026AE  1  00           		.byte	0
+0026AF  1  53 74 65 70  		.byte	"Step   : "
+0026B3  1  20 20 20 3A  
+0026B7  1  20           
+0026B8  1  00           		.byte	0
+0026B9  1  53 65 63 2F  MSGSEC:		.byte	"Sec/Trk: "
+0026BD  1  54 72 6B 3A  
+0026C1  1  20           
+0026C2  1  00           		.byte	0
+0026C3  1  48 65 61 64  MSGHEA:		.byte	"Heads  : "
+0026C7  1  73 20 20 3A  
+0026CB  1  20           
+0026CC  1  00           		.byte	0
+0026CD  1  44 65 6E 73  MSGDEN:		.byte	"Density: "
+0026D1  1  69 74 79 3A  
+0026D5  1  20           
+0026D6  1  00           		.byte	0
+0026D7  1  42 79 74 2F  MSGBYT:		.byte	"Byt/Sec: "
+0026DB  1  53 65 63 3A  
+0026DF  1  20           
+0026E0  1  00           		.byte	0
+0026E1  1  53 65 6C 65  		.byte	"Select : "
+0026E5  1  63 74 20 3A  
+0026E9  1  20           
+0026EA  1  00           		.byte	0
+0026EB  1  53 65 72 52  		.byte	"SerRate: "
+0026EF  1  61 74 65 3A  
+0026F3  1  20           
+0026F4  1  00           		.byte	0
+0026F5  1  D4 72 61 63  		.byte	'T'+128, "racks ", 'S'+128, "ecs ", 'H'+128, "eads ", 'D'+128, "ensity ", 'B'+128, "ytes", EOL
+0026F9  1  6B 73 20 D3  
+0026FD  1  65 63 73 20  
+002715  1  D7 72 69 74  		.byte	'W'+128, "rite  ", 'X'+128, "xit", EOL
+002719  1  65 20 20 D8  
+00271D  1  78 69 74 9B  
+002721  1  00           		.byte	0
+002722  1               
+002722  1  44 3A 53 41  sallycom:	.byte	"D:SALLY2.COM",EOL
+002726  1  4C 4C 59 32  
+00272A  1  2E 43 4F 4D  
+00272F  1  61 64 64 72  msgadr:		.byte	"address:",0
+002733  1  65 73 73 3A  
+002737  1  00           
+002738  1  00 00        ATADR:		.word	0
+00273A  1  00 00        SALLYADR:	.word	0
+00273C  1  00 00        SALLYLEN:	.word	0
+00273E  1  00 00        DUMPADR:	.word	0
+002740  1  00           CNT:		.byte	0
+002741  1  00           BUFFER:		.byte	0
+002741  1               

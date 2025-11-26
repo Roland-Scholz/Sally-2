@@ -232,9 +232,8 @@ SETADR:		lda	#0
 		sta	DBUFLO
 		lda	#>BUFFER
 		sta	DBUFHI
-		lda	#3
-		sta	DBYTLO
 		lda	#0
+		sta	DBYTLO
 		sta	DBYTHI
 		lda	SALLYADR
 		sta	DAUX1
@@ -242,7 +241,8 @@ SETADR:		lda	#0
 		sta	DAUX2
 		jmp	SIOV
 
-PUTRAM:		lda	#'W'	
+PUTRAM:		jsr	SETADR
+		lda	#'W'	
 		sta	DCOMND
 		lda	#128
 		sta	DSTATS
@@ -258,7 +258,8 @@ PUTRAM:		lda	#'W'
 		sta	DBYTHI
 		jmp	SIOV
 
-GETRAM:		lda	#'R'
+GETRAM:		jsr	SETADR
+		lda	#'R'
 		sta	DCOMND
 		lda	#64
 		sta	DSTATS
@@ -270,12 +271,21 @@ GETRAM:		lda	#'R'
 		sta	DBYTHI
 		jmp	SIOV
 		
-GOTOADR:	lda	#'G'
+GOTOADR:	jsr	SETADR
+		lda	#'Z'
+		sta	DDEVIC
+		lda	#1
+		sta	DUNIT
+		lda	#'G'
 		sta	DCOMND
 		lda	#0
+		sta	DSTATS
+		lda	SALLYADR
 		sta	DAUX1
-		sta	DBYTLO
+		lda	SALLYADR+1
 		sta	DAUX2
+		lda	#0
+		sta	DBYTLO
 		sta	DBYTHI
 		jmp	SIOV
 ;
@@ -288,8 +298,12 @@ GOTO:		jsr	getadr
 		sta	SALLYADR
 		lda	WORD+1
 		sta	SALLYADR+1
-		jsr	SETADR
 		jsr	GOTOADR
+		lda	SALLYADR+1
+		jsr	puthex
+		lda	SALLYADR
+		jsr	puthex
+		jsr	GETKEY
 GOTOEND:	jmp	START
 ;
 ;
@@ -297,24 +311,22 @@ GOTOEND:	jmp	START
 VERSION:	lda	#0
 		sta	SALLYADR
 		sta	SALLYADR+1
-		jsr	SETADR
 		jsr	GETRAM
 		
-		clc
-		lda	BUFFER+$3a
-		adc	BUFFER+$40
+		sec
+		lda	BUFFER+$2f
+		sbc	#$1f
 		sta	SALLYADR
-		lda	BUFFER+$3b
-		adc	BUFFER+$41		
+		lda	BUFFER+$30
+		sbc	#0
 		sta	SALLYADR+1
-		jsr	SETADR
 		jsr	GETRAM
 		
-		ldx	#12
+		ldx	#0
 VERSION1:	lda	BUFFER,x
 		jsr	PRINT
 		inx
-		cpx	#12+16
+		cpx	#16
 		bne	VERSION1
 		jsr	NEWLINE
 		jsr	GETKEY		
@@ -323,17 +335,9 @@ VERSION1:	lda	BUFFER,x
 ;
 ;
 ;
-UPLOAD:		jsr	openfile
-;		tya
-;		jsr	puthex
-		
+UPLOAD:		jsr	openfile	
 		jsr	readfile
-;		tya
-;		jsr	puthex
-
 		jsr	closefile
-;		tya
-;		jsr	puthex
 		
 		ldx	#$10
 		lda	ICBLH,x
@@ -356,10 +360,11 @@ upoload1:	lda	SALLYLEN+1
 		lda	#32
 		jsr	PRINT
 		
-		jsr	SETADR
 		jsr	PUTRAM
 		tya
 		jsr	puthex
+		tay
+		bmi	uploadex
 		jsr	NEWLINE
 		
 		inc	SALLYADR+1
@@ -367,8 +372,25 @@ upoload1:	lda	SALLYLEN+1
 		dec	SALLYLEN+1
 		bpl	upoload1
 		
+		lda	#0
+		sta	SALLYADR
+		lda	#$20
+		sta	SALLYADR+1
+		jsr	GETRAM
+		
+		sec
+		lda	BUFFER+$2f
+		sbc	#$0f
+		sta	SALLYADR
+		lda	BUFFER+$30
+		sbc	#0
+		adc	#$20-1
+		sta	SALLYADR+1
+		
 		jsr	GETKEY
-		jmp	START
+		jsr	GOTOADR
+		
+uploadex:	jmp	START
 
 ;
 ;
@@ -416,8 +438,9 @@ closefile:	ldx	#$10
 ;
 ;
 dumpbuf:	ldx	#0
-		ldy	#16
-		sty	WORD
+		ldy	#8
+		lda	#16
+		sta	WORD
 
 		lda	SALLYADR
 		sta	DUMPADR
@@ -428,16 +451,36 @@ dumpbuf2:	jsr	dumpadr
 dumpbuf1:	lda	BUFFER,x
 		jsr	puthex
 		inx
-		txa
-		and	#15
-		cmp	#8
-		bne	dumpbuf3
-		lda	#32
-		jsr	PRINT
+		jsr	SPACE
 dumpbuf3:	dey
 		bne	dumpbuf1
+		
+		txa
+		sec
+		sbc	#8
+		tax
+
+		ldy	#8
+		lda	#'|'
+		jsr	PRINT
+		
+dumpbuf5:	lda	BUFFER,x
+		and	#$7f
+		cmp	#32
+		bcc	dumpbuf4
+		cmp	#$7d
+		bcc	dumpbuf6
+dumpbuf4:	lda	#'.'
+dumpbuf6:	jsr	PRINT
+		inx
+		dey
+		bne	dumpbuf5
+		
+		lda	#'|'
+		jsr	PRINT
 		jsr	NEWLINE
-		ldy	#16
+		
+		ldy	#8
 		dec	WORD
 		bne	dumpbuf2
 		rts
@@ -450,7 +493,7 @@ dumpadr:	lda	DUMPADR+1
 		jsr	PRINT
 		clc
 		lda	DUMPADR
-		adc	#16
+		adc	#8
 		sta	DUMPADR
 		bcc	dumpadr1
 		inc	DUMPADR+1
@@ -477,14 +520,19 @@ DUMP:		jsr	getadr
 		jmp	START
 DUMP1:		cmp	#EOL
 		bne	DUMP2
+		clc
+		lda	SALLYADR
+		adc	#128
+		sta	SALLYADR
+		bcc	DUMP4
 		inc	SALLYADR+1
-		jmp	DUMP3
+DUMP4:		jmp	DUMP3
+
 DUMP2:		lda	WORD
 		sta	SALLYADR
 		lda	WORD+1
 		sta	SALLYADR+1
 DUMP3:		jsr	NEWLINE
-		jsr	SETADR
 		jsr	GETRAM
 		jsr	dumpbuf
 		jmp	DUMP
@@ -605,6 +653,8 @@ putnib:		cmp	#10
 putnib1:	adc	#'0'
 		jmp	PRINT
 
+SPACE:		lda	#32
+		bne	PRINT
 NEWLINE:	lda	#EOL
 PRINT:		pha	
 		txa	

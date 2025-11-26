@@ -26,8 +26,8 @@ move *.o obj 2> nul > nul
 move *.a obj 2> nul > nul
 
 rem copy boot.atr e:
-"C:\Program Files (x86)\Altirra\Altirra64.exe" mydos90k.atr
-rem aspeqt mydos90k.atr
+rem "C:\Program Files (x86)\Altirra\Altirra64.exe" mydos90k.atr
+"C:\Program Files\aspeqt\AspeQt.exe"
 rem pause
 goto eof
 

@@ -17,41 +17,41 @@
    1:				;--------------------------------------------------
    2:				; Equates for Sally2 Hi-Speed-SIO code
    3:				;--------------------------------------------------
-   4:     -	0000          	NOHIGHSPEEDSIO	EQU	0
+   4:     -	0000          	NOHIGHSPEEDSIO		EQU	0
    5:				;
    6:				;--------------------------------------------------
    7:				; Track-Buffer 26*256 bytes
    8:				;--------------------------------------------------
-   9:     -	0800          	TRKBUFFER	EQU	00800h
-  10:				
-  11:     -	0028          	SIONORMAL	EQU	40
-  12:     -	0008          	SIOFAST		EQU	8
+   9:     -	0800          	TRKBUFFER		EQU	00800h
+  10:					
+  11:     -	0028          	SIONORMAL		EQU	40
+  12:     -	0008          	SIOFAST			EQU	8
   13:				;--------------------------------------------------
   14:				;
   15:				;--------------------------------------------------
   16:				;
   17:				;
   18:				;
-  19:     -	0020          	PRINTER	EQU	20H		;PRINTER OUTPUT/INPUTS
-  20:     -	0030          	LATCH	EQU	30H		;DRIVE CONTROL LATCH
-  21:     -	0040          	WD179X	EQU	40H		;WD TYPE DISK CONTROLLER
-  22:				;
-  23:     -	0050          	SERIN	EQU	50H		;RS232 SERIAL INPUT
-  24:				;
-  25:     -	0050          	ATROUT	EQU	50H		;ATARI SERIAL OUTPUT
-  26:     -	0051          	SEROUT	EQU	51H		;RS232 SERIAL OUTPUT
-  27:     -	0052          	BANKSW	EQU	52H		;ROM BANKSWITCH BIT
-  28:     -	0053          	STROBE	EQU	53H		;PRINTER STROBE
-  29:     -	0054          	INDXCLR	EQU	54H		;INDEX CONTROL FLOP CLEAR
-  30:     -	0055          	DTR	EQU	55H		;DTR OUTPUT CONTROL
-  31:     -	0056          	INDXSET	EQU	56H		;INDEX CONTROL FLOP SET
-  32:     -	0057          	CDMUX	EQU	57H		;ATARI CMD/DATA MUX CONTROL
-  33:				;
-  34:     -	0070          	ATARI	EQU	70H		;ATARI INPUT BITS PORT
-  35:     -	0080          	CTC0	EQU	80H		;ZILOG COUNTER/TIMER 0
-  36:     -	0081          	CTC1	EQU	81H		;ZILOG COUNTER/TIMER 1
-  37:     -	0082          	CTC2	EQU	82H		;ZILOG COUNTER/TIMER 2
-  38:     -	0083          	CTC3	EQU	83H		;ZILOG COUNTER/TIMER 3
+  19:     -	0020          	PRINTER			EQU	20H		;PRINTER OUTPUT/INPUTS
+  20:     -	0030          	LATCH			EQU	30H		;DRIVE CONTROL LATCH
+  21:     -	0040          	WD179X			EQU	40H		;WD TYPE DISK CONTROLLER
+  22:				;		
+  23:     -	0050          	SERIN			EQU	50H		;RS232 SERIAL INPUT
+  24:				;		
+  25:     -	0050          	ATROUT			EQU	50H		;ATARI SERIAL OUTPUT
+  26:     -	0051          	SEROUT			EQU	51H		;RS232 SERIAL OUTPUT
+  27:     -	0052          	BANKSW			EQU	52H		;ROM BANKSWITCH BIT
+  28:     -	0053          	STROBE			EQU	53H		;PRINTER STROBE
+  29:     -	0054          	INDXCLR			EQU	54H		;INDEX CONTROL FLOP CLEAR
+  30:     -	0055          	DTR			EQU	55H		;DTR OUTPUT CONTROL
+  31:     -	0056          	INDXSET			EQU	56H		;INDEX CONTROL FLOP SET
+  32:     -	0057          	CDMUX			EQU	57H		;ATARI CMD/DATA MUX CONTROL
+  33:				;		
+  34:     -	0070          	ATARI			EQU	70H		;ATARI INPUT BITS PORT
+  35:     -	0080          	CTC0			EQU	80H		;ZILOG COUNTER/TIMER 0
+  36:     -	0081          	CTC1			EQU	81H		;ZILOG COUNTER/TIMER 1
+  37:     -	0082          	CTC2			EQU	82H		;ZILOG COUNTER/TIMER 2
+  38:     -	0083          	CTC3			EQU	83H		;ZILOG COUNTER/TIMER 3
   39:				;
   40:     -	0000          	CTC_D0_VECTOR:		EQU	00000000B	;Data is a Vector
   41:     -	0001          	CTC_D0_CONTROL:		EQU	00000001B	;Data is a Control Word
@@ -68,9 +68,9 @@
   52:     -	0000          	CTC_D7_INT_DIS:		EQU	00000000B	;Disables Interrupt
   53:     -	0080          	CTC_D7_INT_EN:		EQU	10000000B	;Enables Interrupt
   54:				;
-  55:     -	0000          	NULL	EQU	00H
-  56:     -	000D          	CR	EQU	0DH
-  57:     -	000A          	LF	EQU	0AH
+  55:     -	0000          	NULL			EQU	00H
+  56:     -	000D          	CR			EQU	0DH
+  57:     -	000A          	LF			EQU	0AH
   58:				;
 **** ..\src\SALLYMON.MAC ****
   16:				

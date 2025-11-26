@@ -163,6 +163,12 @@ IF SALLYBUILD
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
+		LD	A, SIONORMAL				;init Pokey-divisor
+		LD	(pokeydiv), A
+		
+		LD	A, 2
+		LD	(direct), A
+		
 		LD	HL, 0ffffh				;reset drive / track buffer
 		LD	(drive), HL
 
@@ -190,12 +196,6 @@ IF SALLYBUILD
 		LD	(SalyDISKID+4), HL
 		LD	(SalyDISKID+6), HL
 
-		LD	A, SIONORMAL
-		LD	(pokeydiv), A
-		XOR	A
-;		LD	(hispeed), A
-		LD	A, 2
-		LD	(direct), A
 		LD	A, 0c3h					;'JP' instruction
 		LD	(XMITBUF), A
 		LD	(RXBLOCK), A
@@ -230,6 +230,7 @@ ENDIF	;SALLYBUILD
 
 
 IF SALLYBUILD
+
 SalyLogon:
 		LD	(RWMAX),A				;DO LESS RETRIES IN ATARI MODE
 
@@ -278,18 +279,23 @@ SalySEL4:
 		LD	IX, dcb
 		LD	HL, id
 		LD	(dcb + DSKPTR), HL
-		LD	A, RIDCMD
+		LD	HL, 6
+		LD	(dcb + DSKAUX), HL
+		LD	A, RIDCMD+4				;read address + settle delay
 		LD	(CMDBYT), A
 		LD	A, 018h					;substitute JR	Z,xx by JR xx
 		LD	(DISK3 + 031h), A
-		LD	B, 6
+		LD	B, 3
 SalySEL4A:
 		PUSH	BC
 		CALL	SalyDISK3				;DISK3: READ 6 BYTE ID RECORD
 		POP	BC
+		LD	A, (dcb + DSKSTS)
+		OR	A
+		JR	Z, SalySEL4B
 		DJNZ	SalySEL4A
 
-		LD	A, 028h					;reset JR Z,xx
+SalySEL4B:	LD	A, 028h					;reset JR Z,xx
 		LD	(DISK3 + 031h), A
 			
 		POP	IX
@@ -481,7 +487,7 @@ dskreadfn:
 
 		CALL	checktrack
 		JP	Z, match
-;		ld	a, 'N'
+; 		ld	a, 'N'
 ;		CALL	seroutfn
 		LD	(drive), DE				;save new drive and track
 		PUSH	IX					;save IX
@@ -547,6 +553,7 @@ readtrack:
 		PUSH	BC
 		CALL	compbufadr
 		LD	(dcb + DSKPTR), HL
+;		CALL	dumpdcb
 		CALL	DISKV
 		POP	BC
 
@@ -616,7 +623,7 @@ checktrack:
 		LD	D, (IX + DSKTRK)			;high
 		LD	E, (IX + DSKDRV)			;low
 		OR	A					;clear carry
-		sbc	HL, DE
+		SBC	HL, DE
 		RET
 
 ;--------------------------------------------------
@@ -639,7 +646,6 @@ getspeed:
 	IF NOHIGHSPEEDSIO <> 1
 		LD	A, SIOFAST
 		LD	(HL), A
-;		LD	(hispeed), A
 	ELSE
 		LD	(HL), SIONORMAL
 	ENDIF	; HIGHSPEEDSIO
@@ -835,7 +841,7 @@ serdumpcpl:
 		PUSH	BC
 		PUSH	DE
 		LD	D, 255
-		JR	serdump1
+		JP	serdump1
 
 diskiodebug:	LD	a, (CMDBYT)
 		CP	080h
@@ -1131,7 +1137,9 @@ time19600a:
 		RET						;10
 
 	ENDIF
-	
+ENDIF	; SALLYBUILD
+
+IF WD1772
 SalyCMDOUT:
 		OUT	(CMDREG),A				;OUTPUT DISK CONTROLLER COMMAND BYTE
 slyCMDT1:
@@ -1144,7 +1152,7 @@ CMDT3:
 		BIT	0, A
 		JR	NZ, slyCMDT1
 		RET
-		ENDIF	; SALLYBUILD
+ENDIF
 
 ;--------------------------------------------------
 ; 11 times port:value
@@ -1192,7 +1200,6 @@ dsector:	DB	0, 0
 direct:		DB	0
 
 pokeydiv:	DB	SIONORMAL
-;hispeed:	DB	0
 
 drive:		DB	255
 thetrack:	DB	255
@@ -1213,6 +1220,14 @@ dcb:		DB	0					;DISK OPERATION CODE
 
 id:		DW	0, 0, 0
 		
+		include	version.asm
+		
+		di
+		ld	hl,02000h
+		ld	de,00000h
+		ld	bc,02000h
+		ldir
+		jp	RAMTST
 ENDIF	;SALLYBUILD
 ;
 ;
