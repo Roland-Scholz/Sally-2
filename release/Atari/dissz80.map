@@ -1,0 +1,993 @@
+Modules list:
+-------------
+DISSZ80.o:
+    CODE              Offs=000000  Size=0022C9  Align=00001  Fill=0000
+    RODATA            Offs=000000  Size=00028C  Align=00001  Fill=0000
+    BSS               Offs=000000  Size=0002CB  Align=00001  Fill=0000
+    DATA              Offs=000000  Size=00009E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_directerrno.o):
+    CODE              Offs=0022C9  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_file.o):
+    DATA              Offs=00009E  Size=00001E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_hextab.o):
+    RODATA            Offs=00028C  Size=000010  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_longminstr.o):
+    RODATA            Offs=00029C  Size=00000C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_mappederrno.o):
+    CODE              Offs=0022D3  Size=000010  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_oserror.o):
+    BSS               Offs=0002CB  Size=000001  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_printf.o):
+    CODE              Offs=0022E3  Size=0003A5  Align=00001  Fill=0000
+    BSS               Offs=0002CC  Size=00002B  Align=00001  Fill=0000
+    DATA              Offs=0000BC  Size=000003  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(_seterrno.o):
+    CODE              Offs=002688  Size=000009  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(add.o):
+    CODE              Offs=002691  Size=00001C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(addysp.o):
+    CODE              Offs=0026AD  Size=00000E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(aslax1.o):
+    CODE              Offs=0026BB  Size=000008  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(asrax1.o):
+    CODE              Offs=0026C3  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(asrax2.o):
+    CODE              Offs=0026CD  Size=00000F  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(asrax3.o):
+    CODE              Offs=0026DC  Size=000014  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(asrax4.o):
+    CODE              Offs=0026F0  Size=000019  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(axlong.o):
+    CODE              Offs=002709  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(bneg.o):
+    CODE              Offs=002716  Size=00000E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(callmain.o):
+    CODE              Offs=002724  Size=000017  Align=00001  Fill=0000
+    DATA              Offs=0000BF  Size=000004  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(condes.o):
+    CODE              Offs=00273B  Size=00000C  Align=00001  Fill=0000
+    DATA              Offs=0000C3  Size=000025  Align=00001  Fill=0000
+    ONCE              Offs=000000  Size=00000C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(crt0.o):
+    BSS               Offs=0002F7  Size=000005  Align=00001  Fill=0000
+    STARTUP           Offs=000000  Size=000063  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ctype.o):
+    RODATA            Offs=0002A8  Size=000100  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decax1.o):
+    CODE              Offs=002747  Size=000007  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decsp2.o):
+    CODE              Offs=00274E  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decsp3.o):
+    CODE              Offs=00275B  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decsp4.o):
+    CODE              Offs=002768  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decsp5.o):
+    CODE              Offs=002775  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(decsp6.o):
+    CODE              Offs=002782  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(do_oserr.o):
+    CODE              Offs=00278F  Size=000004  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(dosdetect.o):
+    DATA              Offs=0000E8  Size=000001  Align=00001  Fill=0000
+    ONCE              Offs=00000C  Size=00004B  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(errno.o):
+    BSS               Offs=0002FC  Size=000002  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(exehdr.o):
+    EXEHDR            Offs=000000  Size=000002  Align=00001  Fill=0000
+    MAINHDR           Offs=000000  Size=000004  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(exetrailer.o):
+    AUTOSTRT          Offs=000000  Size=000006  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(fdtab.o):
+    DATA              Offs=0000E9  Size=00002C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(fdtoiocb.o):
+    CODE              Offs=002793  Size=000022  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(fwrite.o):
+    CODE              Offs=0027B5  Size=00007B  Align=00001  Fill=0000
+    BSS               Offs=0002FE  Size=000002  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(getargs.o):
+    ONCE              Offs=000057  Size=0000A0  Align=00001  Fill=0000
+    INIT              Offs=000000  Size=000063  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(icmp.o):
+    CODE              Offs=002830  Size=00002E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incax1.o):
+    CODE              Offs=00285E  Size=000007  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incaxy.o):
+    CODE              Offs=002865  Size=00000B  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp1.o):
+    CODE              Offs=002870  Size=000007  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp2.o):
+    CODE              Offs=002877  Size=000016  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp3.o):
+    CODE              Offs=00288D  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp4.o):
+    CODE              Offs=002892  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp5.o):
+    CODE              Offs=002897  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(incsp6.o):
+    CODE              Offs=00289C  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(inviocb.o):
+    CODE              Offs=0028A1  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ldaui.o):
+    CODE              Offs=0028A6  Size=000009  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ldaxi.o):
+    CODE              Offs=0028AF  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ldaxsp.o):
+    CODE              Offs=0028BC  Size=000009  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(leaaxsp.o):
+    CODE              Offs=0028C5  Size=00000C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(linc.o):
+    CODE              Offs=0028D1  Size=000011  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lmul.o):
+    CODE              Offs=0028E2  Size=00005C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lneg.o):
+    CODE              Offs=00293E  Size=00001E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lpush.o):
+    CODE              Offs=00295C  Size=000021  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lsave.o):
+    CODE              Offs=00297D  Size=00001A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lsub.o):
+    CODE              Offs=002997  Size=000027  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(lt.o):
+    CODE              Offs=0029BE  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ltoa.o):
+    CODE              Offs=0029C8  Size=000095  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(makebool.o):
+    CODE              Offs=002A5D  Size=00002C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(memcpy.o):
+    CODE              Offs=002A89  Size=00003C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(memset.o):
+    CODE              Offs=002AC5  Size=00005D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(mul.o):
+    CODE              Offs=002B22  Size=000045  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(mul8.o):
+    CODE              Offs=002B67  Size=00003A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ne.o):
+    CODE              Offs=002BA1  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(negabs.o):
+    CODE              Offs=002BAB  Size=000012  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(or.o):
+    CODE              Offs=002BBD  Size=000012  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(oserror.o):
+    CODE              Offs=002BCF  Size=00001A  Align=00001  Fill=0000
+    RODATA            Offs=0003A8  Size=000038  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(popptr1.o):
+    CODE              Offs=002BE9  Size=00000E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(printf.o):
+    CODE              Offs=002BF7  Size=000033  Align=00001  Fill=0000
+    BSS               Offs=000300  Size=000001  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(push1.o):
+    CODE              Offs=002C2A  Size=000005  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(pusha.o):
+    CODE              Offs=002C2F  Size=000016  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(pushax.o):
+    CODE              Offs=002C45  Size=00001A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(pushwsp.o):
+    CODE              Offs=002C5F  Size=00001C  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(return0.o):
+    CODE              Offs=002C7B  Size=000004  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(rwcommon.o):
+    CODE              Offs=002C7F  Size=00002D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(shrax3.o):
+    CODE              Offs=002CAC  Size=00000E  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(sprintf.o):
+    CODE              Offs=002CBA  Size=00002B  Align=00001  Fill=0000
+    BSS               Offs=000301  Size=000001  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(staspidx.o):
+    CODE              Offs=002CE5  Size=000016  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(staxsp.o):
+    CODE              Offs=002CFB  Size=00000B  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(staxspi.o):
+    CODE              Offs=002D06  Size=00001B  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(strcat.o):
+    CODE              Offs=002D21  Size=000031  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(strlen.o):
+    CODE              Offs=002D52  Size=000016  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(strlower.o):
+    CODE              Offs=002D68  Size=000028  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(sub.o):
+    CODE              Offs=002D90  Size=000015  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(subysp.o):
+    CODE              Offs=002DA5  Size=00000D  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(system_check.o):
+    SYSCHK            Offs=000000  Size=0000F6  Align=00001  Fill=0000
+    SYSCHKHDR         Offs=000000  Size=000004  Align=00001  Fill=0000
+    SYSCHKTRL         Offs=000000  Size=000006  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(tolower.o):
+    CODE              Offs=002DB2  Size=000010  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(toupper.o):
+    CODE              Offs=002DC2  Size=000010  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(udiv.o):
+    CODE              Offs=002DD2  Size=00004F  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ugt.o):
+    CODE              Offs=002E21  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ule.o):
+    CODE              Offs=002E2B  Size=00000A  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(ult.o):
+    CODE              Offs=002E35  Size=000008  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(vfprintf.o):
+    CODE              Offs=002E3D  Size=000061  Align=00001  Fill=0000
+    DATA              Offs=000115  Size=000008  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(vsnprintf.o):
+    CODE              Offs=002E9E  Size=0000DA  Align=00001  Fill=0000
+    DATA              Offs=00011D  Size=000008  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(vsprintf.o):
+    CODE              Offs=002F78  Size=000012  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(write.o):
+    CODE              Offs=002F8A  Size=000028  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(zerobss.o):
+    CODE              Offs=002FB2  Size=000023  Align=00001  Fill=0000
+C:\github\atari-tools\cc65\lib/atari.lib(zeropage.o):
+    ZEROPAGE          Offs=000000  Size=00001A  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+AUTOSTRT              000000  000005  000006  00001
+EXEHDR                000000  000001  000002  00001
+MAINHDR               000000  000003  000004  00001
+SYSCHKHDR             000000  000003  000004  00001
+SYSCHKTRL             000000  000005  000006  00001
+ZEROPAGE              000082  00009B  00001A  00001
+STARTUP               002000  002062  000063  00001
+ONCE                  002063  00215D  0000FB  00001
+CODE                  00215E  005132  002FD5  00001
+SYSCHK                002E00  002EF5  0000F6  00001
+RODATA                005133  005512  0003E0  00001
+DATA                  005513  005637  000125  00001
+INIT                  005638  00569A  000063  00001
+BSS                   00569B  00599C  000302  00001
+
+
+Exports list by name:
+---------------------
+__AUTOSTART__             000001 REA    __BSS_LOAD__              00569B RLA    
+__BSS_RUN__               00569B RLA    __BSS_SIZE__              000302 REA    
+__CONSTRUCTOR_COUNT__     000002 REA    __CONSTRUCTOR_TABLE__     00215A RLA    
+__DESTRUCTOR_COUNT__      000000 REA    __DESTRUCTOR_TABLE__      005513 RLA    
+__EXEHDR__                000001 REA    __LOWCODE_RUN__           002063 RLA    
+__LOWCODE_SIZE__          000000 REA    __MAIN_START__            002000 RLA    
+__RESERVED_MEMORY__       000000 REA    __STACKSIZE__             000800 REA    
+__STARTADDRESS__          002000 REA    __STARTUP__               000001 REA    
+__SYSCHK_LOAD__           002E00 RLA    __SYSTEM_CHECK__          000001 REA    
+__argc                    0055D2 RLA    __argv                    0055D4 RLA    
+__ctype                   0053DB RLA    __directerrno             004427 RLA    
+__do_oserror              0048ED RLA    __dos_type                0055FB RLA    
+__errno                   005997 RLA    __hextab                  0053BF RLA    
+__inviocb                 0049FF RLA    __longminstr              0053CF RLA    
+__mappederrno             004431 RLA    __oserror                 005966 RLA    
+__osmaperrno              004D2D RLA    __printf                  004534 RLA    
+__rwsetup                 004DDD RLA    __seterrno                0047E6 RLA    
+_abs                      004D09 RLA    _fwrite                   004913 RLA    
+_ltoa                     004B3E RLA    _main                     00438E RLA    
+_memcpy                   004BE7 RLA    _memset                   004C2B RLA    
+_printf                   004D55 RLA    _sprintf                  004E18 RLA    
+_stdout                   0055CB RLA    _strcat                   004E7F RLA    
+_strlen                   004EB0 RLA    _strlower                 004EC6 RLA    
+_tolower                  004F10 RLA    _toupper                  004F20 RLA    
+_ultoa                    004B7F RLA    _vfprintf                 004FD3 RLA    
+_vsprintf                 0050D6 RLA    _write                    0050E8 RLA    
+addysp                    00480C RLA    addysp1                   00480B RLA    
+aslax1                    004819 RLA    asrax1                    004821 RLA    
+asrax2                    00482B RLA    asrax3                    00483A RLA    
+asrax4                    00484E RLA    axlong                    004867 RLA    
+axulong                   00486D RLA    bnega                     004878 RLA    
+bnegax                    004874 RLA    booleq                    004BC1 RLA    
+boolge                    004BD2 RLA    boollt                    004BCA RLA    
+boolne                    004BBB RLA    boolugt                   004BE0 RLA    
+boolule                   004BD8 RLA    boolult                   004BDA RLA    
+callmain                  004882 RLA    decax1                    0048A5 RLA    
+decsp2                    0048AC RLA    decsp3                    0048B9 RLA    
+decsp4                    0048C6 RLA    decsp5                    0048D3 RLA    
+decsp6                    0048E0 RLA    detect                    00206F  LAI   
+donelib                   004899 RLA    fd_index                  0055FC RLA    
+fd_table                  005608 RLA    fdtoiocb                  0048F1 RLA    
+incax1                    0049BC RLA    incaxy                    0049C5 RLA    
+inceaxy                   004A2F RLA    incsp1                    0049CE RLA    
+incsp2                    0049DD RLA    incsp3                    0049EB RLA    
+incsp4                    0049F0 RLA    incsp5                    0049F5 RLA    
+incsp6                    0049FA RLA    initlib                   002063 RLA    
+initmainargs              0020BB RLAI   ldauidx                   004A04 RLA    
+ldaxidx                   004A0F RLA    ldaxysp                   004A1C RLA    
+leaa0sp                   004A23 RLA    mul8x16                   004CC7 RLA    
+mul8x16a                  004CD1 RLA    negax                     004D0D RLA    
+negeax                    004A9C RLA    popax                     0049D5 RLA    
+popptr1                   004D47 RLA    ptr1                      00008A RLZ    
+ptr2                      00008C RLZ    ptr3                      00008E RLZ    
+ptr4                      000090 RLZ    push1                     004D88 RLA    
+pusha                     004D91 RLA    pusha0                    004DA5 RLA    
+pushax                    004DA7 RLA    pusheax                   004AC3 RLA    
+pushw0sp                  004DBD RLA    pushwysp                  004DBF RLA    
+regbank                   000096 RLZ    regsave                   000086 RLZ    
+resteax                   004AE8 RLA    return0                   004DD9 RLA    
+saveeax                   004ADB RLA    shrax3                    004E0A RLA    
+sp                        000082 RLZ    sreg                      000084 RLZ    
+start                     002001 RLA    staspidx                  004E43 RLA    
+staxspidx                 004E64 RLA    staxysp                   004E5B RLA    
+subysp                    004F03 RLA    tmp1                      000092 RLZ    
+tmp2                      000093 RLZ    tmp3                      000094 RLZ    
+tmp4                      000095 RLZ    tosaddax                  0047F1 RLA    
+tosicmp                   004990 RLA    tosltax                   004B20 RLA    
+tosneax                   004D03 RLA    tosorax                   004D1D RLA    
+tossubax                  004EF0 RLA    tossubeax                 004AFB RLA    
+tosudivax                 004F32 RLA    tosugtax                  004F83 RLA    
+tosuleax                  004F8D RLA    tosultax                  004F95 RLA    
+tosumulax                 004C80 RLA    tosumuleax                004A46 RLA    
+vsnprintf                 004FFF RLA    zerobss                   005110 RLA    
+
+
+
+Exports list by value:
+----------------------
+__RESERVED_MEMORY__       000000 REA    __LOWCODE_SIZE__          000000 REA    
+__DESTRUCTOR_COUNT__      000000 REA    __SYSTEM_CHECK__          000001 REA    
+__EXEHDR__                000001 REA    __STARTUP__               000001 REA    
+__AUTOSTART__             000001 REA    __CONSTRUCTOR_COUNT__     000002 REA    
+sp                        000082 RLZ    sreg                      000084 RLZ    
+regsave                   000086 RLZ    ptr1                      00008A RLZ    
+ptr2                      00008C RLZ    ptr3                      00008E RLZ    
+ptr4                      000090 RLZ    tmp1                      000092 RLZ    
+tmp2                      000093 RLZ    tmp3                      000094 RLZ    
+tmp4                      000095 RLZ    regbank                   000096 RLZ    
+__BSS_SIZE__              000302 REA    __STACKSIZE__             000800 REA    
+__STARTADDRESS__          002000 REA    __MAIN_START__            002000 RLA    
+start                     002001 RLA    __LOWCODE_RUN__           002063 RLA    
+initlib                   002063 RLA    detect                    00206F  LAI   
+initmainargs              0020BB RLAI   __CONSTRUCTOR_TABLE__     00215A RLA    
+__SYSCHK_LOAD__           002E00 RLA    _main                     00438E RLA    
+__directerrno             004427 RLA    __mappederrno             004431 RLA    
+__printf                  004534 RLA    __seterrno                0047E6 RLA    
+tosaddax                  0047F1 RLA    addysp1                   00480B RLA    
+addysp                    00480C RLA    aslax1                    004819 RLA    
+asrax1                    004821 RLA    asrax2                    00482B RLA    
+asrax3                    00483A RLA    asrax4                    00484E RLA    
+axlong                    004867 RLA    axulong                   00486D RLA    
+bnegax                    004874 RLA    bnega                     004878 RLA    
+callmain                  004882 RLA    donelib                   004899 RLA    
+decax1                    0048A5 RLA    decsp2                    0048AC RLA    
+decsp3                    0048B9 RLA    decsp4                    0048C6 RLA    
+decsp5                    0048D3 RLA    decsp6                    0048E0 RLA    
+__do_oserror              0048ED RLA    fdtoiocb                  0048F1 RLA    
+_fwrite                   004913 RLA    tosicmp                   004990 RLA    
+incax1                    0049BC RLA    incaxy                    0049C5 RLA    
+incsp1                    0049CE RLA    popax                     0049D5 RLA    
+incsp2                    0049DD RLA    incsp3                    0049EB RLA    
+incsp4                    0049F0 RLA    incsp5                    0049F5 RLA    
+incsp6                    0049FA RLA    __inviocb                 0049FF RLA    
+ldauidx                   004A04 RLA    ldaxidx                   004A0F RLA    
+ldaxysp                   004A1C RLA    leaa0sp                   004A23 RLA    
+inceaxy                   004A2F RLA    tosumuleax                004A46 RLA    
+negeax                    004A9C RLA    pusheax                   004AC3 RLA    
+saveeax                   004ADB RLA    resteax                   004AE8 RLA    
+tossubeax                 004AFB RLA    tosltax                   004B20 RLA    
+_ltoa                     004B3E RLA    _ultoa                    004B7F RLA    
+boolne                    004BBB RLA    booleq                    004BC1 RLA    
+boollt                    004BCA RLA    boolge                    004BD2 RLA    
+boolule                   004BD8 RLA    boolult                   004BDA RLA    
+boolugt                   004BE0 RLA    _memcpy                   004BE7 RLA    
+_memset                   004C2B RLA    tosumulax                 004C80 RLA    
+mul8x16                   004CC7 RLA    mul8x16a                  004CD1 RLA    
+tosneax                   004D03 RLA    _abs                      004D09 RLA    
+negax                     004D0D RLA    tosorax                   004D1D RLA    
+__osmaperrno              004D2D RLA    popptr1                   004D47 RLA    
+_printf                   004D55 RLA    push1                     004D88 RLA    
+pusha                     004D91 RLA    pusha0                    004DA5 RLA    
+pushax                    004DA7 RLA    pushw0sp                  004DBD RLA    
+pushwysp                  004DBF RLA    return0                   004DD9 RLA    
+__rwsetup                 004DDD RLA    shrax3                    004E0A RLA    
+_sprintf                  004E18 RLA    staspidx                  004E43 RLA    
+staxysp                   004E5B RLA    staxspidx                 004E64 RLA    
+_strcat                   004E7F RLA    _strlen                   004EB0 RLA    
+_strlower                 004EC6 RLA    tossubax                  004EF0 RLA    
+subysp                    004F03 RLA    _tolower                  004F10 RLA    
+_toupper                  004F20 RLA    tosudivax                 004F32 RLA    
+tosugtax                  004F83 RLA    tosuleax                  004F8D RLA    
+tosultax                  004F95 RLA    _vfprintf                 004FD3 RLA    
+vsnprintf                 004FFF RLA    _vsprintf                 0050D6 RLA    
+_write                    0050E8 RLA    zerobss                   005110 RLA    
+__hextab                  0053BF RLA    __longminstr              0053CF RLA    
+__ctype                   0053DB RLA    __DESTRUCTOR_TABLE__      005513 RLA    
+_stdout                   0055CB RLA    __argc                    0055D2 RLA    
+__argv                    0055D4 RLA    __dos_type                0055FB RLA    
+fd_index                  0055FC RLA    fd_table                  005608 RLA    
+__BSS_RUN__               00569B RLA    __BSS_LOAD__              00569B RLA    
+__oserror                 005966 RLA    __errno                   005997 RLA    
+
+
+
+Imports list:
+-------------
+__AUTOSTART__ (exetrailer.o):
+    [linker generated]        C:\github\atari-tools\cc65\cfg/atari.cfg(7)
+__BSS_LOAD__ ([linker generated]):
+    exehdr.o                  atari/exehdr.s(4)
+__BSS_RUN__ ([linker generated]):
+    zerobss.o                 common/zerobss.s(8)
+    system_check.o            atari/system_check.s(24)
+__BSS_SIZE__ ([linker generated]):
+    zerobss.o                 common/zerobss.s(8)
+    system_check.o            atari/system_check.s(24)
+__CONSTRUCTOR_COUNT__ ([linker generated]):
+    condes.o                  runtime/condes.s(18)
+__CONSTRUCTOR_TABLE__ ([linker generated]):
+    condes.o                  runtime/condes.s(18)
+__DESTRUCTOR_COUNT__ ([linker generated]):
+    condes.o                  runtime/condes.s(19)
+__DESTRUCTOR_TABLE__ ([linker generated]):
+    condes.o                  runtime/condes.s(19)
+__EXEHDR__ (exehdr.o):
+    [linker generated]        C:\github\atari-tools\cc65\cfg/atari.cfg(5)
+__LOWCODE_RUN__ ([linker generated]):
+    crt0.o                    atari/crt0.s(18)
+__LOWCODE_SIZE__ ([linker generated]):
+    crt0.o                    atari/crt0.s(18)
+__MAIN_START__ ([linker generated]):
+    exehdr.o                  atari/exehdr.s(4)
+__RESERVED_MEMORY__ ([linker generated]):
+    system_check.o            atari/system_check.s(26)
+    crt0.o                    atari/crt0.s(16)
+    [linker generated]        C:\github\atari-tools\cc65\cfg/atari.cfg(25)
+__STACKSIZE__ ([linker generated]):
+    system_check.o            atari/system_check.s(25)
+    [linker generated]        C:\github\atari-tools\cc65\cfg/atari.cfg(25)
+__STARTADDRESS__ ([linker generated]):
+    system_check.o            atari/system_check.s(21)
+__STARTUP__ (crt0.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(13)
+__SYSCHK_LOAD__ ([linker generated]):
+    system_check.o            atari/system_check.s(20)
+__SYSTEM_CHECK__ (system_check.o):
+    [linker generated]        C:\github\atari-tools\cc65\cfg/atari.cfg(6)
+__argc (callmain.o):
+    getargs.o                 atari/getargs.s(17)
+__argv (callmain.o):
+    getargs.o                 atari/getargs.s(17)
+__ctype (ctype.o):
+    strlower.o                common/strlower.s(13)
+    toupper.o                 common/toupper.s(8)
+    tolower.o                 common/tolower.s(8)
+__directerrno (_directerrno.o):
+    inviocb.o                 /home/travis/build/cc65/cc65/asminc/errno.inc(10)
+    vsnprintf.o               /home/travis/build/cc65/cc65/asminc/errno.inc(10)
+__do_oserror (do_oserr.o):
+    write.o                   atari/write.s(5)
+__dos_type (dosdetect.o):
+    getargs.o                 atari/getargs.s(19)
+__errno (errno.o):
+    _seterrno.o               /home/travis/build/cc65/cc65/asminc/errno.inc(7)
+__hextab (_hextab.o):
+    ltoa.o                    common/ltoa.s(10)
+__inviocb (inviocb.o):
+    write.o                   atari/write.s(5)
+__longminstr (_longminstr.o):
+    ltoa.o                    common/ltoa.s(10)
+__mappederrno (_mappederrno.o):
+    do_oserr.o                /home/travis/build/cc65/cc65/asminc/errno.inc(10)
+__oserror (_oserror.o):
+    _mappederrno.o            /home/travis/build/cc65/cc65/asminc/errno.inc(7)
+    _directerrno.o            /home/travis/build/cc65/cc65/asminc/errno.inc(7)
+    write.o                   atari/write.s(5)
+__osmaperrno (oserror.o):
+    _mappederrno.o            /home/travis/build/cc65/cc65/asminc/errno.inc(8)
+__printf (_printf.o):
+    vsnprintf.o               common/vsnprintf.s(10)
+    vfprintf.o                common/vfprintf.s(10)
+__rwsetup (rwcommon.o):
+    write.o                   atari/write.s(5)
+__seterrno (_seterrno.o):
+    _mappederrno.o            /home/travis/build/cc65/cc65/asminc/errno.inc(9)
+    _directerrno.o            /home/travis/build/cc65/cc65/asminc/errno.inc(9)
+    fwrite.o                  /home/travis/build/cc65/cc65/asminc/errno.inc(9)
+_abs (negabs.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(20)
+_fwrite (fwrite.o):
+    vfprintf.o                common/vfprintf.s(10)
+_ltoa (ltoa.o):
+    _printf.o                 common/_printf.s(12)
+_main (DISSZ80.o):
+    callmain.o                runtime/callmain.s(11)
+_memcpy (memcpy.o):
+    vsnprintf.o               common/vsnprintf.s(10)
+_memset (memset.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(19)
+_printf (printf.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(15)
+_sprintf (sprintf.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(16)
+_stdout (_file.o):
+    printf.o                  common/printf.s(8)
+_strcat (strcat.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(17)
+_strlen (strlen.o):
+    _printf.o                 common/_printf.s(13)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(18)
+_strlower (strlower.o):
+    _printf.o                 common/_printf.s(13)
+_tolower (tolower.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(22)
+_toupper (toupper.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(21)
+_ultoa (ltoa.o):
+    _printf.o                 common/_printf.s(12)
+_vfprintf (vfprintf.o):
+    printf.o                  common/printf.s(8)
+_vsprintf (vsprintf.o):
+    sprintf.o                 common/sprintf.s(8)
+_write (write.o):
+    fwrite.o                  common/fwrite.s(10)
+addysp (addysp.o):
+    fwrite.o                  common/fwrite.s(11)
+    sprintf.o                 common/sprintf.s(8)
+    printf.o                  common/printf.s(8)
+    incsp6.o                  runtime/incsp6.s(8)
+    incsp5.o                  runtime/incsp5.s(8)
+    incsp4.o                  runtime/incsp4.s(8)
+    incsp3.o                  runtime/incsp3.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+addysp1 (addysp.o):
+    sub.o                     runtime/sub.s(8)
+    or.o                      runtime/or.s(9)
+    lsub.o                    runtime/lsub.s(11)
+    lmul.o                    runtime/lmul.s(9)
+aslax1 (aslax1.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+asrax1 (asrax1.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+asrax2 (asrax2.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+asrax3 (asrax3.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+asrax4 (asrax4.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+axlong (axlong.o):
+    _printf.o                 common/_printf.s(11)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+axulong (axlong.o):
+    _printf.o                 common/_printf.s(11)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+bnega (bneg.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+bnegax (bneg.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+booleq (makebool.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+boolge (makebool.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+boollt (makebool.o):
+    lt.o                      runtime/lt.s(8)
+boolne (makebool.o):
+    ne.o                      runtime/ne.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+boolugt (makebool.o):
+    ugt.o                     runtime/ugt.s(8)
+boolule (makebool.o):
+    ule.o                     runtime/ule.s(8)
+boolult (makebool.o):
+    ult.o                     runtime/ult.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+callmain (callmain.o):
+    crt0.o                    atari/crt0.s(15)
+decax1 (decax1.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+decsp2 (decsp2.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+decsp3 (decsp3.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+decsp4 (decsp4.o):
+    sprintf.o                 common/sprintf.s(8)
+    lpush.o                   runtime/lpush.s(12)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+decsp5 (decsp5.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+decsp6 (decsp6.o):
+    _printf.o                 common/_printf.s(11)
+donelib (condes.o):
+    crt0.o                    atari/crt0.s(14)
+fd_index (fdtab.o):
+    fdtoiocb.o                atari/fdtoiocb.s(10)
+fd_table (fdtab.o):
+    fdtoiocb.o                atari/fdtoiocb.s(10)
+fdtoiocb (fdtoiocb.o):
+    rwcommon.o                atari/rwcommon.s(8)
+incax1 (incax1.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incaxy (incaxy.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+inceaxy (linc.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp1 (incsp1.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp2 (incsp2.o):
+    vsnprintf.o               common/vsnprintf.s(9)
+    popptr1.o                 runtime/popptr1.s(8)
+    staxspi.o                 runtime/staxspi.s(9)
+    staspidx.o                runtime/staspidx.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp3 (incsp3.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp4 (incsp4.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp5 (incsp5.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+incsp6 (incsp6.o):
+    vsnprintf.o               common/vsnprintf.s(9)
+    fwrite.o                  common/fwrite.s(11)
+    vfprintf.o                common/vfprintf.s(9)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+initlib (condes.o):
+    crt0.o                    atari/crt0.s(14)
+initmainargs (getargs.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(14)
+ldauidx (ldaui.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+ldaxidx (ldaxi.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+ldaxysp (ldaxsp.o):
+    vsnprintf.o               common/vsnprintf.s(9)
+    fwrite.o                  common/fwrite.s(11)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+leaa0sp (leaaxsp.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+mul8x16 (mul8.o):
+    mul.o                     runtime/mul.s(8)
+mul8x16a (mul8.o):
+    mul.o                     runtime/mul.s(8)
+negax (negabs.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+negeax (lneg.o):
+    ltoa.o                    common/ltoa.s(9)
+popax (incsp2.o):
+    rwcommon.o                atari/rwcommon.s(7)
+    memcpy.o                  common/memcpy.s(14)
+    vsnprintf.o               common/vsnprintf.s(9)
+    ltoa.o                    common/ltoa.s(9)
+    _printf.o                 common/_printf.s(11)
+    strcat.o                  common/strcat.s(9)
+    memset.o                  common/memset.s(19)
+popptr1 (popptr1.o):
+    memcpy.o                  common/memcpy.s(14)
+    udiv.o                    runtime/udiv.s(9)
+    mul8.o                    runtime/mul8.s(9)
+    mul.o                     runtime/mul.s(9)
+    ltoa.o                    common/ltoa.s(9)
+ptr1 (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
+    vsnprintf.o               common/vsnprintf.s(11)
+    udiv.o                    runtime/udiv.s(10)
+    strlower.o                common/strlower.s(14)
+    popptr1.o                 runtime/popptr1.s(9)
+    mul8.o                    runtime/mul8.s(10)
+    mul.o                     runtime/mul.s(10)
+    ltoa.o                    common/ltoa.s(11)
+    fwrite.o                  common/fwrite.s(14)
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(12)
+    zerobss.o                 common/zerobss.s(9)
+    vfprintf.o                common/vfprintf.s(11)
+    strcat.o                  common/strcat.s(10)
+    staxspi.o                 runtime/staxspi.s(10)
+    staspidx.o                runtime/staspidx.s(9)
+    sprintf.o                 common/sprintf.s(9)
+    printf.o                  common/printf.s(9)
+    memset.o                  common/memset.s(20)
+    lmul.o                    runtime/lmul.s(10)
+    ldaxi.o                   runtime/ldaxi.s(8)
+    ldaui.o                   runtime/ldaui.s(8)
+    getargs.o                 atari/getargs.s(18)
+ptr2 (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
+    strlower.o                common/strlower.s(14)
+    ltoa.o                    common/ltoa.s(11)
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(12)
+    strlen.o                  common/strlen.s(12)
+    strcat.o                  common/strcat.s(10)
+    memset.o                  common/memset.s(20)
+ptr3 (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
+    ltoa.o                    common/ltoa.s(11)
+    memset.o                  common/memset.s(20)
+    lmul.o                    runtime/lmul.s(10)
+ptr4 (zeropage.o):
+    udiv.o                    runtime/udiv.s(10)
+    mul8.o                    runtime/mul8.s(10)
+    mul.o                     runtime/mul.s(10)
+    lmul.o                    runtime/lmul.s(10)
+    linc.o                    runtime/linc.s(8)
+push1 (push1.o):
+    _printf.o                 common/_printf.s(11)
+    vfprintf.o                common/vfprintf.s(9)
+pusha (pusha.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+pusha0 (pushax.o):
+    push1.o                   runtime/push1.s(8)
+pushax (pushax.o):
+    fwrite.o                  common/fwrite.s(11)
+    callmain.o                runtime/callmain.s(11)
+    _printf.o                 common/_printf.s(11)
+    printf.o                  common/printf.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+pusheax (lpush.o):
+    _printf.o                 common/_printf.s(11)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+pushw0sp (pushwsp.o):
+    vsprintf.o                common/vsprintf.s(8)
+pushwysp (pushwsp.o):
+    fwrite.o                  common/fwrite.s(11)
+    vfprintf.o                common/vfprintf.s(9)
+regbank (zeropage.o):
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(14)
+regsave (zeropage.o):
+    lsave.o                   runtime/lsave.s(9)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(10)
+resteax (lsave.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+return0 (return0.o):
+    ult.o                     runtime/ult.s(8)
+saveeax (lsave.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+shrax3 (shrax3.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+sp (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
+    vsnprintf.o               common/vsnprintf.s(11)
+    pushwsp.o                 runtime/pushwsp.s(8)
+    popptr1.o                 runtime/popptr1.s(9)
+    icmp.o                    runtime/icmp.s(9)
+    decsp6.o                  runtime/decsp6.s(8)
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(11)
+    vfprintf.o                common/vfprintf.s(11)
+    subysp.o                  runtime/subysp.s(9)
+    sub.o                     runtime/sub.s(9)
+    staxspi.o                 runtime/staxspi.s(10)
+    staxsp.o                  runtime/staxsp.s(8)
+    staspidx.o                runtime/staspidx.s(9)
+    sprintf.o                 common/sprintf.s(9)
+    pushax.o                  runtime/pushax.s(8)
+    pusha.o                   runtime/pusha.s(8)
+    printf.o                  common/printf.s(9)
+    or.o                      runtime/or.s(10)
+    memset.o                  common/memset.s(20)
+    lsub.o                    runtime/lsub.s(12)
+    lpush.o                   runtime/lpush.s(13)
+    lmul.o                    runtime/lmul.s(10)
+    leaaxsp.o                 runtime/leaaxsp.s(8)
+    ldaxsp.o                  runtime/ldaxsp.s(8)
+    incsp2.o                  runtime/incsp2.s(8)
+    incsp1.o                  runtime/incsp1.s(8)
+    decsp5.o                  runtime/decsp5.s(8)
+    decsp4.o                  runtime/decsp4.s(8)
+    decsp3.o                  runtime/decsp3.s(8)
+    decsp2.o                  runtime/decsp2.s(8)
+    crt0.o                    /home/travis/build/cc65/cc65/asminc/zeropage.inc(11)
+    addysp.o                  runtime/addysp.s(8)
+    add.o                     runtime/add.s(12)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(10)
+sreg (zeropage.o):
+    lneg.o                    runtime/lneg.s(11)
+    udiv.o                    runtime/udiv.s(10)
+    ltoa.o                    common/ltoa.s(11)
+    icmp.o                    runtime/icmp.s(9)
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(11)
+    lsub.o                    runtime/lsub.s(12)
+    lsave.o                   runtime/lsave.s(9)
+    lpush.o                   runtime/lpush.s(13)
+    lmul.o                    runtime/lmul.s(10)
+    linc.o                    runtime/linc.s(8)
+    axlong.o                  runtime/axlong.s(9)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(10)
+start (crt0.o):
+    exetrailer.o              atari/exetrailer.s(4)
+staspidx (staspidx.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+staxspidx (staxspi.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+staxysp (staxsp.o):
+    vsprintf.o                common/vsprintf.s(8)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+subysp (subysp.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tmp1 (zeropage.o):
+    mul.o                     runtime/mul.s(10)
+    ltoa.o                    common/ltoa.s(11)
+    _printf.o                 /home/travis/build/cc65/cc65/asminc/zeropage.inc(13)
+    staxspi.o                 runtime/staxspi.s(10)
+    staspidx.o                runtime/staspidx.s(9)
+    shrax3.o                  runtime/shrax3.s(8)
+    or.o                      runtime/or.s(10)
+    incaxy.o                  runtime/incaxy.s(8)
+    asrax4.o                  runtime/asrax4.s(9)
+    asrax3.o                  runtime/asrax3.s(9)
+    asrax2.o                  runtime/asrax2.s(8)
+    asrax1.o                  runtime/asrax1.s(8)
+    aslax1.o                  runtime/aslax1.s(8)
+    add.o                     runtime/add.s(12)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(11)
+tmp2 (zeropage.o):
+    lmul.o                    runtime/lmul.s(10)
+tmp3 (zeropage.o):
+    strcat.o                  common/strcat.s(10)
+    lmul.o                    runtime/lmul.s(10)
+tmp4 (zeropage.o):
+    lmul.o                    runtime/lmul.s(10)
+tosaddax (add.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosicmp (icmp.o):
+    ult.o                     runtime/ult.s(8)
+    ule.o                     runtime/ule.s(8)
+    ugt.o                     runtime/ugt.s(8)
+    ne.o                      runtime/ne.s(8)
+    lt.o                      runtime/lt.s(8)
+tosltax (lt.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosneax (ne.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosorax (or.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tossubax (sub.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tossubeax (lsub.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosudivax (udiv.o):
+    fwrite.o                  common/fwrite.s(12)
+tosugtax (ugt.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosuleax (ule.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosultax (ult.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+tosumulax (mul.o):
+    fwrite.o                  common/fwrite.s(12)
+tosumuleax (lmul.o):
+    DISSZ80.o                 ..\src\utils\DISSZ80.s(4547)
+vsnprintf (vsnprintf.o):
+    vsprintf.o                common/vsprintf.s(9)
+zerobss (zerobss.o):
+    crt0.o                    atari/crt0.s(15)
+

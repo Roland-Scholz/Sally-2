@@ -1,6 +1,8 @@
 PTR		=	0
 LFTMARGIN	=	$52
 
+DVSTAT		=	$2ea
+
 DDEVIC		=	$300
 DUNIT		=	$301
 DCOMND		=	$302
@@ -38,19 +40,36 @@ EOL		=	$9B
 ;		
 START:		lda	#0
 		sta	LFTMARGIN
+
 		lda	#<SALLYMSG
 		sta	PTR
 		lda	#>SALLYMSG
 		sta	PTR+1
 		jsr	PRTSTR
+
+		lda	#<MSGDUNIT
+		sta	PTR
+		lda	#>MSGDUNIT
+		sta	PTR+1
+		jsr	PRTSTR
+		
+		lda	DUNIT				;DUNIT
+		ldx	#0
+		jsr	PRTWORD
 		
 		jsr	GETKEY
 		cmp	#'D'
 		beq	DODUMP
+		cmp	#'F'
+		beq	DOFORMAT
 		cmp	#'G'
 		beq	DOGOTO
 		cmp	#'P'
 		beq	DOPERCOM
+		cmp	#'S'
+		beq	DOGETSTAT
+		cmp	#'T'
+		beq	DOTESTSEC
 		cmp	#'U'
 		beq	DOUPLOAD
 		cmp	#'V'
@@ -61,7 +80,10 @@ START:		lda	#0
 EXIT:		rts
 
 DODUMP:		jmp	DUMP
+DOFORMAT:	jmp	FORMAT
 DOGOTO:		jmp	GOTO
+DOGETSTAT:	jmp	GETSTAT
+DOTESTSEC:	jmp	TESTSEC
 DOUPLOAD:	jmp	UPLOAD
 DOVERSION:	jmp	VERSION
 
@@ -70,7 +92,7 @@ DOPERCOM:	lda	#<PERTXT0
 		lda	#>PERTXT0
 		sta	PTR+1
 		jsr	PRTSTR
-		
+				
 		jsr	GETKEY
 		jsr	PRINT
 		
@@ -81,8 +103,8 @@ DOPERCOM:	lda	#<PERTXT0
 		sbc	#'1'-2
 		sta	DUNIT
 		jsr	READPER				;read percom block
-		tya	
-		bmi	DOPERCOM			;iterate if error
+;		tya	
+;		bmi	DOPERCOM			;iterate if error
 		
 DOPERCOM1:	jsr	SHOWPER				;display percom block
 		
@@ -137,7 +159,14 @@ HEADS:		lda	#<MSGHEA
 		jsr	getbyte
 		sta	PERHEA
 		jmp	DOPERCOM1
-DENSITY:
+DENSITY:	lda	#<MSGDEN
+		sta	PTR
+		lda	#>MSGDEN
+		sta	PTR+1
+		jsr	PRTSTR
+		jsr	getbyte
+		sta	PERDEN
+		jmp	DOPERCOM1
 BYTES:		lda	#<MSGBYT
 		sta	PTR
 		lda	#>MSGBYT
@@ -176,8 +205,8 @@ SHOWPER:	lda	#<PERTXT1
 		
 		jsr	PRTSTR				;SIDES
 		lda	PERCOM+4
-		clc	
-		adc	#1
+;		clc	
+;		adc	#1
 		jsr	PRTWORD
 		
 		jsr	PRTSTR				;DESITY
@@ -218,7 +247,7 @@ READPER1:	sta	DCOMND
 		sta	DBYTLO
 		lda	#>12
 		sta	DBYTHI
-		jmp	SIOV
+		jmp	CALLSIO
 
 SETADR:		lda	#0
 		sta	DSTATS
@@ -228,10 +257,6 @@ SETADR:		lda	#0
 		sta	DDEVIC
 		lda	#1
 		sta	DUNIT
-		lda	#<BUFFER
-		sta	DBUFLO
-		lda	#>BUFFER
-		sta	DBUFHI
 		lda	#0
 		sta	DBYTLO
 		sta	DBYTHI
@@ -246,23 +271,17 @@ PUTRAM:		jsr	SETADR
 		sta	DCOMND
 		lda	#128
 		sta	DSTATS
-		lda	ATADR
-		sta	DBUFLO
-		lda	ATADR+1
-		sta	DBUFHI
-		lda	#0
-		sta	DAUX1
-		sta	DBYTLO
-		lda	#1
-		sta	DAUX2
-		sta	DBYTHI
-		jmp	SIOV
+		bne	GETRAM1
 
 GETRAM:		jsr	SETADR
 		lda	#'R'
 		sta	DCOMND
 		lda	#64
 		sta	DSTATS
+GETRAM1:	lda	#<BUFFER
+		sta	DBUFLO
+		lda	#>BUFFER
+		sta	DBUFHI
 		lda	#0
 		sta	DAUX1
 		sta	DBYTLO
@@ -308,6 +327,109 @@ GOTOEND:	jmp	START
 ;
 ;
 ;
+TESTSEC:	lda	#'1'
+		sta	DDEVIC
+		lda	#'R'
+		sta	DCOMND
+		lda	#<BUFFER
+		sta	DBUFLO
+		lda	#>BUFFER
+		sta	DBUFHI
+		lda	#1
+		sta	DAUX1
+		lda	#0
+		sta	DAUX2
+TESTSEC1:	lda	#64
+		sta	DSTATS
+		lda	#128
+		sta	DBYTLO
+		lda	#0
+		sta	DBYTHI
+		lda	DAUX2
+		bne	TESTSEC2
+		lda	DAUX1
+		cmp	#4
+		bcc	TESTSEC4
+TESTSEC2:	asl	DBYTLO
+		rol	DBYTHI
+TESTSEC4:	lda	DAUX2
+		jsr	puthex
+		lda	DAUX1
+		jsr	puthex
+		jsr	NEWLINE
+		jsr	CALLSIO
+		bmi	TESTSEC3
+		inc	DAUX1
+		bne	TESTSEC1
+		inc	DAUX2	
+		bne	TESTSEC1
+TESTSEC3:	jmp	START		
+
+;
+;
+;
+FORMAT:		lda	#'1'
+		sta	DDEVIC
+		lda	#'!'
+		sta	DCOMND
+		lda	#64
+		sta	DSTATS
+		lda	#<BUFFER
+		sta	DBUFLO
+		lda	#>BUFFER
+		sta	DBUFHI
+		lda	DTIMLO
+		pha
+		lda	#$ff
+		sta	DTIMLO
+		lda	#128
+		sta	DBYTLO
+		lda	#0
+		sta	DBYTHI
+		lda	PERDEN
+		and	#4
+		beq	FORMAT1
+		asl	DBYTLO
+		rol	DBYTHI
+FORMAT1:	jsr	CALLSIO
+		pla
+		sta	DTIMLO
+		jmp	START
+
+GETSTAT:	lda	#'1'
+		sta	DDEVIC
+		lda	#'S'
+		sta	DCOMND
+		lda	#64
+		sta	DSTATS
+		lda	#<DVSTAT
+		sta	DBUFLO
+		lda	#>DVSTAT
+		sta	DBUFHI
+		lda	#4
+		sta	DBYTLO
+		lda	#0
+		sta	DBYTHI
+		jsr	CALLSIO
+		
+		ldx	#0
+GETSTAT1:	lda	DVSTAT,x
+		jsr	puthex
+		jsr	SPACE
+		inx
+		cpx	#4
+		bne	GETSTAT1
+		jsr	GETKEY
+		jmp	START
+		
+CALLSIO:	jsr	SIOV
+		bpl	CALLSIO1
+		tya
+		jsr	puthex
+		jsr	SPACE
+		ldy	#128
+CALLSIO1:	rts
+		
 VERSION:	lda	#0
 		sta	SALLYADR
 		sta	SALLYADR+1
@@ -333,44 +455,43 @@ VERSION1:	lda	BUFFER,x
 		jmp	START
 		
 ;
+; uploads sally2.com to $2000 using a 256 buffer @ BUFFER
 ;
-;
-UPLOAD:		jsr	openfile	
-		jsr	readfile
-		jsr	closefile
-		
-		ldx	#$10
-		lda	ICBLH,x
-		sta	SALLYLEN+1
-		lda	ICBLL,x
-		sta	SALLYLEN
+UPLOAD:		jsr	openfile
 
 		lda	#0
 		sta	SALLYADR
-		sta	ATADR
 		lda	#$20
 		sta	SALLYADR+1
-		lda	#$30
-		sta	ATADR+1
 		
-upoload1:	lda	SALLYLEN+1
+upload1:	jsr	readfile			;read a page from file
+		lda	ICBLH,x
 		jsr	puthex
-		lda	SALLYLEN
+		lda	ICBLL,x
 		jsr	puthex
-		lda	#32
-		jsr	PRINT
+		jsr	SPACE
 		
-		jsr	PUTRAM
+		jsr	PUTRAM				;put to Sally RAM
 		tya
 		jsr	puthex
 		tay
 		bmi	uploadex
+		
+		jsr	SPACE
+		
+		lda	SALLYADR+1
+		jsr	puthex
+		lda	SALLYADR
+		jsr	puthex
+		
 		jsr	NEWLINE
 		
 		inc	SALLYADR+1
-		inc	ATADR+1
-		dec	SALLYLEN+1
-		bpl	upoload1
+		ldx	#$10
+		lda	ICBLH,x				;check if 256 were loaded
+		bne	upload1				;loop if yes
+
+		jsr	closefile
 		
 		lda	#0
 		sta	SALLYADR
@@ -415,13 +536,13 @@ openfile:	ldx	#$10
 readfile:	ldx	#$10
 		lda	#CGETB
 		sta	ICCOM,x
-		lda	#$00
+		lda	#<BUFFER
 		sta	ICBAL,x
-		lda	#$30
+		lda	#>BUFFER
 		sta	ICBAH,x
-		lda	#$ff
+		lda	#$00
 		sta	ICBLL,x
-		lda	#$ff
+		lda	#$01
 		sta	ICBLH,x
 		lda	#4
 		sta	ICAX1,x
@@ -765,17 +886,20 @@ SALLYMSG:	.byte	CLS
 		.byte	"* Sally 2 tools  *", EOL
 		.byte	"******************", EOL
 		.byte	EOL
-		.byte	"D - Dump memory",EOL
-		.byte	"G - Goto address",EOL
-		.byte	"P - Percom Block Config",EOL
-		.byte	"U - upload sally2.com",EOL
+		.byte	"D - Dump memory", EOL
+		.byte	"G - Goto address", EOL
+		.byte	"F - Format", EOL
+		.byte	"P - Percom Block Config", EOL
+		.byte	"S - Get Status", EOL
+		.byte	"T - Test sector 1", EOL
+		.byte	"U - upload sally2.com", EOL
 		.byte	"V - Show Sally 2 version", EOL
 		.byte	"X - EXIT", EOL
 		.byte	0
 		
 PERTXT0:	.byte	EOL
 		.byte	"Display PERCOM for"
-		.byte	" Unit (1-8)?"
+		.byte	" Unit (1-8 / x)?"
 		.byte	0
 		
 PERTXT1:	.byte	EOL
@@ -785,27 +909,27 @@ PERTXT1:	.byte	EOL
 		.byte	EOL
 		.byte	"****************"
 		.byte	EOL
-		.byte	"Unit   : "
+MSGDUNIT:	.byte	"Unit       : "
 		.byte	0
 		
-MSGTRK:		.byte	"Tracks : "
+MSGTRK:		.byte	"Tracks     : "
 		.byte	0
-		.byte	"Step   : "
+		.byte	"Step       : "
 		.byte	0
-MSGSEC:		.byte	"Sec/Trk: "
+MSGSEC:		.byte	"Sec/Trk    : "
 		.byte	0
-MSGHEA:		.byte	"Heads  : "
+MSGHEA:		.byte	"Heads (0-1): "
 		.byte	0
-MSGDEN:		.byte	"Density: "
+MSGDEN:		.byte	"Density    : "
 		.byte	0
-MSGBYT:		.byte	"Byt/Sec: "
+MSGBYT:		.byte	"Byt/Sec    : "
 		.byte	0
-		.byte	"Select : "
+		.byte	"Select     : "
 		.byte	0
-		.byte	"SerRate: "
+		.byte	"SerRate    : "
 		.byte	0
 		.byte	'T'+128, "racks ", 'S'+128, "ecs ", 'H'+128, "eads ", 'D'+128, "ensity ", 'B'+128, "ytes", EOL
-		.byte	'W'+128, "rite  ", 'X'+128, "xit", EOL
+		.byte	'W'+128, "rite  ", 'E', 'x'+128, "it", EOL
 		.byte	0
 
 sallycom:	.byte	"D:SALLY2.COM",EOL

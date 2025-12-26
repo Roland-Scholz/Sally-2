@@ -41,7 +41,7 @@ WRPCOMP		EQU	00000010B	;1770/1772/1773 Write Sector and Write Track commands onl
 ;
 	IF WD1772
 HLOAD		EQU	SPINWAIT	; Sally2
-STEPRATE	EQU	STEPRATE3	; Sally2 - 3ms step rate
+STEPRATE	EQU	STEPRATE0	; Sally2 - 6/3ms step rate
 	ELSE
 HLOAD		EQU	00001000B	; ATR 8000 original
 STEPRATE	EQU	STEPRATE3	; ATR 8000 original - 15ms step rate
@@ -597,9 +597,9 @@ IF WD1772
 	nop
 	ld	a, (OUTCPY)
 	and	FBS
-	ld	a, SKCMD+HLOAD+STEPRATE3
-	jr	NZ, STEP1
-	AND	11111100b
+	ld	a, SKCMD+HLOAD+STEPRATE3	;3ms for DD
+	jr	NZ, STEP1			;if HD Disk
+	ld	a, SKCMD+HLOAD+STEPRATE0	;switch to STEPRATE0 (3ms HD)
 STEP1:
 ELSE
 	LD	HL,RATES
