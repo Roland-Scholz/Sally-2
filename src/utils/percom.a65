@@ -23,7 +23,6 @@ ICBLL		=	$348
 ICBLH		=	$349
 ICAX1		=	$34A
 ICAX2		=	$34B
-
 		
 CIOV		=	$E456
 SIOV		=	$E459
@@ -32,6 +31,9 @@ CCOPEN		=	3
 CGETB		=	7
 CPUTB		=	11
 CCLOSE		=	12
+
+CREAD		=	64
+CWRITE		=	128
 
 CLS		=	$7D
 EOL		=	$9B
@@ -64,8 +66,12 @@ START:		lda	#0
 		beq	DOFORMAT
 		cmp	#'G'
 		beq	DOGOTO
+		cmp	#'N'
+		beq	DONACK
 		cmp	#'P'
 		beq	DOPERCOM
+		cmp	#'R'
+		beq	DORESET
 		cmp	#'S'
 		beq	DOGETSTAT
 		cmp	#'T'
@@ -82,7 +88,9 @@ EXIT:		rts
 DODUMP:		jmp	DUMP
 DOFORMAT:	jmp	FORMAT
 DOGOTO:		jmp	GOTO
+DONACK:		jmp	NACK
 DOGETSTAT:	jmp	GETSTAT
+DORESET:	jmp	RESET
 DOTESTSEC:	jmp	TESTSEC
 DOUPLOAD:	jmp	UPLOAD
 DOVERSION:	jmp	VERSION
@@ -97,14 +105,17 @@ DOPERCOM:	lda	#<PERTXT0
 		jsr	PRINT
 		
 		cmp	#'1'
-		bcc	START
-		cmp	#'8'+1
-		bcs	START
-		sbc	#'1'-2
+		bcs	DOPERCOM3
+		jmp	START
+DOPERCOM3:	cmp	#'8'+1
+		bcc	DOPERCOM2
+		jmp	START
+DOPERCOM2:	sbc	#'1'-2
 		sta	DUNIT
+		
 		jsr	READPER				;read percom block
-;		tya	
-;		bmi	DOPERCOM			;iterate if error
+		tya	
+		bmi	DOPERCOM			;iterate if error
 		
 DOPERCOM1:	jsr	SHOWPER				;display percom block
 		
@@ -269,14 +280,14 @@ SETADR:		lda	#0
 PUTRAM:		jsr	SETADR
 		lda	#'W'	
 		sta	DCOMND
-		lda	#128
+		lda	#CWRITE
 		sta	DSTATS
 		bne	GETRAM1
 
 GETRAM:		jsr	SETADR
 		lda	#'R'
 		sta	DCOMND
-		lda	#64
+		lda	#CREAD
 		sta	DSTATS
 GETRAM1:	lda	#<BUFFER
 		sta	DBUFLO
@@ -335,21 +346,24 @@ TESTSEC:	lda	#'1'
 		sta	DBUFLO
 		lda	#>BUFFER
 		sta	DBUFHI
-		lda	#1
+		lda	#1				;start at sector 1
 		sta	DAUX1
 		lda	#0
 		sta	DAUX2
-TESTSEC1:	lda	#64
+TESTSEC1:	lda	#CREAD
 		sta	DSTATS
-		lda	#128
+		lda	#128				;standard 128 bytes/sec
 		sta	DBYTLO
 		lda	#0
 		sta	DBYTHI
-		lda	DAUX2
-		bne	TESTSEC2
-		lda	DAUX1
+		lda	PERDEN				;double density?
+		and	#4
+		beq	TESTSEC4			;no, jump to readsection
+		lda	DAUX2				;yes, check if DAUX2 > 0
+		bne	TESTSEC2			;yes, switch to 256 bytes/sec
+		lda	DAUX1				;no, check if sector 1-3
 		cmp	#4
-		bcc	TESTSEC4
+		bcc	TESTSEC4			;yes, just read 128 bytes
 TESTSEC2:	asl	DBYTLO
 		rol	DBYTHI
 TESTSEC4:	lda	DAUX2
@@ -358,8 +372,8 @@ TESTSEC4:	lda	DAUX2
 		jsr	puthex
 		jsr	NEWLINE
 		jsr	CALLSIO
-		bmi	TESTSEC3
-		inc	DAUX1
+		bmi	TESTSEC3			;if error, quit read loop
+		inc	DAUX1				;increment DAUX1/2
 		bne	TESTSEC1
 		inc	DAUX2	
 		bne	TESTSEC1
@@ -368,11 +382,22 @@ TESTSEC3:	jmp	START
 ;
 ;
 ;
+NACK:		lda	#'1'
+		sta	DDEVIC
+		lda	#'X'
+		sta	DCOMND
+		lda	#0
+		sta	DSTATS
+		sta	DBYTLO
+		sta	DBYTHI
+		jsr	CALLSIO
+		jmp	START
+		
 FORMAT:		lda	#'1'
 		sta	DDEVIC
 		lda	#'!'
 		sta	DCOMND
-		lda	#64
+		lda	#CREAD
 		sta	DSTATS
 		lda	#<BUFFER
 		sta	DBUFLO
@@ -400,7 +425,7 @@ GETSTAT:	lda	#'1'
 		sta	DDEVIC
 		lda	#'S'
 		sta	DCOMND
-		lda	#64
+		lda	#CREAD
 		sta	DSTATS
 		lda	#<DVSTAT
 		sta	DBUFLO
@@ -461,7 +486,7 @@ UPLOAD:		jsr	openfile
 
 		lda	#0
 		sta	SALLYADR
-		lda	#$20
+		lda	#$80
 		sta	SALLYADR+1
 		
 upload1:	jsr	readfile			;read a page from file
@@ -495,7 +520,7 @@ upload1:	jsr	readfile			;read a page from file
 		
 		lda	#0
 		sta	SALLYADR
-		lda	#$20
+		lda	#$80
 		sta	SALLYADR+1
 		jsr	GETRAM
 		
@@ -505,13 +530,20 @@ upload1:	jsr	readfile			;read a page from file
 		sta	SALLYADR
 		lda	BUFFER+$30
 		sbc	#0
-		adc	#$20-1
+		adc	#$80-1
 		sta	SALLYADR+1
 		
 		jsr	GETKEY
 		jsr	GOTOADR
 		
 uploadex:	jmp	START
+
+RESET:		lda	#$39
+		sta	SALLYADR
+		lda	#0
+		sta	SALLYADR+1		
+		jsr	GOTOADR
+		jmp	START
 
 ;
 ;
@@ -634,7 +666,15 @@ INCPTR1:	rts
 	
 ;
 ;
-;	
+;
+CLEARBUF:	ldx	#0
+CLEARBUF1:	sta	BUFFER,x
+		inx
+		bne	CLEARBUF1
+		rts
+;
+;
+;
 DUMP:		jsr	getadr
 		cmp	#'X'
 		bne	DUMP1
@@ -889,9 +929,11 @@ SALLYMSG:	.byte	CLS
 		.byte	"D - Dump memory", EOL
 		.byte	"G - Goto address", EOL
 		.byte	"F - Format", EOL
+		.byte	"N - Test NACK (Cmd 'X')", EOL
 		.byte	"P - Percom Block Config", EOL
+		.byte	"R - Reset Sally", EOL
 		.byte	"S - Get Status", EOL
-		.byte	"T - Test sector 1", EOL
+		.byte	"T - Test (read) all sectors", EOL
 		.byte	"U - upload sally2.com", EOL
 		.byte	"V - Show Sally 2 version", EOL
 		.byte	"X - EXIT", EOL

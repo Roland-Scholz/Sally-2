@@ -1223,9 +1223,9 @@ id:		DW	0, 0, 0
 		include	version.asm
 		
 		di
-		ld	hl,02000h
+		ld	hl,08000h
 		ld	de,00000h
-		ld	bc,02000h
+		ld	bc,08000h
 		ldir
 		jp	RAMTST
 ENDIF	;SALLYBUILD
