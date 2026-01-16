@@ -36,7 +36,7 @@ SIDESEL		EQU	00001000B	;1791/1793/1773: Side Select Compare for Side 1 \ 1795/17
 ;	TYPE II AND TYPE III COMMANDS LOW NIBBLE
 ;
 SETTLE		EQU	00000100B	;179x: Add 15ms delay (2MHz)
-WRPCOMP		EQU	00000010B	;1770/1772/1773 Write Sector and Write Track commands only: Enable Write Precompensation
+WRPCOMP		EQU	00000010B	;1770/1772/1773 Write Sector and Write Track commands only: Disable Write Precompensation
 ;
 ;
 	IF WD1772

@@ -794,8 +794,7 @@ fastrecv:
 fastrecv1:              
 		IN	A, (ATARI)				;11
 		RLA						;4
-		;JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
-		JP	NC, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
+		JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
 								;14-25 / 7
 		LD	A, D					;4
 		ADD	A, B					;4
@@ -805,16 +804,12 @@ fastrecv1:
 		LD	B, 07fh					;7
 		JP	fastrecv2a				;10 = 50
 ;
-; SERIAL->PARALLEL CONVERSION AT 17,5 MICROSECONDS PER BIT (70 T-States, actually 69)
+; SERIAL->PARALLEL CONVERSION AT 17,5 MICROSECONDS PER BIT (70 T-States)
 ;
 fastrecv2:
 		
-;		PUSH	AF					;11
-;		POP	AF					;10
-		NOP
-		NOP
-		NOP
-		NOP						;16
+		PUSH	AF					;11
+		POP	AF					;10
 
 fastrecv2a:
 		LD	A, (HL)					;7
@@ -822,7 +817,6 @@ fastrecv2a:
 
 		IN	A, (ATARI)				;11 CYCLES
 		RLA						; 4 CYCLES
-		CCF
 		RR	B					; 8 CYCLES
 		JR	C, fastrecv2				;12/7 = 70 / 65 cycles
 

@@ -346,9 +346,9 @@ TESTSEC:	lda	#'1'
 		sta	DBUFLO
 		lda	#>BUFFER
 		sta	DBUFHI
-		lda	#1				;start at sector 1
+		lda	#<3000				;start at sector 1
 		sta	DAUX1
-		lda	#0
+		lda	#>3000
 		sta	DAUX2
 TESTSEC1:	lda	#CREAD
 		sta	DSTATS
@@ -377,7 +377,8 @@ TESTSEC4:	lda	DAUX2
 		bne	TESTSEC1
 		inc	DAUX2	
 		bne	TESTSEC1
-TESTSEC3:	jmp	START		
+TESTSEC3:	jsr	GETKEY
+		jmp	START		
 
 ;
 ;
