@@ -24,6 +24,9 @@ See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
 # FAQ
 [click here for FAQ](faq.md)
 
+# ToDo:
+[click here for ToD o](todo.md)
+
 # Key features:
 
 - Operates either as standalone CP/M system or versatile ATARI 8-bit interface (up to 4 floppies, Centronics, RS232)
@@ -38,11 +41,6 @@ Additionally we have added:
 - 60.000 baud high speed SIO (Pokey divisor 8, drive responds to the "Get Speed Byte" command '?')
 - Track buffer
 - HD-support for 3 1/2" disks (ca. 1MB). (Format is same as 8", 2 sides, 77 tracks, 26 sectors/track, 256 bytes per sector)
-
-# ToDo:
-
-[click here for ToDo](todo.md)
-
 
 # Final product ready as of October 2025
 

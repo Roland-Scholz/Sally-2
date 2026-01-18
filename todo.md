@@ -1,5 +1,5 @@
 # to be implemented:
-- SIO connection need a signal shaping switching transistor (inverting) oder two (non-invertng) per line (SIOOUT, CMD, RDY)
+- SIO connection needs a signal shaping switching transistor (inverting) oder two (non-invertng) per line (SIOOUT, CMD, RDY)
 
 - Tests for disk geometry:
  	- does the drive spin at 360 RPM (Yes -> HD, 500 Kbit MFM) (No -> it's a 300 RPM drive)
