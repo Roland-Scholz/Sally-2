@@ -25,7 +25,7 @@ See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
 [click here for FAQ](faq.md)
 
 # ToDo:
-[click here for ToD o](todo.md)
+[click here for ToDo](todo.md)
 
 # Key features:
 
