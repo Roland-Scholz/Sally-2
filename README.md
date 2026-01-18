@@ -21,6 +21,8 @@ Join the illustrous community and take part in conventions and discussions.
 After some testing and debugging, the vRetro VR177x FDC replacement can now be recommended for use with this interface.
 See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
 
+#FAQ
+[click here for FAQ](faq.md)
 
 # Key features:
 
