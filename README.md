@@ -41,8 +41,7 @@ Additionally we have added:
 
 # ToDo:
 
-- read/write 512-bytes (MS-DOS) sectors for my Atari FAT-16 DOS 
-- add SD-card?
+[click here for ToDo](todo.md)
 
 
 # Final product ready as of October 2025

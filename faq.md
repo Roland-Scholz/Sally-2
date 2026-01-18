@@ -1,4 +1,4 @@
-#known issues / quirks:
+# known issues / quirks:
 
 - Connection to the SIO-bus needs to be revised as some A8 won't communicate properly. Erhard has looked into it and a fix is on its way...
 
