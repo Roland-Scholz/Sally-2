@@ -1,7 +1,6 @@
 @echo off
 PATH=%PATH%;C:\msys64\usr\bin
 setlocal
-set MODULE=sally2
 set ASSEMBLER_PATH=zmac
 set ASSEMBLER_EXE="%ASSEMBLER_PATH%/zmac.exe"
 set ASM_EXTENSION=asm
@@ -35,9 +34,22 @@ rem ****************************************************
 for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
 echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
 
+set MODULE=sally2
 call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
 move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
+
+rem ****************************************************
+rem * compile sally2 firmware
+rem ****************************************************
+for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
+echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
+
+set MODULE=sally2rs
+call :compile %MODULE% DUMMMYSYMBOL
+if not %ERRORLEVEL%==0 goto :error
+move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
+
 
 rem ****************************************************
 rem * compile DDINIT for Sally 2

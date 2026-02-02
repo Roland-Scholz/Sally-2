@@ -4,7 +4,12 @@
 ;********************************************************
 ;
 ;
-	SALLYDEBUG = 0
+	SALLYDEBUG = 1
+;
+PERTRACK	equ 	SPARE0
+PERMAXSEC	equ	SPARE1
+PERCONFIG	equ	SPARE3
+DDHD		equ	0
 ;
 ;
 INIT:		DI
@@ -172,6 +177,7 @@ IF SALLYBUILD
 		LD	HL, 0ffffh				;reset drive / track buffer
 		LD	(drive), HL
 
+	IF SALLYRS = 0
 		LD	HL, DISKTAB+2
 		LD	DE, dsktb+3
 		LD	BC, 3*7
@@ -196,6 +202,7 @@ IF SALLYBUILD
 		LD	(SalyDISKID+4), HL
 		LD	(SalyDISKID+6), HL
 
+	ENDIF
 		LD	A, 0c3h					;'JP' instruction
 		LD	(XMITBUF), A
 		LD	(RXBLOCK), A
@@ -277,7 +284,7 @@ SalySEL4:
 		LDIR						;copy dcb
 			
 		LD	IX, dcb
-		LD	HL, id
+		LD	HL, idambuf
 		LD	(dcb + DSKPTR), HL
 		LD	HL, 6
 		LD	(dcb + DSKAUX), HL
@@ -625,10 +632,13 @@ checktrack:
 		OR	A					;clear carry
 		SBC	HL, DE
 		RET
-
+;
+;
 ;--------------------------------------------------
 ; get Pokeydivisor command '?'
 ;--------------------------------------------------
+;
+;
 getspeed:
 ;		LD	A, '?'
 ;		CALL	seroutfn
@@ -653,16 +663,775 @@ getspeed:
 		LD	DE, 'C'
 		JP	SENDBUFF				;SEND 'C' AND PARAMS DATA FRAME
 
+;
+;
+	IF SALLYRS = 1
+;
+;--------------------------------------------------
+;	... PERCOM 'N' COMMAND PROCESSOR ...
+;--------------------------------------------------
+;
+;
+;
+GETPARAMS:
+		CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+		RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
+	
+;		CALL	HASPARMS
+;		RET	Z		;EXIT IF DISK PARAMS NOT KNOWN
+	
+		CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
 
+		call	dumppercom
+
+;		SET	CONFIG,(IY+FLAGS)
+GETPARAMS1	PUSH	IY
+		POP	HL
+		LD	DE,IOBUFF+LEN-12
+		PUSH	DE
+		LD	BC,12
+		LDIR			;COPY PARAMS TO OUTPUT BUFFER
+		POP	HL
+		LD	DE,'C'
+		JP	SENDBUFF	;SEND 'C' AND PARAMS DATA FRAME
+		
+;
+;
+;
+;--------------------------------------------------
+; Disk status
+;--------------------------------------------------
+;
+;
+;
+diskstatus:	CALL	DRVINDEX		;POINT IY TO DRIVE'S DATA AREA
+		RET	C			;EXIT IF NOT A DRIVE IN OUR BOX
+
+		CALL	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
+
+		call	diskanalyse
+		jr	C, diskstatus4
+		
+		call	waitstatus		;get idle status for motor on
+		ld	b, a			;save status from FDC
+			
+		ld	a, not BADRW
+		and	(IY + CMDSTS)		;keep BADRW
+		
+		bit	7, b			;motor on?
+		jr	z, diskstatus1		;no
+		set	ACTIVE, a
+
+diskstatus1:	bit	DENSTY, (IY + MEDIA)	;double density?
+		jr	z, diskstatus2		;no
+		set	SEC256, a
+
+diskstatus2:	bit	6, (IX + DSKSTS)	;last command wp?
+		jr	z, diskstatus3		;no
+		set	WRPROT, a
+
+diskstatus3:	ld	hl, statbytes
+		ld	(hl), a
+;		call	serhex
+		ld	a,(IY+HDWSTS)
+		cpl
+		inc	hl
+		ld	(hl), a
+		
+		dec	hl
+		ld	de, IOBUFF+LEN-4
+		ld	bc, 4
+		ldir				;COPY PARAMS TO OUTPUT BUFFER
+		
+diskstatus4:	ld	d, 00h			;true data
+		ld	a, (siorc)		;get rc to br returned
+;		call	seroutfn
+		ld	e, a
+		ld	hl, IOBUFF+LEN-4
+		JP	SENDBUFF		;SEND 'C' or 'E' AND PARAMS DATA FRAME		
+
+statbytes:	DEFB	0h, 0ffh, 224, 0
+
+	ENDIF
+;
+;
+;
+;--------------------------------------------------
+; Disk read
+;--------------------------------------------------
+;
+;
+;
+diskreadfn:	call	DRVINDEX		;POINT IY TO DRIVE'S DATA AREA
+		ret	C			;EXIT IF NOT A DRIVE IN OUR BOX
+	
+diskreadfn2:	call	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
+
+		ld	hl, (CFRAME+2)		;get sector from SIO cmd
+		ld	(siosector), hl		;save in siosector
+		
+		call	isspinning
+		jr	C, diskreadfn3
+				
+		call	diskanalyse
+		jr	C, diskreadfn3
+			
+		call	checkmaxsec		;check if sio sector > max sector
+		jr	C, diskreadfn3		;no carry, ok
+
+		call	compdskbuf
+		call	sec2trk			;compute head / track / sec and seek
+		
+		ld	a, RDCMD
+		call	diskop			;call diskio routine
+
+diskreadfn3:	call	adjustsiobuf
+		ld	d, 0ffh			;invert data
+		ld	a, (siorc)
+		ld	e, a
+		jp	SENDBUFF		;SEND 'C' AND PARAMS DATA FRAME	
+
+;
+;
+;
+;--------------------------------------------------
+; Disk write
+;--------------------------------------------------
+;
+;
+;
+diskwritefn:	call	DRVINDEX		;POINT IY TO DRIVE'S DATA AREA
+		ret	C			;EXIT IF NOT A DRIVE IN OUR BOX
+					
+diskwritefn2:	call	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
+
+		CALL	RECVBUFF		;ATTEMPT TO READ DATA FRAME FROM ATARI
+		RET	NZ
+
+		LD	(DKIOCB + DSKAUX),HL	;SAVE DATA BLOCK LENGTH
+		LD	DE,128
+		OR	A
+		SBC	HL,DE			;TEST FOR 128 BYTE FRAME
+		JR	Z,diskwritefn1
+		OR	A
+		SBC	HL,DE			;TEST FOR 256 BYTE FRAME
+		RET	NZ		
+		
+diskwritefn1:	call	SENDACK			;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
+
+		ld	hl, (CFRAME+2)		;get sector from SIO cmd
+		ld	(siosector), hl		;save in siosector
+			
+		call	isspinning
+		jr	C, diskwritefn4
+		
+		call	diskanalyse
+		jr	C, diskwritefn4
+		
+		call	checkmaxsec		;check if sio sector > max sector
+		jr	C, diskwritefn4		;no carry, ok
+		
+		call	sec2trk			;compute head / track / sec and seek
+
+		ld	hl, IOBUFF
+		ld	(DKIOCB + DSKPTR), hl
+
+		ld	b, (IX + DSKAUX)	;complement data frame, only up to 256 byte sectors
+diskwritefn5:	ld	a, (hl)
+		cpl
+		ld	(hl), a
+		inc	hl
+		djnz	diskwritefn5
+
+		ld	a, (IY + SECLEN)
+		ld	(DKIOCB + DSKAUX + 1), a
+		ld	a, (IY + SECLEN + 1)
+		ld	(DKIOCB + DSKAUX), a
+
+		ld	a, WRTCMD
+		call	diskop			;call diskio routine
+		
+diskwritefn4:	ld	a, (siorc)
+;		call	seroutfn
+		ld	e, a
+		jp	SENDCHAR		;SEND 'C' AND PARAMS DATA FRAME	
+
+;
+;
+;	... DISK FORMAT COMMAND PROCESSOR ...
+;
+diskformat:
+		CALL	DRVINDEX		;POINT IY TO DRIVE'S DATA AREA
+		RET	C			;EXIT IF NOT A DRIVE IN OUR BOX
+						
+		LD	HL,(PCOUNT)             
+		LD	A,H                     
+		OR	L                       
+		RET	NZ			;REFUSE TO FORMAT IF SPOOLER ACTIVE
+						
+		ld	a, (IY + NTRKS) 	;REFUSE TO FORMAT IF PARAMS NOT SET
+		or	a                       
+		ret	Z                       
+						
+		call	SENDACK                 
+		call	STOPTMR			;THEN KILL CTC3 TO STOP DISK TIMER
+						
+		ld	a, 'C'
+		ld	(siorc), a
+
+		call	computeflags
+		
+		ld	(OUTCPY), a
+		out	(LATCH), a
+		;call	serhex
+
+		push	af
+		call	restoretrack
+		pop	af
+		
+		push	hl
+	
+		ld	(SEQPTR), hl			;STORE POINTER FOR BAD SECTOR LIST
+		ld	hl , 1
+		ld	(SEQNUM), HL			;RESET BAD SECTOR COUNTER
+		ld	HL, (FMTPTR)			;pointer to formats
+		ld	DE, FMTSTUFF
+		ld	BC, FMTLEN
+		rlca
+		rlca
+		and	00000011B
+		jr	Z, diskformat5
+diskformat2:	add	HL,BC
+		dec	A
+		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
+diskformat5:	call	seraddr
+		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
+		ld	A,(DKIOCB+DSKSTS)
+		and	11000000B
+		jr	NZ, diskformat6			;ERROR IF NOT READY OR WRITE PROTECTED
+	
+		ld	a,(iy+nsides)			;set for SS/DS init
+		ld	(sides),a
+		ld	a,(iy+ntrks)			;set for number of tracks
+		ld	(tracks),a
+		push	IY
+		push	IX
+		call	FORMAT				;CALL FORMAT SUBROUTINE
+		pop	IX
+		pop	IY
+
+
+diskformat6:	res	7, a
+		push	af
+		ld	a, ':'
+		call	seroutfn
+		pop	af
+		call	serhex
+		CALL	SETSTAT				;UPDATE STATUS AS SPECIFIED BY ACC
+		
+		ld	(IY + FLAGS), 0
+;		call	serinfn
+		call	diskanalyse			;compute maxsec
+;		call	restoretrack
+		call	dumppercom
+		
+		POP	HL
+		LD	D,0
+		ld	a, (siorc)
+		ld	e, a
+		jp	SENDBUFF			;SEND BAD SECTOR DATA FRAME
+;		JP	ACTIVON		;THEN RESTART THE DISK TIMER
+	
+;--------------------------------------------------
+; computeflags
+;--------------------------------------------------
+computeflags:	call	getdrivelatch
+		ld	b, a
+		
+		ld	hl, IOBUFF+LEN-256	;256 byte bad sector list
+		bit	DENSTY, (IY + MEDIA)    
+		jr	nz, computeflags1         
+		set	7, b			;set single density
+		set	6, b			;and no HD
+		ld	HL, IOBUFF+LEN-128	;128 byte bad sector list
+		jr	computeflags4
+;
+; HD/DD selection
+; number sector >= 26 and sector-size > 128 then hd
+;
+computeflags1:	bit	7, (IY + SECLEN + 1)		;bit 7 - low byte (128) = 1?
+		jr	NZ, computeflags3		;probably medium density
+		ld	a, (IY + NSECS + 1)
+		cp	26
+		jr	NC, computeflags4		;>= 26 HD
+computeflags3:	set	6, b				;< 26 sectores, normal DD
+computeflags4:	ld	a, b
+		ld	(IY + FLAGS), a
+		ret
+;--------------------------------------------------
+; compdskbufbuf
+; siorc default to 'C' - complete
+; copy percom sector length to IX + DSKAUX
+; computer start of serial buffer (IOBUF+LEN - seclen)
+;--------------------------------------------------
+compdskbuf:
+		ld	a, 'C'
+		ld	(siorc), a
+
+		ld	h, (IY + SECLEN)	;compute start of disk-data
+		ld	l, (IY + SECLEN + 1)	;in transfer buffer
+		ld	(DKIOCB + DSKAUX), hl
+		ex	de, hl
+		or	a
+		ld	hl, IOBUFF+LEN
+		sbc	hl, de
+		ld	(DKIOCB + DSKPTR), hl
+		ld	(siobuffer), hl
+		ret
+
+;--------------------------------------------------
+; adjustsiobufbuf
+; if sector < 4, copy data to IOBUF+LEN - 128
+; return start of SIo buffer in HL
+;--------------------------------------------------
+adjustsiobuf:	
+		ld	a, (IY + FLAGS)
+		or	a
+		jr	NZ, adjustsiobuf1
+		ld	hl, IOBUFF+256
+		xor	a
+		jr 	adjustsiobuf2
+
+adjustsiobuf1:	ld	hl, (DKIOCB + DSKPTR)
+		ld	a, (IX + DSKAUX)		;sectorlen < 256
+		or	a
+		ret	NZ				;yes, do nothing
+		
+adjustsiobuf2:	ld	a, (siosector + 1)		;hi-byte <> 0
+		or	a
+		ret	NZ				;yes, no nothing
+		
+		ld	a, (siosector)		
+		cp	4
+		ret	NC				;>= 4
+
+		push	hl
+		ld	bc, 128
+		add	hl, bc
+		ex	de, hl				;de = hl+128
+		pop	hl				;hl = diskbuffer
+		ldir
+
+		ret
+		
+;--------------------------------------------------
+; diskanalyse - compute PERCOM values
+;--------------------------------------------------
+diskanalyse:	ld	a, 'C'
+		ld	(siorc), a
+		ld	ix, DKIOCB			;get right selection value
+		
+		ld	a, (IY + FLAGS)			;check if percom empty
+		ld	(OUTCPY), a			;set LATCH und OUTCPY
+		out	(LATCH), a
+		or	a
+		ret	NZ				;no continue without disk analyse
+
+		
+		ld	(IY + MEDIA), 4			;set DD (MFM)
+		ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
+		ld	(IY + NSIDES), 0
+
+		call	getdrivelatch
+		ld	(IY + FLAGS), a	
+		out	(LATCH), a
+		ld	(OUTCPY), a
+
+		call	restoretrack
+
+		call	getperiod
+		jr	NC, diskanalyse3		;if no period, error
+
+diskanalyse2:	ld	a, '-'
+		call	seroutfn
+		ld	(IY + FLAGS), 0
+		jp	setsioerror
+		
+diskanalyse3:	ld	a, (IY + FLAGS)	
+		out	(LATCH), a	
+		call 	tryidam	
+		jr	z, diskanalyse1	
+
+		bit 	6, (IY + FLAGS)			;DD already set?
+		jr	nz, diskanalyse4		;yes	
+		set	6, (IY + FLAGS)			;switch back to DD
+		res	DDHD, (IY + PERCONFIG)		;reset DDHD
+		jr	diskanalyse3	
+			
+diskanalyse4:	bit 	7, (IY + FLAGS)			;FM already set?
+		jp	nz, diskanalyse2		;bail out with C set
+		set	7, (IY + FLAGS)			;set FM
+		res	DENSTY, (IY + MEDIA)		;reset DENSTY (FM/MFM)
+		jr	diskanalyse3	
+
+;
+; arrive here if IDAM has been found
+; check for track 41 to be readable
+;
+diskanalyse1:	ld	a, 40				;check for track 41
+		ld	(IY + NTRKS), a
+		ld	(IX + DSKTRK), a
+		call	seektrack
+		call 	tryidam
+		jr	nz, diskanalyse8
+;
+; track 41 was readable, check if ID holds also track 41
+; if not is was a 40 TRK drive and the head hit the bottom
+;
+		ld	a, (idtrack)
+		cp	(IY + NTRKS)
+		jr	nz, diskanalyse8
+		
+;
+; now check for track 77
+;
+		ld	a, 77
+		ld	(IY + NTRKS), a			;assume at least 77 tracks
+		ld	(IX + DSKTRK), a
+		call	seektrack
+		call 	tryidam
+		jr	nz, diskanalyse8
+
+		ld	a, (idtrack)
+		cp	(IY + NTRKS)
+		jr	nz, diskanalyse8
+
+		ld	a, (idseclen)			;check seclen
+		and	a, 3
+		cp	1				;has to be a 256 byte sector
+		jr	nz, diskanalyse8
+		
+		ld	(IY + NTRKS), 80
+		
+diskanalyse8:	call	restoretrack			;restore and check other side
+	
+		set	5, (IY + FLAGS)			;set side 1
+		ld	a, (IY + FLAGS)
+		out	(LATCH), a
+		call 	tryidam
+		jr	nz, diskanalyse6
+		
+		inc	(IY + NSIDES)
+
+diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
+		ld	a, (IY + FLAGS)
+		out	(LATCH), a
+		
+		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
+		
+		ld	a, (idseclen)			;compute sector length
+		and	3				;from IDAM field
+		inc	a
+		ld	hl, 64
+compseclen:	sla	l
+		rl	h
+		dec	a
+		jr	NZ, compseclen	
+		ld	(IY + SECLEN), h
+		ld	(IY + SECLEN + 1), l
+		
+;		call	seraddr		
+
+		ld	(IY + NSECS), 0
+		ld	(IY + NSECS + 1), 18
+		bit	6, (IY + FLAGS)
+		jr	nz, diskanalyse5
+		ld	(IY + NSECS + 1), 26
+		
+diskanalyse5:	ld	hl, 0				;compute PERcom MAXSEC
+		ld	b, (IY + NTRKS)
+		ld	d, (IY + NSECS)			;compute max sector
+		ld 	e, (IY + NSECS + 1)		;NSECS by NTRKS
+diskanalyse7:	add	hl, de
+		djnz	diskanalyse7			;multiply
+		bit	0, (IY + NSIDES)
+		jr	z, diskanalyse9
+		add	hl, hl				;double
+diskanalyse9:	ld	(IY + PERMAXSEC), l		;save as low/hi pair
+		ld	(IY + PERMAXSEC + 1), h
+
+		ld	a, 'C'
+		ld	(siorc), a
+		ld	a, (IY + FLAGS)			;return LATCH bytes
+		or	a				;return carry clear
+		ret
+
+;--------------------------------------------------
+; checkmaxsec
+; compare zero
+; compare against max sector
+;--------------------------------------------------
+checkmaxsec:
+		ld	hl, (siosector)
+		dec	hl
+		
+		ld	d, (IY + PERMAXSEC + 1)		;siosec - maxsec
+		ld	e, (IY + PERMAXSEC)
+		or	a
+		sbc	hl, de
+		ccf
+		ret	NC
+
+		jp	setsioerror
+				
+;--------------------------------------------------
+; getdrivelatch
+;--------------------------------------------------
+getdrivelatch:
+		ld	a, (DKIOCB+DSKDRV)
+		inc	a
+		ld	b, a
+		xor	a
+		scf
+getdrivelatch1:	rla
+		djnz	getdrivelatch1
+		ret
+
+;--------------------------------------------------
+; isspinning
+;--------------------------------------------------
+isspinning:	in	a, (STSREG)			;Motor on?
+		and	10000000b			;mask bit 7 and clear carry
+		ret	NZ				;yes
+		
+		call	getdrivelatch
+		out	(LATCH), a			;fall through to getperiod
+		
+;--------------------------------------------------
+; getperiod
+;--------------------------------------------------
+getperiod:	ld	de, 3000
+
+getperiod1:	dec	de				;get an Index within x iterations
+		ld	a, d
+		or	e
+		jr	z, getperiod4
+		call	getfdcstatus
+		jr	C, getperiod4			;no status at all
+		bit	1, a
+		jr	z, getperiod1
+			
+		ld	h, 0
+		
+getperiod2:	call	getfdcstatus
+		bit	1, a
+		jr	nz, getperiod2
+
+getperiod3:	inc	hl
+		call	getfdcstatus		
+		bit	1, a
+		jr	z, getperiod3
+
+;		call	seraddr
+		or	a
+		ret
+		
+getperiod4:	
+		call	SalyResetFDC
+
+		xor	a
+		out	(LATCH), a
+		
+setsioerror:	ld	a, 'E'
+		ld	(siorc), a
+		scf
+		ret
+		
+;--------------------------------------------------
+; seektrack
+;--------------------------------------------------
+seektrack:
+		ld	a, (IY + PERTRACK)		;populate track reg
+		out	(TRKREG), a			;from number stored
+		ld	a, (IX + DSKTRK)		;seek to track
+		out	(DATREG), a			;into DATREG
+		ld	a, SKCMD+HLOAD+STEPRATE	
+seektrack1:	out	(CMDREG), a			;issue step command
+		call	waitstatus
+		ld	a, (IX + DSKTRK)		;update registers
+;		out	(TRKREG), a
+		ld	(IY + PERTRACK), a
+		ret
+		
+;--------------------------------------------------
+; restoretrack
+;--------------------------------------------------
+restoretrack:	ld	a, RSTCMD+STEPRATE
+		out	(CMDREG), a
+		call	waitstatus
+		
+		xor	a
+		ld	(IY + PERTRACK), a
+		ld	(IX + DSKTRK), a
+		out	(TRKREG), a
+		ret
+;--------------------------------------------------
+; getfdcstatus
+;--------------------------------------------------
+getfdcstatus:	in	a, (TRKREG)			
+		out	(DATREG), a
+		ld	a, SKCMD+STEPRATE
+		out	(CMDREG), a			
+		
+;--------------------------------------------------
+; waitstatus
+;--------------------------------------------------
+waitstatus:	ld	bc, 30000
+
+waitstatus1:	LD	A,14	
+		DEC	A
+		JR	NZ,$-1	;DELAY 56 MICROSECONDS
+
+		in	a, (STSREG)
+		or	a
+		bit	0, a
+		ret	z
+		
+		dec	bc
+		ld	a, b
+		or	a, c
+		jr	nz, waitstatus1
+		
+		scf
+		ret
+		
+;--------------------------------------------------
+; read an IDAM
+;--------------------------------------------------
+readidam:	ld	hl, 6
+		ld	(DKIOCB + DSKAUX), hl
+		ld	hl, idambuf
+		ld	(DKIOCB + DSKPTR), hl
+		ld	a, RIDCMD
+		call	diskop
+		ret
+		
+
+;--------------------------------------------------
+; general disk operation
+;--------------------------------------------------
+diskop:		ld	(CMDBYT), a
+		ld	hl, 0a2edh	;12 LOAD HL WITH 'INI' OPCODE
+		bit	5, a		;check if write command
+		jr	z, diskop1
+		inc	h		;change to outi
+diskop1		LD	(NMIVEC), hl
+		LD	HL,NMIVEC+2	;12
+		LD	(HL),0C9H	;10 STORE 'RET' OPCODE AFTER INI/OUTI
+
+;		call	resetcmd
+		
+		;call	dumpiocb
+		
+		ld	c, DATREG
+		ld	a, (IX + DSKAUX)
+		ld	b, a
+		ld	hl, (DKIOCB + DSKPTR)
+		
+		ld	a, (IX + DSKSEC)
+		out	(SECREG), a
+
+		ld	a, (CMDBYT)				
+		out	(CMDREG), a
+		
+		ld	a, (IX + DSKAUX+1)
+		srl	a											;8
+		jr	Z,read256	;JUMP IF BLOCKSIZE <= 256 BYTES						;12
+		srl	a
+		jr	Z,read512	;JUMP IF BLOCKSIZE <= 512 BYTES
+
+;
+; 16 uS time at 500khZ
+;
+read1024:	halt
+		jr	NZ, $-1
+		halt
+		jr	NZ, $-1
+read512:	halt
+		jr	NZ, $-1
+read256:	halt
+		jr	NZ, $-1
+		call	waitstatus	
+		in	a, (STSREG)		
+		res	7, a
+		call	SETSTAT
+		ld	a, e
+		ld	(siorc), a
+		ret
+		
+;--------------------------------------------------
+; sec2trk
+; compute IX + DSKSEC and IX + DSKTRK from siosector
+;--------------------------------------------------
+sec2trk:	ld	hl, (siosector)		;sector from SIO 
+		dec	hl			;minus 1	
+		xor	a			;track to zero
+		ld	d, a
+		ld	e, (IY + NSECS + 1)	;load DE with assumed sec per track
+		
+sec2trk2:	or	a			;compute track number siosector / NSECS
+		sbc	hl, de
+		jr	c, sec2trk1
+		inc	a
+		jr	sec2trk2
+		
+sec2trk1:	ld	(IX + DSKTRK), a	;track to be read
+		cp	(IY + NTRKS)		;check if > NTRKS
+		jr	C, sec2trk3
+		sub	(IY + NTRKS)
+		ld	(IX + DSKTRK), a
+		ld	a, (OUTCPY)
+		set	5, a			;set head 1
+		ld	(OUTCPY), a
+		out	(LATCH), a
+	
+sec2trk3:	ld	a, l
+		add	a, (IY + NSECS + 1)	;add NSECS we have subtracted too much 
+		inc 	a			;offset by 1
+		ld	(IX + DSKSEC),a		;store in IOCB
+		
+		jp	seektrack
+
+;--------------------------------------------------
+; tryidam
+;--------------------------------------------------
+tryidam:	call	readidam		;try to get an id in MFM / HD
+
+		in	a, (STSREG)
+		and	00011100b
+		
+		push	af
+		push	af
+		ld	a, 'i'
+		call	seroutfn
+		pop	af
+		call	serhex
+		pop	af
+		
+		ret
+	
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
-cmdwaitfn:
-		LD	A, (CMDFLG)
+cmdwaitfn:	in	a, (STSREG)
+		rla
+		jr	c, cmdwaitfn1
+		xor	a
+		out	(LATCH), a
+		
+cmdwaitfn1:	LD	A, (CMDFLG)
 		OR	A					;SEE IF COMMAND FRAME HAS ARRIVED
 		RET	Z					;EXIT IF NOTHING HAS HAPPENED
-
-;		CALL	sercmd					;5-byte command frame
 
 		LD	A, (CMDFLG)
 		CP	1
@@ -672,8 +1441,14 @@ cmdwaitfn:
 		OUT	(CTC0), A				;PERFORM THE RESET
 		EI
 
-		JP	Z, CMDL4				;good cmd-frame
+;		JP	Z, CMDL4				;good cmd-frame
 								;fall through
+		JR	NZ, togglebaud
+	IF SALLYRS = 1
+		;CALL	sercmd					;5-byte command frame
+	ENDIF
+		JP	CMDL4
+		
 ;--------------------------------------------------
 ; togglebaud
 ;--------------------------------------------------
@@ -837,6 +1612,10 @@ fastrecv2a:
 ; debug and dump rouines
 ;--------------------------------------------------
 
+
+;--------------------------------------------------
+; dump sector inverted
+;--------------------------------------------------
 serdumpcpl:
 		PUSH	HL
 		PUSH	AF
@@ -845,6 +1624,10 @@ serdumpcpl:
 		LD	D, 255
 		JP	serdump1
 
+
+;--------------------------------------------------
+; dump DKIOCB
+;--------------------------------------------------
 diskiodebug:	LD	a, (CMDBYT)
 		CP	080h
 		JR	NZ, diskiodebug1
@@ -903,30 +1686,88 @@ error1:		JR	error1
 ;--------------------------------------------------
 ; dump 512 bytes at HL
 ;--------------------------------------------------
+dumpsecinv	push	de
+		ld	d, 255
+		jr	dumpsec1
 dumpsec:
-		PUSH	BC
-		PUSH	HL
-		CALL	seraddr
-		CALL	sercr
-		LD	BC, 256
-
-dumpsec1:	LD	A, C
-		AND	15
-		JR	NZ, dumpsec2
-		CALL	sercr
-dumpsec2:	LD	A, (HL)
-		CALL	serhex
+		push	de
+		ld	d, 0
+		
+dumpsec1:	push	bc
+		push	hl
+		call	sercr
+		ld	c, 16
+		
+dumpline:	call	seraddr
+		ld	a, ':'
+		call	seroutfn
+		
+		ld	b, 16
+dumpline1:	ld	a, (hl)
+		xor	a, d
+		call	serhexspace
+		ld	a, b
+		cp	9
+		jr	NZ, dumpline5
 		call	serspace
-		
-		INC	HL
-		DEC	C
-		JR	NZ, dumpsec1
-		DJNZ	dumpsec1
-		
-		POP	HL
-		POP	BC
-		JP	sercr
+dumpline5:	inc	hl
+		djnz	dumpline1
 
+		ld	a, d
+		ld	de, -16				;subtract 16 from hl
+		add	hl, de
+		ld	d, a
+		ld	b, 16
+		ld	a, '|'
+		call	seroutfn
+		
+dumpline2:	ld	a, (hl)
+		xor	a, d
+		cp	32
+		jr	C, dumpline3			;< 32
+		cp	127				;< 127
+		jr	C, dumpline4
+dumpline3:	ld	a, '.'		
+dumpline4:	call	seroutfn
+		inc	hl
+		djnz	dumpline2
+		
+		ld	a, '|'
+		call	seroutfn
+		call	sercr			
+		
+		dec	c
+		jr	NZ, dumpline
+		
+		pop	hl
+		pop	bc
+		pop	de
+		ret
+		
+;--------------------------------------------------
+; Dump Percom Block in IY
+;--------------------------------------------------
+dumppercom:	push	af
+		push	bc
+		push	de
+		push	hl
+		
+		push	iy
+		pop	hl
+		ld	b, 16
+		call	sercr
+dumppercom1:	ld	a, (hl)
+		inc	hl
+		call	serhexspace
+		djnz	dumppercom1
+		call	sercr
+		
+		pop	hl
+		pop	de
+		pop	bc
+		pop	af
+		ret
+		
 ;--------------------------------------------------
 ; Debug routine
 ;--------------------------------------------------
@@ -963,25 +1804,44 @@ debugtrk:	CALL	seroutfn
 
 		CALL	sercr
 		RET
-;
-;
-;
-dumpdcb:
+;--------------------------------------------------
+; dump DKIOCB
+;--------------------------------------------------
+dumpiocb:
 		PUSH	AF
 		PUSH	BC
 		PUSH	HL
 
-		PUSH	IX
-		POP	HL
-;		CALL	sercr
-		LD	B, 9
-dumpdcb1:
-		LD	A, (HL)
-		INC	HL
-		CALL	serhex
-		CALL	serspace
-		DJNZ	dumpdcb1
-		CALL	sercr
+		call	sercr
+		ld	a, '%'
+		call	seroutfn
+		ld	a, (CMDBYT)
+		call	serhexspace
+		ld	a, '@'
+		call	seroutfn
+		ld	hl, (DKIOCB + DSKPTR)
+		call	seraddr
+		ld	a, '#'
+		call	seroutfn
+		ld	hl, (DKIOCB + DSKAUX)
+		call	seraddr
+		ld	a, 'H'
+		call	seroutfn
+		ld	a, (OUTCPY)
+		rlca
+		rlca
+		rlca
+		and	1
+		call	serhexspace
+		ld	a, 'T'
+		call	seroutfn
+		ld	a, (IX + DSKTRK)
+		call 	serhexspace
+		ld	a, 'S'
+		call	seroutfn
+		ld	a, (IX + DSKSEC)
+		call 	serhexspace
+		call	sercr
 
 		POP	HL
 		POP	BC
@@ -995,8 +1855,14 @@ sercmd:
 		PUSH	HL
 		LD	HL, CFRAME
 		CALL	sercr
+		call	serouthl
+		call	serouthl		
 		JR	serdump2
-
+		
+serouthl:	ld	a, (hl)
+		inc	hl
+		call	seroutfn
+		jp	serspace
 ;--------------------------------------------------
 ; RS232 dump
 ;--------------------------------------------------
@@ -1008,7 +1874,6 @@ serdump2:
 		PUSH	DE
 
 		LD	D, 0
-
 serdump1:
 		LD	A, (HL)
 		XOR	D
@@ -1054,6 +1919,13 @@ seraddr:
 		LD	A, L
 		CALL	serhex
 		JR	serspace
+		
+;--------------------------------------------------
+; RS232 output A in hex and trailing space
+;--------------------------------------------------
+serhexspace:	call	serhex
+		jr	serspace
+		
 ;--------------------------------------------------
 ; RS232 output A in hex
 ;--------------------------------------------------
@@ -1184,7 +2056,41 @@ ITBLEN		EQU	$-INITAB
 ;
 ;
 
+	IF SALLYRS = 1
+;
+DISKTAB:			;DISK COMMANDS
+	DEFW	DISKMAX
+
+	DEFB	'R'		;DISK READ
+	DEFB	'S'		;DISK STATUS
+	DEFB	'W'		;DISK WRITE
+	DEFB	'P'		;DISK PUT
+	DEFB	'N'		;N GET PARAMETERS
+	DEFB	'O'		;O PUT PARAMETERS
+	DEFB	'!'		;FORMAT DISK
+	DEFB	'?'		;? get speed byte
+
+	DEFW	getspeed
+;	DEFW	DISKINIT
+	DEFW 	diskformat
+	DEFW	PUTPARAMS
+	DEFW	GETPARAMS
+;	DEFW	DISKPUT
+;	DEFW	DISKWRITE	
+;	DEFW	DISKSTAT
+;	DEFW	DISKREAD
+	DEFW	diskwritefn
+	DEFW	diskwritefn
+	DEFW	diskstatus
+	DEFW	diskreadfn
+		
+DISKMAX	EQU	($-(DISKTAB+2))/3
+
+	ENDIF
+	
 IF SALLYBUILD
+
+	IF SALLYRS = 0
 ;--------------------------------------------------
 ; variables and data structure
 ;--------------------------------------------------
@@ -1195,7 +2101,7 @@ IF SALLYBUILD
 ;
 dsktb:		DW	0, 0, 0, 0, 0, 0, 0, 0
 		DW	0, 0, 0, 0, 0, 0, 0, 0
-
+	ENDIF
 ;
 ; direct MSDOS sector for each drive
 ;
@@ -1221,8 +2127,18 @@ dcb:		DB	0					;DISK OPERATION CODE
 		DW	0					;AUXILLIARY PARAMETERS (2 BYTES)
 		DB	0					;OPERATION COMPLETION STATUS
 
-id:		DW	0, 0, 0
-		
+idambuf:
+idtrack:	db	0
+idside:		db	0
+idsector:	db	0
+idseclen:	db	0
+idcrc:		dw	0
+
+siorc:		db	0
+siosector:	dw	0
+siobuffer:	dw	0
+
+
 		include	version.asm
 		
 		di

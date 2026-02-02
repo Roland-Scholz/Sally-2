@@ -22,7 +22,7 @@
    6:				;--------------------------------------------------
    7:				; Track-Buffer 26*256 bytes
    8:				;--------------------------------------------------
-   9:     -	0800          	TRKBUFFER		EQU	00800h
+   9:     -	1000          	TRKBUFFER		EQU	01000h
   10:					
   11:     -	0028          	SIONORMAL		EQU	40
   12:     -	0008          	SIOFAST			EQU	8
@@ -1678,7 +1678,7 @@ SPACES           4C4      1220
 STKTOP           71C      1820
 STROBE         =53        83
 TABEND           484      1156
-TRKBUFFER      = 800      2048
+TRKBUFFER      =1000      4096
 TRYMAT           475      1141
 TRYNDX           422      1058
 VARS           =FFF0      65520

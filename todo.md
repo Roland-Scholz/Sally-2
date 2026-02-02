@@ -1,4 +1,6 @@
 # to be implemented:
+- Silscreen for 27C128 Eprom, not correct (must jump to +5v)
+
 - SIO connection needs a signal shaping switching transistor (inverting) oder two (non-invertng) per line (SIOOUT, CMD, RDY)
 
 - Tests for disk geometry:

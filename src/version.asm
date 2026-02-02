@@ -1,1 +1,1 @@
-SVERSION DB "sally-1.1.0     " 
+SVERSION DB "sally-1.0.5-7-g1" 

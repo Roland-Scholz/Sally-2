@@ -338,7 +338,13 @@ GOTOEND:	jmp	START
 ;
 ;
 ;
-TESTSEC:	lda	#'1'
+TESTSEC:	jsr	getadr
+		lda	WORD
+		sta 	DAUX1
+		lda	WORD + 1
+		sta 	DAUX2
+		
+		lda	#'1'
 		sta	DDEVIC
 		lda	#'R'
 		sta	DCOMND
@@ -346,10 +352,10 @@ TESTSEC:	lda	#'1'
 		sta	DBUFLO
 		lda	#>BUFFER
 		sta	DBUFHI
-		lda	#<3000				;start at sector 1
-		sta	DAUX1
-		lda	#>3000
-		sta	DAUX2
+;		lda	#<3800				;start at sector 1
+;		sta	DAUX1
+;		lda	#>3800
+;		sta	DAUX2
 TESTSEC1:	lda	#CREAD
 		sta	DSTATS
 		lda	#128				;standard 128 bytes/sec
@@ -903,6 +909,11 @@ WORD2D2:	lda	PACKDEC,Y
 		
 		cld	
 		rts	
+		
+;
+;
+;
+
 ;		
 ; VAR + CONST	
 ;		

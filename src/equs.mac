@@ -6,7 +6,7 @@ NOHIGHSPEEDSIO		EQU	0
 ;--------------------------------------------------
 ; Track-Buffer 26*256 bytes
 ;--------------------------------------------------
-TRKBUFFER		EQU	00800h
+TRKBUFFER		EQU	01000h
 	
 SIONORMAL		EQU	40
 SIOFAST			EQU	8
