@@ -773,7 +773,7 @@ DINIT6:	POP	HL
 ;	ret
 ;
 ;
-	ENDIF
+
 ;
 ;
 ;
@@ -797,6 +797,8 @@ FMTS:
 	DEFW	SKEWSD
 	DEFB	18
 	DEFW	3125
+	
+	ENDIF
 ;
 ;
 ;
@@ -842,6 +844,8 @@ GETPARAMS:
 	LD	DE,'C'
 	JP	SENDBUFF	;SEND 'C' AND PARAMS DATA FRAME
 ;	ret
+
+	ENDIF
 ;
 ;
 ;
@@ -867,7 +871,15 @@ PUTPARAMS:
 	POP	DE		;POINT DE TO PARAMETERS FOR DRIVE(N)
 	LD	BC,12
 	LDIR			;COPY NEW STUFF IN THE PLACE	
-	IF SALLYRS = 1
+
+	IF SALLYRS = 1	
+	bit	6, (IY + FLAGS)
+	jr	Z, PUTPARAMS1
+	ld	a, (IY + SECLEN)
+	or	a
+	jr	NZ, PUTPARAMS1
+	ld	(IY + NSECS + 1), 26
+PUTPARAMS1:
 	call	computeflags
 	call	diskanalyse5	;compute maxsector
 	call	dumppercom

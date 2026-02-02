@@ -730,9 +730,18 @@ diskstatus2:	bit	6, (IX + DSKSTS)	;last command wp?
 		jr	z, diskstatus3		;no
 		set	WRPROT, a
 
-diskstatus3:	ld	hl, statbytes
+diskstatus3:	bit	SEC256, a
+		jr	NZ, diskstatus5
+		ld	b, a
+		ld	a, (IY + NSECS + 1)
+		cp	26
+		ld	a, b
+		jr	NZ, diskstatus5
+		set	7, a
+		
+diskstatus5:	ld	hl, statbytes
 		ld	(hl), a
-;		call	serhex
+		call	serhex
 		ld	a,(IY+HDWSTS)
 		cpl
 		inc	hl
@@ -856,6 +865,7 @@ diskwritefn4:	ld	a, (siorc)
 		ld	e, a
 		jp	SENDCHAR		;SEND 'C' AND PARAMS DATA FRAME	
 
+
 ;
 ;
 ;	... DISK FORMAT COMMAND PROCESSOR ...
@@ -883,7 +893,7 @@ diskformat:
 		
 		ld	(OUTCPY), a
 		out	(LATCH), a
-		;call	serhex
+		call	serhex
 
 		push	af
 		call	restoretrack
@@ -904,7 +914,25 @@ diskformat:
 diskformat2:	add	HL,BC
 		dec	A
 		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
-diskformat5:	call	seraddr
+		
+diskformat5:	ld	a, (CFRAME + 1)			;check for medium density
+		call	serhexspace
+		cp	'"'
+		jr	NZ, diskformat1
+		ld	hl, (FMTPTR)
+		add	hl, bc
+		add	hl, bc
+		add	hl, bc
+		add	hl, bc
+		ld	a, (OUTCPY)
+		and	00111111b
+		or	01000000b
+		ld	(OUTCPY), a
+		ld	(IY + FLAGS), a
+		out	(LATCH), a
+;		ld	(IY + NSECS + 1), 26
+
+diskformat1:	call	seraddr
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	A,(DKIOCB+DSKSTS)
 		and	11000000B
@@ -951,9 +979,12 @@ computeflags:	call	getdrivelatch
 		ld	hl, IOBUFF+LEN-256	;256 byte bad sector list
 		bit	DENSTY, (IY + MEDIA)    
 		jr	nz, computeflags1         
-		set	7, b			;set single density
-		set	6, b			;and no HD
 		ld	HL, IOBUFF+LEN-128	;128 byte bad sector list
+		set	6, b			;and no HD
+		ld	a, (IY + NSECS + 1)
+		cp	26
+		jr	Z, computeflags4
+		set	7, b			;set single density (FM)
 		jr	computeflags4
 ;
 ; HD/DD selection
@@ -1144,9 +1175,16 @@ compseclen:	sla	l
 
 		ld	(IY + NSECS), 0
 		ld	(IY + NSECS + 1), 18
-		bit	6, (IY + FLAGS)
-		jr	nz, diskanalyse5
-		ld	(IY + NSECS + 1), 26
+		bit	6, (IY + FLAGS)			;HD mode, set to 26
+		jr	Z, diskanalyse10
+		bit	7, (IY + FLAGS)			;MFM mode 
+		jr	NZ, diskanalyse5
+		ld	a, (IY + SECLEN)		;and seclen < 256
+		or	a
+		jr	NZ, diskanalyse5 		;then set also to 26
+		ld	(IY + MEDIA), a
+
+diskanalyse10:	ld	(IY + NSECS + 1), 26
 		
 diskanalyse5:	ld	hl, 0				;compute PERcom MAXSEC
 		ld	b, (IY + NTRKS)
@@ -1331,7 +1369,7 @@ diskop1		LD	(NMIVEC), hl
 
 ;		call	resetcmd
 		
-		;call	dumpiocb
+		call	dumpiocb
 		
 		ld	c, DATREG
 		ld	a, (IX + DSKAUX)
@@ -1445,7 +1483,7 @@ cmdwaitfn1:	LD	A, (CMDFLG)
 								;fall through
 		JR	NZ, togglebaud
 	IF SALLYRS = 1
-		;CALL	sercmd					;5-byte command frame
+		CALL	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
@@ -2069,7 +2107,9 @@ DISKTAB:			;DISK COMMANDS
 	DEFB	'O'		;O PUT PARAMETERS
 	DEFB	'!'		;FORMAT DISK
 	DEFB	'?'		;? get speed byte
+	DEFB	'"'		;" format medium density
 
+	DEFW	diskformat
 	DEFW	getspeed
 ;	DEFW	DISKINIT
 	DEFW 	diskformat
@@ -2086,6 +2126,63 @@ DISKTAB:			;DISK COMMANDS
 		
 DISKMAX	EQU	($-(DISKTAB+2))/3
 
+;
+;
+;
+FMTS:
+	DEFW	DD8N26		;DOUBLE DENSITY 8 INCH
+	DEFW	SKEW17
+	DEFB	26
+	DEFW	10416
+
+	DEFW	DD5N18		;DOUBLE DENSITY 5 INCH
+	DEFW	SKEWDD
+	DEFB	18
+	DEFW	6250
+
+	DEFW	SD8N26		;SINGLE DENSITY 8 INCH
+	DEFW	SKEW13
+	DEFB	26
+	DEFW	5208
+
+	DEFW	SD5N18		;SINGLE DENSITY 5 INCH
+	DEFW	SKEWSD
+	DEFB	18
+	DEFW	3125
+	
+	DEFW	DD5N26		;DOUBLE DENSITY 128B/sec 26 secs
+	DEFW	SKEWMD		;Medium or Enhanced density (ATARI 1050)
+	DEFB	26
+	DEFW	6500		;6238
+;
+;
+;
+
+DD5N26:	DEFB	1
+	DEFB	50, 4EH
+		
+	DEFB	12
+	DEFB	12,00H		;SECOND PART OF GAP 3
+	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+	DEFB	1,0		;TRACK#
+	DEFB	1,00000000B	;SIDE
+	DEFB	1,0		;SECTOR#
+	DEFB	1,00000000B	;LENGTH
+	DEFB	1,0F7H		;GENERATE CRC
+	DEFB	22,4EH		;FIRST PART OF GAP 2
+	DEFB	12,00H		;SECOND PART OF GAP 2
+	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+
+	DEFB	3
+	DEFB	1,0F7H		;GENERATE CRC BYTES
+	DEFB	18,00H
+	DEFB	32,4EH		;FIRST PART OF GAP 3
+	
+SKEWMD:	DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
+	DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26
+	
 	ENDIF
 	
 IF SALLYBUILD
