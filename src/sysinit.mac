@@ -6,10 +6,6 @@
 ;
 	SALLYDEBUG = 1
 ;
-PERTRACK	equ 	SPARE0
-PERMAXSEC	equ	SPARE1
-PERCONFIG	equ	SPARE3
-DDHD		equ	0
 ;
 ;
 INIT:		DI
@@ -63,6 +59,27 @@ RTST3:		DEC	HL
 ZEROS:		LD	(DE),A
 		INC	E
 		JR	NZ,ZEROS				;FILL REST OF SCRATCHPAD WITH ZEROS
+
+IF SALLYBUILD			
+		LD	HL, 00000h				; source
+		LD	DE, 08000h				; dest
+		LD	BC, 02000h
+		LDIR
+		LD	HL, code8000
+		SET	7, H
+		JP	(HL)
+code8000:
+		LD	A, 1
+		OUT	(BANKSW), A
+		LD	HL, 08000h
+		LD	DE, 00000h
+		LD	BC, 02000h
+		LDIR
+		JP	code0000
+code0000:
+ENDIF	;SALLYBUILD
+
+
 ;
 ;	ESTABLISH STACK AND INTERRUPT VECTOR BASE
 ;
@@ -133,34 +150,32 @@ ELSE
 		call	shutdown				;unload the heads and deselect the drives
 ENDIF	;WD1772
 
-		LD	HL,DMATRIX+DSKBITS
-		LD	BC,16
-		LD	A,4					;PREP TO SET FLAGS FOR DRIVES PRESENT
+	IF SALLYRS = 1
+		xor	a
+		ld	b, a
+		ld	hl, drivedata
+cleardrivedata:	ld	(hl), a
+		inc	hl
+		djnz	cleardrivedata
+	ENDIF
+
+	IF SALLYRS = 0
+		LD	HL, DMATRIX+DSKBITS
+		LD	BC, 16
+	ELSE
+		LD	HL, drivedata + DSKBITS
+		LD	BC, 64
+	ENDIF
+		LD	A, 4					;PREP TO SET FLAGS FOR DRIVES PRESENT
 REST4:		RR	D			
 		JR	C,REST4A				;JUMP IF DRIVE(N) NOT AT TRACK ZERO
 		SET	PRESENT,(HL)				;ELSE SET BIT IN ARRAY(HL)
+		call	seraddr
 REST4A:		ADD	HL,BC			
 		DEC	 A			
 		JR	NZ,REST4				;DO FOR ALL 4 DRIVES
 ;			
-IF SALLYBUILD			
-		LD	HL, 00000h				; source
-		LD	DE, 08000h				; dest
-		LD	BC, 02000h
-		LDIR
-		LD	HL, code8000
-		SET	7, H
-		JP	(HL)
-code8000:
-		LD	A, 1
-		OUT	(BANKSW), A
-		LD	HL, 08000h
-		LD	DE, 00000h
-		LD	BC, 02000h
-		LDIR
-		JP	code0000
-code0000:
-ENDIF	;SALLYBUILD
+
 
 		LD	SP, IOBUFF				;NEW PLACE FOR STACK
 
@@ -230,6 +245,7 @@ IF SALLYBUILD
 		LD	(SalyDISKWRT1+1), HL
 ;		LD	HL, diskiodebug
 ;		LD	(DISK4+1),HL
+
 
 ENDIF	;SALLYBUILD
 
@@ -682,6 +698,8 @@ GETPARAMS:
 	
 		CALL	SENDACK		;SEND 'ACK' FOR COMMAND FRAME
 
+		call	diskanalyse
+		
 		call	dumppercom
 
 ;		SET	CONFIG,(IY+FLAGS)
@@ -692,7 +710,9 @@ GETPARAMS1	PUSH	IY
 		LD	BC,12
 		LDIR			;COPY PARAMS TO OUTPUT BUFFER
 		POP	HL
-		LD	DE,'C'
+		ld	d, 0
+		ld	a, (siorc)
+		ld	e, a
 		JP	SENDBUFF	;SEND 'C' AND PARAMS DATA FRAME
 		
 ;
@@ -775,9 +795,6 @@ diskreadfn:	call	DRVINDEX		;POINT IY TO DRIVE'S DATA AREA
 		ret	C			;EXIT IF NOT A DRIVE IN OUR BOX
 	
 diskreadfn2:	call	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
-
-		ld	hl, (CFRAME+2)		;get sector from SIO cmd
-		ld	(siosector), hl		;save in siosector
 		
 		call	isspinning
 		jr	C, diskreadfn3
@@ -827,9 +844,6 @@ diskwritefn2:	call	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
 		RET	NZ		
 		
 diskwritefn1:	call	SENDACK			;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
-
-		ld	hl, (CFRAME+2)		;get sector from SIO cmd
-		ld	(siosector), hl		;save in siosector
 			
 		call	isspinning
 		jr	C, diskwritefn4
@@ -915,7 +929,7 @@ diskformat2:	add	HL,BC
 		dec	A
 		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
 		
-diskformat5:	ld	a, (CFRAME + 1)			;check for medium density
+diskformat5:	ld	a, (siocmd)			;check for medium density
 		call	serhexspace
 		cp	'"'
 		jr	NZ, diskformat1
@@ -973,7 +987,8 @@ diskformat6:	res	7, a
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	call	getdrivelatch
+computeflags:	ld	(IY + PERSTEPRATE), STEPRATE0
+		call	getdrivelatch
 		ld	b, a
 		
 		ld	hl, IOBUFF+LEN-256	;256 byte bad sector list
@@ -981,6 +996,7 @@ computeflags:	call	getdrivelatch
 		jr	nz, computeflags1         
 		ld	HL, IOBUFF+LEN-128	;128 byte bad sector list
 		set	6, b			;and no HD
+		ld	(IY + PERSTEPRATE), STEPRATE3
 		ld	a, (IY + NSECS + 1)
 		cp	26
 		jr	Z, computeflags4
@@ -1060,7 +1076,6 @@ adjustsiobuf2:	ld	a, (siosector + 1)		;hi-byte <> 0
 ;--------------------------------------------------
 diskanalyse:	ld	a, 'C'
 		ld	(siorc), a
-		ld	ix, DKIOCB			;get right selection value
 		
 		ld	a, (IY + FLAGS)			;check if percom empty
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
@@ -1072,7 +1087,8 @@ diskanalyse:	ld	a, 'C'
 		ld	(IY + MEDIA), 4			;set DD (MFM)
 		ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
 		ld	(IY + NSIDES), 0
-
+		ld	(IY + PERSTEPRATE), STEPRATE0	;select 6ms/3ms
+		
 		call	getdrivelatch
 		ld	(IY + FLAGS), a	
 		out	(LATCH), a
@@ -1097,6 +1113,7 @@ diskanalyse3:	ld	a, (IY + FLAGS)
 		jr	nz, diskanalyse4		;yes	
 		set	6, (IY + FLAGS)			;switch back to DD
 		res	DDHD, (IY + PERCONFIG)		;reset DDHD
+		ld	(IY + PERSTEPRATE), STEPRATE3	;set to 3ms in DD mode
 		jr	diskanalyse3	
 			
 diskanalyse4:	bit 	7, (IY + FLAGS)			;FM already set?
@@ -1157,6 +1174,8 @@ diskanalyse8:	call	restoretrack			;restore and check other side
 diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 		ld	a, (IY + FLAGS)
 		out	(LATCH), a
+		ld	(OUTCPY), a			;set LATCH und OUTCPY
+
 		
 		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
 		
@@ -1221,6 +1240,49 @@ checkmaxsec:
 		ret	NC
 
 		jp	setsioerror
+
+	IF SALLYRS = 1
+;--------------------------------------------------
+; DRVINDEX 64 Bytes per drive
+;--------------------------------------------------
+
+DRVINDEX:
+	ld	hl, (CFRAME + 2)
+	ld	(siosector), hl
+	ld	hl, (CFRAME)
+	ld	(siounit), hl
+	
+	ld	a, l	
+;	ld	a,(CFRAME)	;GET DRIVE# FROM COMAND FRAME
+	sub	'1'
+	cp	4
+	ccf
+	ret	C		;EXIT IF NOT DRIVE 1,2,3 OR 4
+
+	ld	h,0
+	ld	l,a
+	add	hl,hl
+	add	hl,hl
+	add	hl,hl
+	add	hl,hl
+	add	hl,hl
+	add	hl,hl		;MULTIPLY DRIVE INDEX BY 64
+	
+	ld	bc, drivedata
+	add	hl, bc		;INDEX TO DRIVE'S PARAMETERS
+	push	hl
+	pop	iy		;GET POINTER INTO IY FOR RETURN
+	bit	PRESENT, (IY + DSKBITS)
+	scf
+	ret	Z		;EXIT IT DRIVE NOT PRESENT
+
+	ld	IX, DKIOCB
+	ld	(DKIOCB+DSKDRV), a
+	xor	a
+	ret
+;
+	ENDIF
+;
 				
 ;--------------------------------------------------
 ; getdrivelatch
@@ -1293,7 +1355,8 @@ seektrack:
 		out	(TRKREG), a			;from number stored
 		ld	a, (IX + DSKTRK)		;seek to track
 		out	(DATREG), a			;into DATREG
-		ld	a, SKCMD+HLOAD+STEPRATE	
+		ld	a, (IY + PERSTEPRATE)
+		add	a, SKCMD	
 seektrack1:	out	(CMDREG), a			;issue step command
 		call	waitstatus
 		ld	a, (IX + DSKTRK)		;update registers
@@ -1304,7 +1367,8 @@ seektrack1:	out	(CMDREG), a			;issue step command
 ;--------------------------------------------------
 ; restoretrack
 ;--------------------------------------------------
-restoretrack:	ld	a, RSTCMD+STEPRATE
+restoretrack:	ld	a, (IY + PERSTEPRATE)
+		add	a, RSTCMD
 		out	(CMDREG), a
 		call	waitstatus
 		
@@ -1318,7 +1382,7 @@ restoretrack:	ld	a, RSTCMD+STEPRATE
 ;--------------------------------------------------
 getfdcstatus:	in	a, (TRKREG)			
 		out	(DATREG), a
-		ld	a, SKCMD+STEPRATE
+		ld	a, SKCMD
 		out	(CMDREG), a			
 		
 ;--------------------------------------------------
@@ -1792,13 +1856,65 @@ dumppercom:	push	af
 		
 		push	iy
 		pop	hl
-		ld	b, 16
+		
 		call	sercr
-dumppercom1:	ld	a, (hl)
-		inc	hl
+		
+		ld	a, 'T'
+		call	seroutfn
+		ld	a, (hl)
 		call	serhexspace
-		djnz	dumppercom1
+		
+		inc	hl
+		ld	a, 's'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhexspace
+
+		inc	hl
+		ld	a, 'S'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhex
+		inc	hl
+		ld	a, (hl)
+		call	serhexspace
+
+		inc	hl
+		ld	a, 'H'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhexspace
+
+		inc	hl
+		ld	a, 'D'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhexspace
+
+		inc	hl
+		ld	a, 'L'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhex
+		inc	hl
+		ld	a, (hl)
+		call	serhexspace
+		
+		inc	hl
+		ld	a, '-'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhexspace
 		call	sercr
+
+		
+;		ld	b, 16
+;		call	sercr
+;dumppercom1:	ld	a, (hl)
+;		inc	hl
+;		call	serhexspace
+;		djnz	dumppercom1
+;		call	sercr
 		
 		pop	hl
 		pop	de
@@ -1951,12 +2067,14 @@ sercr:
 ;--------------------------------------------------
 ; RS232 output HL in hex
 ;--------------------------------------------------
-seraddr:
-		LD	A, H
-		CALL	serhex
-		LD	A, L
-		CALL	serhex
-		JR	serspace
+seraddr:	push	af
+		ld	a, h
+		call	serhex
+		ld	a, l
+		call	serhex
+		call	serspace
+		pop	af
+		ret
 		
 ;--------------------------------------------------
 ; RS232 output A in hex and trailing space
@@ -2231,10 +2349,45 @@ idsector:	db	0
 idseclen:	db	0
 idcrc:		dw	0
 
-siorc:		db	0
+siounit:	db	0
+siocmd:		db	0
 siosector:	dw	0
+
+siorc:		db	0
 siobuffer:	dw	0
 
+drivedata:
+;
+;
+;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
+;
+;NTRKS		EQU	0		;NUMBER OF TRACKS
+;STEPRT		EQU	1		;STEP RATE
+;NSECS		EQU	2		;SECTORS PER TRACK (HI/LOW)
+;NSIDES		EQU	4		;NUMBER OF SIDES
+;MEDIA		EQU	5		;MEDIA SIZE AND FORMAT BITS
+;SECLEN		EQU	6		;SECTOR LENGTH (HI/LOW)
+;DSKBITS	EQU	8		;MISC NAUGHTY BITS
+;SPARE0		EQU	9
+;SPARE1		EQU	10
+;SPARE2		EQU	11
+;	
+;CMDSTS		EQU	12		;COMMAND STATUS
+;HDWSTS		EQU	13		;HARDWARE STATUS
+;	
+;FLAGS		EQU	14		;FLAGS BYTE FOR DISK OPERATION
+;SPARE3		EQU	15
+
+PERCONFIG	equ	SPARE3
+
+PERTRACK	equ 	16
+PERMAXSEC	equ	17
+PERSTEPRATE	equ	19
+
+DDHD		equ	0
+
+
+nextbyte	equ	$ + 256
 
 		include	version.asm
 		
