@@ -170,12 +170,10 @@ cleardrivedata:	ld	(hl), a
 REST4:		RR	D			
 		JR	C,REST4A				;JUMP IF DRIVE(N) NOT AT TRACK ZERO
 		SET	PRESENT,(HL)				;ELSE SET BIT IN ARRAY(HL)
-		call	seraddr
 REST4A:		ADD	HL,BC			
 		DEC	 A			
 		JR	NZ,REST4				;DO FOR ALL 4 DRIVES
 ;			
-
 
 		LD	SP, IOBUFF				;NEW PLACE FOR STACK
 
@@ -761,7 +759,7 @@ diskstatus3:	bit	SEC256, a
 		
 diskstatus5:	ld	hl, statbytes
 		ld	(hl), a
-		call	serhex
+;		call	serhex
 		ld	a,(IY+HDWSTS)
 		cpl
 		inc	hl
@@ -805,8 +803,35 @@ diskreadfn2:	call	SENDACK			;SEND 'ACK' FOR COMMAND FRAME
 		call	checkmaxsec		;check if sio sector > max sector
 		jr	C, diskreadfn3		;no carry, ok
 
-		call	compdskbuf
 		call	sec2trk			;compute head / track / sec and seek
+
+		ld	a, (OUTCPY)		;make head info as bit 7
+		rla
+		rla
+		and	10000000b
+		or	(IX + DSKDRV)
+		ld	b, a
+		ld	c, (IX + DSKTRK)	;BC = DRIVE/TRACK
+		
+		ld	hl, (drive)
+		sbc	hl, bc			;or above, carry clear!
+		jr	z, trkmatch
+		
+		call	readtrk
+		call	compdskbuf
+		
+trkmatch:	call	computesecbuf
+		
+;		call	sercr
+;		call	seraddr
+;		call	serspace
+;		ex	de, hl
+;		call	seraddr
+;		call	serspace
+;		push	bc
+;		pop	hl
+;		call	seraddr
+;		call	serspace
 		
 		ld	a, RDCMD
 		call	diskop			;call diskio routine
@@ -817,6 +842,67 @@ diskreadfn3:	call	adjustsiobuf
 		ld	e, a
 		jp	SENDBUFF		;SEND 'C' AND PARAMS DATA FRAME	
 
+;
+;
+;
+readtrk:	ret
+		call	readidam
+
+		call	getskewtab
+
+		ld	a, (idsector)
+		ld	b, (IY + NSECS + 1)	;loop over #secs		
+;		call	serhex
+readtrk1:	cp	(hl)
+		jr	Z, readtrk2		;initial secnr found
+		inc	hl
+		jr	readtrk1
+		
+readtrk2:	inc	hl
+		ld	a, (hl)
+		or	a
+		jr	NZ, readtrk3
+		call	getskewtab
+		ld	a, (hl)
+
+readtrk3:	ld	c, (IX + DSKSEC)
+		ld	(IX + DSKSEC), a
+		push	bc
+		push	hl
+		call	computesecbuf
+		call	seraddr
+		call	serspace
+		pop	hl
+		pop	bc
+		ld	(IX + DSKSEC), c
+
+		djnz	readtrk2
+		
+		ret
+
+
+computesecbuf:
+		ld	d, (IY + SECLEN)	;hi
+		ld	e, (IY + SECLEN + 1)	;lo
+		push	de
+		ld	b, (IX + DSKSEC)	;sec to be read;
+		ld	hl, 0
+trkmatch1:	add	hl, de
+		djnz	trkmatch1		;compute start of sector
+		or	a
+		sbc	hl, de
+		ld	de, TRKBUFFER
+		add	hl, de
+		ld	de, IOBUFF+LEN-256
+		pop	bc
+		ret
+
+getskewtab:
+		push	iy
+		pop	hl
+		ld	de, PERSKEWTAB
+		add	hl, de
+		ret
 ;
 ;
 ;
@@ -873,6 +959,8 @@ diskwritefn5:	ld	a, (hl)
 
 		ld	a, WRTCMD
 		call	diskop			;call diskio routine
+		ld	a, (IY + CMDSTS)
+		call	serhex
 		
 diskwritefn4:	ld	a, (siorc)
 ;		call	seroutfn
@@ -1176,8 +1264,8 @@ diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 		out	(LATCH), a
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
 
-		
-		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
+		call	readskew
+;		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
 		
 		ld	a, (idseclen)			;compute sector length
 		and	3				;from IDAM field
@@ -1223,6 +1311,55 @@ diskanalyse9:	ld	(IY + PERMAXSEC), l		;save as low/hi pair
 		or	a				;return carry clear
 		ret
 
+;--------------------------------------------------
+; readskew
+;--------------------------------------------------
+readskew:
+		push	iy
+		pop	hl
+		ld	bc, PERSKEWTAB
+		add	hl, bc
+		ld	b, 36
+		ex	de, hl
+		push	de
+		
+readskew1:	push	bc
+		push	de
+		call	readidam
+		pop	de
+		pop	bc
+		
+		pop	hl
+		push	hl
+		ld	a, (idsector)
+readskew6:	push	hl
+		or	a
+		sbc 	hl, de
+		pop	hl
+		jr	Z, readskew4				;store value if c = 0		
+		cp	(hl)					;did we have this sector already?
+		jr	Z, readskew5				;get out of loop
+		inc	hl
+		jr	readskew6
+		
+readskew4:	ld	(de), a
+		inc	de
+		djnz	readskew1
+
+readskew5:	xor	a
+		ld	(de), a
+		pop	hl
+		
+;		call	sercr
+;		ld	b, 36
+;readskew2:	ld	a, (hl)
+;		or	a
+;		ret	Z
+;		call	serhexspace
+;		inc	hl
+;		djnz	readskew2
+readskew3:	ret
+		
 ;--------------------------------------------------
 ; checkmaxsec
 ; compare zero
@@ -1415,8 +1552,8 @@ readidam:	ld	hl, 6
 		ld	hl, idambuf
 		ld	(DKIOCB + DSKPTR), hl
 		ld	a, RIDCMD
-		call	diskop
-		ret
+;		call	diskop					;fall through
+;		ret
 		
 
 ;--------------------------------------------------
@@ -1433,7 +1570,7 @@ diskop1		LD	(NMIVEC), hl
 
 ;		call	resetcmd
 		
-		call	dumpiocb
+;		call	dumpiocb
 		
 		ld	c, DATREG
 		ld	a, (IX + DSKAUX)
@@ -1465,7 +1602,7 @@ read256:	halt
 		jr	NZ, $-1
 		call	waitstatus	
 		in	a, (STSREG)		
-		res	7, a
+		and	01111111b
 		call	SETSTAT
 		ld	a, e
 		ld	(siorc), a
@@ -1512,29 +1649,31 @@ tryidam:	call	readidam		;try to get an id in MFM / HD
 		in	a, (STSREG)
 		and	00011100b
 		
-		push	af
-		push	af
-		ld	a, 'i'
-		call	seroutfn
-		pop	af
-		call	serhex
-		pop	af
+;		push	af
+;		push	af
+;		ld	a, 'i'
+;		call	seroutfn
+;		pop	af
+;		call	serhex
+;		pop	af
 		
 		ret
 	
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
-cmdwaitfn:	in	a, (STSREG)
-		rla
-		jr	c, cmdwaitfn1
-		xor	a
-		out	(LATCH), a
+cmdwaitfn:	;in	a, (STSREG)
+		;rla
+		;jr	c, cmdwaitfn1
+		;xor	a
+		;out	(LATCH), a
 		
 cmdwaitfn1:	LD	A, (CMDFLG)
 		OR	A					;SEE IF COMMAND FRAME HAS ARRIVED
 		RET	Z					;EXIT IF NOTHING HAS HAPPENED
 
+		call	sercmd
+		
 		LD	A, (CMDFLG)
 		CP	1
 
@@ -1546,7 +1685,7 @@ cmdwaitfn1:	LD	A, (CMDFLG)
 ;		JP	Z, CMDL4				;good cmd-frame
 								;fall through
 		JR	NZ, togglebaud
-	IF SALLYRS = 1
+	IF SALLYRS = 2
 		CALL	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
@@ -1591,7 +1730,7 @@ xmitfast1:
 		ADD	A, E					;4
 		ADC	0					;7
 		LD	E, A					;4
-		CALL	fastsend				;17 send byte in c
+		CALL	fastsend				;17 send byte in c (53 T-States)
 		LD	A, H					;4
 		CP	HIGH (IOBUFF+LEN)			;7
 		JR	C, xmitfast1				;12/7 loop if buffer end not reached
@@ -1602,12 +1741,12 @@ xmitfast1:
 		RET
 
 fastsend:
-		XOR	A
-		OUT	(ATROUT), A
+		XOR	A					;4
+		OUT	(ATROUT), A				;11
 
 		PUSH	IX					;15
 		POP	IX					;14
-		LD	A,	C				;4
+		LD	A, C					;4
 		LD	B, 8					;7
 		INC	BC					;6
 		NOP						;4
@@ -1624,7 +1763,9 @@ fastsend1:
 		LD	A, r					;9
 		LD	A, 1					;7
 		OUT	(ATROUT), A				;11
+				
 		RET						;10
+		
 
 ;--------------------------------------------------
 ; rxblck
@@ -1679,23 +1820,20 @@ fastrecv1:
 		LD	D, A					;4
 				
 		LD	B, 07fh					;7
-		JP	fastrecv2a				;10 = 50
+		jr	$+2					;10 = 50
 ;
-; SERIAL->PARALLEL CONVERSION AT 17,5 MICROSECONDS PER BIT (70 T-States)
+; SERIAL->PARALLEL CONVERSION
+; Pokey DIV 8 = 59114 / 59659 average 59400 baud equals about 68 T-states
 ;
 fastrecv2:
+		push	af					;11
+		pop	af					;10
+		in	a, (c)					;12
 		
-		PUSH	AF					;11
-		POP	AF					;10
-
-fastrecv2a:
-		LD	A, (HL)					;7
-		LD	A, (HL)					;7
-
 		IN	A, (ATARI)				;11 CYCLES
 		RLA						; 4 CYCLES
 		RR	B					; 8 CYCLES
-		JR	C, fastrecv2				;12/7 = 70 / 65 cycles
+		JR	C, fastrecv2				;12 = 69 / 65 cycles
 
 		LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
 		INC	HL					;6
@@ -1905,17 +2043,43 @@ dumppercom:	push	af
 		call	seroutfn
 		ld	a, (hl)
 		call	serhexspace
+
+		ld	b, 3
+dumppercom3:	inc	hl
+		ld	a, (hl)
+		call	serhexspace
+		djnz	dumppercom3
 		call	sercr
 
+		push	iy
+		pop	hl
+		ld	bc, PERMAXSEC
+		add	hl, bc
+		ld	a, (hl)
+		inc	hl
+		push	hl
+		ld	h, (hl)
+		inc	hl
+		ld	l, a
+		ld	a, 'M'
+		call	seroutfn
+		call	seraddr
+				
+		call	sercr
 		
-;		ld	b, 16
-;		call	sercr
-;dumppercom1:	ld	a, (hl)
-;		inc	hl
-;		call	serhexspace
-;		djnz	dumppercom1
-;		call	sercr
+		pop	hl
+		inc	hl
+		inc	hl
+		ld	b, 36
 		
+dumppercom2:	ld	a, (hl)
+		or	a
+		jr	Z, dumppercom1
+		call 	serhexspace
+		inc	hl
+		djnz	dumppercom2
+		
+dumppercom1:	call	sercr
 		pop	hl
 		pop	de
 		pop	bc
@@ -2383,11 +2547,12 @@ PERCONFIG	equ	SPARE3
 PERTRACK	equ 	16
 PERMAXSEC	equ	17
 PERSTEPRATE	equ	19
+PERSKEWTAB	equ	20		;NSECS+1 bytes for sector skew
 
 DDHD		equ	0
 
-
-nextbyte	equ	$ + 256
+		org	$ + 256
+		
 
 		include	version.asm
 		
