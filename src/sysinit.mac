@@ -1662,11 +1662,11 @@ tryidam:	call	readidam		;try to get an id in MFM / HD
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
-cmdwaitfn:	;in	a, (STSREG)
-		;rla
-		;jr	c, cmdwaitfn1
-		;xor	a
-		;out	(LATCH), a
+cmdwaitfn:	in	a, (STSREG)
+		rla
+		jr	c, cmdwaitfn1
+		xor	a
+		out	(LATCH), a
 		
 cmdwaitfn1:	LD	A, (CMDFLG)
 		OR	A					;SEE IF COMMAND FRAME HAS ARRIVED
@@ -1728,9 +1728,23 @@ xmitfast1:
 		XOR	D					;4
 		LD	C, A					;4
 		ADD	A, E					;4
-		ADC	0					;7
+		ADC	0					;7	carry clear!
 		LD	E, A					;4
-		CALL	fastsend				;17 send byte in c (53 T-States)
+
+		ld	a, c					;4
+		rla						;4 carry clear = start bit
+		ld	b, 9					;7
+
+fastsend:	OUT	(ATROUT), A				;11
+		RRA						;4
+		scf						;4 make stop bit
+		jr	$+2					;12
+		jr	$+2					;12
+		jr	$+2					;12
+		nop						;4
+		DJNZ	fastsend				;13 / 8 = 72
+		OUT	(ATROUT), A				;stop bit, don't loose time
+
 		LD	A, H					;4
 		CP	HIGH (IOBUFF+LEN)			;7
 		JR	C, xmitfast1				;12/7 loop if buffer end not reached
@@ -1739,32 +1753,6 @@ xmitfast1:
 		OUT	(CTC1), A				;SOFWARE RESET CTC1
 		EI
 		RET
-
-fastsend:
-		XOR	A					;4
-		OUT	(ATROUT), A				;11
-
-		PUSH	IX					;15
-		POP	IX					;14
-		LD	A, C					;4
-		LD	B, 8					;7
-		INC	BC					;6
-		NOP						;4
-
-fastsend1:
-		NOP						;4
-		CP	1					;7
-		OUT	(ATROUT), A				;11
-		RRCA						;4
-		PUSH	IX					;15
-		POP	IX					;14
-		DJNZ	fastsend1				;13 / 8
-
-		LD	A, r					;9
-		LD	A, 1					;7
-		OUT	(ATROUT), A				;11
-				
-		RET						;10
 		
 
 ;--------------------------------------------------
@@ -1813,19 +1801,22 @@ fastrecv1:
 		IN	A, (ATARI)				;11
 		RLA						;4
 		JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
-								;14-25 / 7
+								;= 25
+								
 		LD	A, D					;4
 		ADD	A, B					;4
 		ADC	A, 0					;7 ACCUMULATE CHECKSUM ATARI STYLE
 		LD	D, A					;4
 				
 		LD	B, 07fh					;7
-		jr	$+2					;10 = 50
+		jr	$+2					;12
 ;
 ; SERIAL->PARALLEL CONVERSION
 ; Pokey DIV 8 = 59114 / 59659 average 59400 baud equals about 68 T-states
+; Pokey DIV 9 = 55420 / 55930 average 55675 baud equals about 72 T-states
 ;
 fastrecv2:
+		nop						;4	for Divisor 9
 		push	af					;11
 		pop	af					;10
 		in	a, (c)					;12
@@ -1833,7 +1824,7 @@ fastrecv2:
 		IN	A, (ATARI)				;11 CYCLES
 		RLA						; 4 CYCLES
 		RR	B					; 8 CYCLES
-		JR	C, fastrecv2				;12 = 69 / 65 cycles
+		JR	C, fastrecv2				;12 = 72 / 65 cycles
 
 		LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
 		INC	HL					;6
