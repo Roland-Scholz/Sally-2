@@ -883,7 +883,7 @@ PUTPARAMS:
 	ld	(IY + NSECS + 1), 26
 PUTPARAMS1:
 	call	computeflags
-	call	diskanalyse5	;compute maxsector
+	call	computemaxsec	;compute maxsector
 	call	dumppercom
 	ENDIF
 	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI

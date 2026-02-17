@@ -848,55 +848,71 @@ diskreadfn3:	call	adjustsiobuf
 readtrk:	ret
 		call	readidam
 
-		call	getskewtab
+		ld	h, (IX + SECLEN)
+		ld	l, (IX + SECLEN + 1)
+		ld	(DKIOCB + DSKAUX), hl
+		
+		call	getskewtab		;load HL with address of skewtab
 
 		ld	a, (idsector)
-		ld	b, (IY + NSECS + 1)	;loop over #secs		
+		ld	b, (IY + NSECS + 1)	;loop over #secs	
+		ld	c, (IX + DSKSEC)
+		
 ;		call	serhex
 readtrk1:	cp	(hl)
 		jr	Z, readtrk2		;initial secnr found
 		inc	hl
 		jr	readtrk1
 		
-readtrk2:	inc	hl
+readtrk2:	inc	hl			;get next sector
 		ld	a, (hl)
 		or	a
-		jr	NZ, readtrk3
+		jr	NZ, readtrk3		;if 0 start at beginning
 		call	getskewtab
 		ld	a, (hl)
 
-readtrk3:	ld	c, (IX + DSKSEC)
-		ld	(IX + DSKSEC), a
+readtrk3:	
 		push	bc
 		push	hl
-		call	computesecbuf
-		call	seraddr
-		call	serspace
+		ld	(DKIOCB + DSKSEC), a
+		;call	serhexspace
+		call	computesecbuf			;computer position in track-buffer
+		ld	(DKIOCB + DSKPTR), hl		
+		
+		ld	a, RDCMD
+		call	diskop			;call diskio routine
 		pop	hl
 		pop	bc
-		ld	(IX + DSKSEC), c
 
 		djnz	readtrk2
+
+		ld	(IX + DSKSEC), c
 		
 		ret
 
 
-computesecbuf:
-		ld	d, (IY + SECLEN)	;hi
-		ld	e, (IY + SECLEN + 1)	;lo
-		push	de
-		ld	b, (IX + DSKSEC)	;sec to be read;
-		ld	hl, 0
-trkmatch1:	add	hl, de
-		djnz	trkmatch1		;compute start of sector
+computesecbuf:	ld	h, (IX + DSKSEC)
+		dec	h
+		ld	l, 0
+	
+		ld	a, (IY + SECLEN)	;hi
 		or	a
-		sbc	hl, de
-		ld	de, TRKBUFFER
+		jr	NZ, computesecbuf1	;256 or 512 byte
+		srl	h
+		rr	l
+		jr	computesecbuf2
+computesecbuf1:	dec	a
+		jr	Z, computesecbuf2	;256
+		add	hl, hl
+
+computesecbuf2:	ld	de, TRKBUFFER
 		add	hl, de
-		ld	de, IOBUFF+LEN-256
-		pop	bc
 		ret
 
+
+;--------------------------------------------------
+; compute hl = pointer to skewtab of this drive
+;--------------------------------------------------
 getskewtab:
 		push	iy
 		pop	hl
@@ -1160,7 +1176,7 @@ adjustsiobuf2:	ld	a, (siosector + 1)		;hi-byte <> 0
 		ret
 		
 ;--------------------------------------------------
-; diskanalyse - compute PERCOM values
+; diskanalyse - compute PERCOM values from disk geometry
 ;--------------------------------------------------
 diskanalyse:	ld	a, 'C'
 		ld	(siorc), a
@@ -1169,16 +1185,15 @@ diskanalyse:	ld	a, 'C'
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
 		out	(LATCH), a
 		or	a
-		ret	NZ				;no continue without disk analyse
-
+		ret	NZ				;no continue without disk analysis
 		
 		ld	(IY + MEDIA), 4			;set DD (MFM)
 		ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
 		ld	(IY + NSIDES), 0
 		ld	(IY + PERSTEPRATE), STEPRATE0	;select 6ms/3ms
 		
-		call	getdrivelatch
-		ld	(IY + FLAGS), a	
+		call	getdrivelatch			;get select bit for drive in A
+		ld	(IY + FLAGS), a
 		out	(LATCH), a
 		ld	(OUTCPY), a
 
@@ -1266,44 +1281,21 @@ diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 
 		call	readskew
 ;		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
-		
+
 		ld	a, (idseclen)			;compute sector length
 		and	3				;from IDAM field
-		inc	a
+		jr	NZ, compseclen1
+		ld	(IY + MEDIA), 0			;MEDIA = SD if 128 b/s
+compseclen1:	inc	a
 		ld	hl, 64
-compseclen:	sla	l
-		rl	h
+compseclen:	add	hl, hl
 		dec	a
 		jr	NZ, compseclen	
 		ld	(IY + SECLEN), h
 		ld	(IY + SECLEN + 1), l
+		call	seraddr		
 		
-;		call	seraddr		
-
-		ld	(IY + NSECS), 0
-		ld	(IY + NSECS + 1), 18
-		bit	6, (IY + FLAGS)			;HD mode, set to 26
-		jr	Z, diskanalyse10
-		bit	7, (IY + FLAGS)			;MFM mode 
-		jr	NZ, diskanalyse5
-		ld	a, (IY + SECLEN)		;and seclen < 256
-		or	a
-		jr	NZ, diskanalyse5 		;then set also to 26
-		ld	(IY + MEDIA), a
-
-diskanalyse10:	ld	(IY + NSECS + 1), 26
-		
-diskanalyse5:	ld	hl, 0				;compute PERcom MAXSEC
-		ld	b, (IY + NTRKS)
-		ld	d, (IY + NSECS)			;compute max sector
-		ld 	e, (IY + NSECS + 1)		;NSECS by NTRKS
-diskanalyse7:	add	hl, de
-		djnz	diskanalyse7			;multiply
-		bit	0, (IY + NSIDES)
-		jr	z, diskanalyse9
-		add	hl, hl				;double
-diskanalyse9:	ld	(IY + PERMAXSEC), l		;save as low/hi pair
-		ld	(IY + PERMAXSEC + 1), h
+		call	computemaxsec
 
 		ld	a, 'C'
 		ld	(siorc), a
@@ -1312,44 +1304,58 @@ diskanalyse9:	ld	(IY + PERMAXSEC), l		;save as low/hi pair
 		ret
 
 ;--------------------------------------------------
+; maximal number of sectors =
+; NTRKS * NSECS * SIDES
+;--------------------------------------------------
+computemaxsec:	ld	hl, 0				;compute Percom MAXSEC
+		ld	b, (IY + NTRKS)
+		ld	d, (IY + NSECS)			;compute max sector
+		ld 	e, (IY + NSECS + 1)		;NSECS by NTRKS
+computemaxsec1:	add	hl, de
+		djnz	computemaxsec1			;multiply
+		bit	0, (IY + NSIDES)
+		jr	z, computemaxsec2
+		add	hl, hl				;double
+computemaxsec2:	ld	(IY + PERMAXSEC), l		;save as low/hi pair
+		ld	(IY + PERMAXSEC + 1), h
+		ret
+		
+;--------------------------------------------------
 ; readskew
 ;--------------------------------------------------
 readskew:
-		push	iy
-		pop	hl
-		ld	bc, PERSKEWTAB
-		add	hl, bc
-		ld	b, 36
-		ex	de, hl
-		push	de
+		call	getskewtab				;HL = pointer to skewtab
+		push	hl					;DE = HL
+		pop	de
+
+		ld	(hl), 0					;start with no sectors
+		ld	b, 36					;max 36 sectors
 		
 readskew1:	push	bc
 		push	de
+		push	hl
 		call	readidam
+		pop	hl
 		pop	de
 		pop	bc
 		
-		pop	hl
-		push	hl
-		ld	a, (idsector)
-readskew6:	push	hl
-		or	a
-		sbc 	hl, de
-		pop	hl
-		jr	Z, readskew4				;store value if c = 0		
-		cp	(hl)					;did we have this sector already?
-		jr	Z, readskew5				;get out of loop
-		inc	hl
-		jr	readskew6
+		ld	a, (idsector)				;is read sector known at start position?
+		cp	(hl)
+		jr	Z, readskew5				;yes, exit loop		
 		
-readskew4:	ld	(de), a
+		ld	(de), a					;store sector
 		inc	de
 		djnz	readskew1
 
 readskew5:	xor	a
 		ld	(de), a
-		pop	hl
-		
+		ex	de, hl
+		sbc	hl, de
+		ld	(IY + NSECS + 1), l
+		ld	(IY + NSECS), 0
+		ld	a, l
+;		call	sercr
+		call	serhex		
 ;		call	sercr
 ;		ld	b, 36
 ;readskew2:	ld	a, (hl)
@@ -1358,6 +1364,7 @@ readskew5:	xor	a
 ;		call	serhexspace
 ;		inc	hl
 ;		djnz	readskew2
+
 readskew3:	ret
 		
 ;--------------------------------------------------
@@ -1425,7 +1432,7 @@ DRVINDEX:
 ; getdrivelatch
 ;--------------------------------------------------
 getdrivelatch:
-		ld	a, (DKIOCB+DSKDRV)
+		ld	a, (DKIOCB + DSKDRV)
 		inc	a
 		ld	b, a
 		xor	a
@@ -1572,10 +1579,9 @@ diskop1		LD	(NMIVEC), hl
 		
 ;		call	dumpiocb
 		
-		ld	c, DATREG
-		ld	a, (IX + DSKAUX)
-		ld	b, a
-		ld	hl, (DKIOCB + DSKPTR)
+		ld	c, DATREG			; load C for ini/outi
+		ld	b, (IX + DSKAUX)		; load B low sec length
+		ld	hl, (DKIOCB + DSKPTR)		
 		
 		ld	a, (IX + DSKSEC)
 		out	(SECREG), a
@@ -1738,10 +1744,11 @@ xmitfast1:
 fastsend:	OUT	(ATROUT), A				;11
 		RRA						;4
 		scf						;4 make stop bit
-		jr	$+2					;12
-		jr	$+2					;12
-		jr	$+2					;12
-		nop						;4
+
+		push	hl					;11
+		ex	(sp), hl				;19
+		pop	hl					;10 waste 40 T-states
+		
 		DJNZ	fastsend				;13 / 8 = 72
 		OUT	(ATROUT), A				;stop bit, don't loose time
 
@@ -1813,25 +1820,23 @@ fastrecv1:
 ;
 ; SERIAL->PARALLEL CONVERSION
 ; Pokey DIV 8 = 59114 / 59659 average 59400 baud equals about 68 T-states
-; Pokey DIV 9 = 55420 / 55930 average 55675 baud equals about 72 T-states
+; Pokey DIV 9 = 55420 / 55930 average 55675 baud equals about 72 T-states, for sake of simplicity we use 73 T-states
 ;
 fastrecv2:
-		nop						;4	for Divisor 9
-		push	af					;11
-		pop	af					;10
-		in	a, (c)					;12
+		ex	(sp), hl				;19
+		ex	(sp), hl				;19
 		
 		IN	A, (ATARI)				;11 CYCLES
 		RLA						; 4 CYCLES
 		RR	B					; 8 CYCLES
-		JR	C, fastrecv2				;12 = 72 / 65 cycles
+		JR	C, fastrecv2				;12/7 = 73 / 66 cycles
 
 		LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
 		INC	HL					;6
 		LD	A, H					;4
 		CP	HIGH (IOBUFF+LEN)			;7
 		CCF						;4
-		RET	C					;5 RETURN WITH CARRY SET IF BUFFER FILLED
+		RET	C					;5 or RETURN WITH CARRY SET IF BUFFER FILLED
 
 		OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
 		OUT	(C), C					;12 COUNT MOD 256 - ACTUALLY C = 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
@@ -2040,6 +2045,12 @@ dumppercom3:	inc	hl
 		ld	a, (hl)
 		call	serhexspace
 		djnz	dumppercom3
+
+		ld	a, 'F'
+		call	seroutfn
+		ld	a, (IY + FLAGS)
+		call	serhex
+		
 		call	sercr
 
 		push	iy
