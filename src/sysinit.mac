@@ -188,9 +188,8 @@ IF SALLYBUILD
 		LD	A, 2
 		LD	(direct), A
 		
-		LD	HL, 0ffffh				;reset drive / track buffer
-		LD	(drive), HL
-
+		call	invalidate
+		
 	IF SALLYRS = 0
 		LD	HL, DISKTAB+2
 		LD	DE, dsktb+3
@@ -253,6 +252,16 @@ ENDIF	;SALLYBUILD
 
 IF SALLYBUILD
 
+;--------------------------------------------------
+; invalidate trackbuffer
+;--------------------------------------------------
+invalidate:	ld	hl, 0ffffh				;reset drive / track buffer
+		ld	(drive), hl
+		ret
+		
+;--------------------------------------------------
+; hook SalyLogon
+;--------------------------------------------------
 SalyLogon:
 		LD	(RWMAX),A				;DO LESS RETRIES IN ATARI MODE
 
@@ -819,28 +828,27 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 		jr	z, trkmatch	
 			
 		call	readtrk	
-		call	compsiobuf	
 			
 trkmatch:	call	computesecbuf	
-			
-;		call	sercr	
-;		call	seraddr	
-;		call	serspace	
-;		ex	de, hl	
-;		call	seraddr	
-;		call	serspace	
-;		push	bc	
-;		pop	hl	
-;		call	seraddr	
-;		call	serspace	
-			
-		ld	a, RDCMD	
-		call	diskop				;call diskio routine
-		call	SETSTAT
-		ld	a, e
-		ld	(siorc), a
 
-diskreadfn3:	call	adjustsiobuf
+diskreadfn3:	ld	de, IOBUFF+LEN-128		;make 128 byte sectors
+		ld	bc, 128
+		bit	2, (IY + MEDIA)
+		jr	Z, diskreadfn1
+		ld	a, (siosector + 1)		;check high byte of sector
+		or	a
+		jr	NZ, diskreadfn4			;make 256 byte sector
+		ld	a, (siosector)			;check low byte (1-3)
+		cp	4
+		jr	C, diskreadfn1
+		
+diskreadfn4:	ld	de, IOBUFF+LEN-256		;make 256 byte sector
+		ld	bc, 256
+		
+diskreadfn1:	push	de
+		ldir
+		
+		pop	hl
 		ld	d, 0ffh				;invert data
 		ld	a, (siorc)
 		ld	e, a
@@ -852,7 +860,9 @@ diskreadfn3:	call	adjustsiobuf
 ;--------------------------------------------------
 ; read entire track 
 ;--------------------------------------------------
-readtrk:	ret
+readtrk:	;ret
+		ld	(drive), bc
+
 		call	readidam
 
 		ld	h, (IY + SECLEN)		;copy SECLEN to DSKAUX
@@ -881,19 +891,21 @@ readtrk2:	inc	hl				;get next sector
 readtrk3:	push	bc
 		push	hl
 		ld	(DKIOCB + DSKSEC), a
-		;call	serhexspace
-		call	computesecbuf			;computer position in track-buffer
+	
+		call	computesecbuf			;compute position in track-buffer
 		ld	(DKIOCB + DSKPTR), hl		
 		
 		ld	a, RDCMD
 		call	diskop				;call diskio routine
-		pop	hl
+		jr	Z, readtrk4
+		jp	setsioerror
+		
+readtrk4:	pop	hl
 		pop	bc
 
 		djnz	readtrk2
 
 		ld	(IX + DSKSEC), c
-		
 		ret
 
 ;--------------------------------------------------
@@ -966,6 +978,8 @@ diskwritefn1:	call	SENDACK				;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
 			
 		call	sec2trk				;compute head / track / sec and seek
 
+		call	invalidate
+		
 		ld	hl, IOBUFF
 		ld	(DKIOCB + DSKPTR), hl
 
@@ -983,7 +997,9 @@ diskwritefn5:	ld	a, (hl)
 
 		ld	a, WRTCMD
 		call	diskop				;call diskio routine
+		
 		call	SETSTAT
+		ld	a, e
 		
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
 
@@ -1298,7 +1314,7 @@ compseclen:	add	hl, hl
 		jr	NZ, compseclen	
 		ld	(IY + SECLEN), h
 		ld	(IY + SECLEN + 1), l
-		call	seraddr		
+;		call	seraddr		
 		
 		call	computemaxsec
 
@@ -1360,7 +1376,7 @@ readskew5:	xor	a
 		ld	(IY + NSECS), 0
 		ld	a, l
 ;		call	sercr
-		call	serhex		
+;		call	serhex		
 ;		call	sercr
 ;		ld	b, 36
 ;readskew2:	ld	a, (hl)
@@ -1658,12 +1674,13 @@ cmdwaitfn:	in	a, (STSREG)
 		jr	c, cmdwaitfn1
 		xor	a
 		out	(LATCH), a
+		call	invalidate
 		
 cmdwaitfn1:	ld	A, (CMDFLG)
 		or	A				;see if command frame has arrived
 		ret	Z				;exit if nothing has happened
 
-		call	sercmd
+;		call	sercmd
 		
 		LD	A, (CMDFLG)
 		CP	1
@@ -1676,8 +1693,8 @@ cmdwaitfn1:	ld	A, (CMDFLG)
 ;		JP	Z, CMDL4				;good cmd-frame
 								;fall through
 		JR	NZ, togglebaud
-	IF SALLYRS = 2
-		CALL	sercmd					;5-byte command frame
+	IF SALLYRS = 1
+;		call	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
