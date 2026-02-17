@@ -848,6 +848,8 @@ diskreadfn4:	ld	de, IOBUFF+LEN-256		;make 256 byte sector
 diskreadfn1:	push	de
 		ldir
 		
+		call	settimer
+		
 		pop	hl
 		ld	d, 0ffh				;invert data
 		ld	a, (siorc)
@@ -999,8 +1001,9 @@ diskwritefn5:	ld	a, (hl)
 		call	diskop				;call diskio routine
 		
 		call	SETSTAT
-		ld	a, e
+		call	settimer
 		
+		ld	a, e
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
 
 
@@ -1666,15 +1669,52 @@ seektrack:
 seektrack1:	out	(CMDREG), a			;issue step command
 		jp	waitstatus
 
+settimer:
+		di
+		ld	A, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+		out	(CTC3),A	;PUT CTC3 IN TIMER MODE, PRESCALE 256
+		xor	A		;TIME CONSTANT OF 0 WHICH MEANS 256
+		out	(CTC3),A	;COUNT MOD 256
+		dec	A
+		ld	(DRVTMR),A			;STOP DRIVES AFTER 255 INTERRUPTS
+		ld	HL, dotimer
+		ld	(CTCVEC+6),HL			;SET VECTOR TO ACTIVITY-CHECK ROUTINE
+		ei
+		ret
+;
+;
+;
+dotimer:	PUSH	AF
+		
+		in	a, (TRKREG)	
+		out	(DATREG), a
+		ld	a, SKCMD
+		out	(CMDREG), a	
+		
+		ld	a, (DRVTMR)
+		dec	a
+		ld	(DRVTMR), a
+		jr	NZ, dotimer1			;EXIT IF 4 SECONDS NOT ELAPSED
+	
+		call	shutdown
+		ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
+		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
+		ld	(DRVOFF), a			;SET 'DRVOFF' FLAG TO NON-ZERO VALUE
+		ld	(drive), a			;invalid track buffer
+	
+dotimer1:	pop	af
+		ei
+		RETI
+	
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
-cmdwaitfn:	in	a, (STSREG)
-		rla
-		jr	c, cmdwaitfn1
-		xor	a
-		out	(LATCH), a
-		call	invalidate
+cmdwaitfn:;	in	a, (STSREG)
+	;	rla
+	;	jr	c, cmdwaitfn1
+	;	xor	a
+	;	out	(LATCH), a
+	;	call	invalidate
 		
 cmdwaitfn1:	ld	A, (CMDFLG)
 		or	A				;see if command frame has arrived
@@ -1688,6 +1728,7 @@ cmdwaitfn1:	ld	A, (CMDFLG)
 		DI						;else reset interrupt and start again
 		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL	;software reset ctc0
 		OUT	(CTC0), A				;perform the reset
+		out	(CTC3), a
 		EI
 
 ;		JP	Z, CMDL4				;good cmd-frame
