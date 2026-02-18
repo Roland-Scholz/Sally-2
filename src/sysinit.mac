@@ -12,10 +12,10 @@
 INIT:		DI
 		XOR	A
 INIT1:		DEC	A
-		JR	NZ,INIT1				;DO NOTHING FOR 1 MILLISECOND
+		JR	NZ,INIT1			;DO NOTHING FOR 1 MILLISECOND
 
 		LD	HL,INITAB
-		LD	B,ITBLEN/2				;SEND INITIAL POOP TO PROGRAMABLE I/O'S
+		LD	B,ITBLEN/2			;SEND INITIAL POOP TO PROGRAMABLE I/O'S
 INIT2:		LD	C,(HL)
 		INC	HL
 		OUTI
@@ -26,44 +26,44 @@ INIT2:		LD	C,(HL)
 RAMTST:		LD	HL,MONITOR
 		LD	A,1
 RTST1:		LD	B,16
-RTST2:		LD	(HL),A					;WRITE TEST BYTE INTO MONITOR/GLOBALS
-		RLCA						;ROTATE BIT PATTERN IN A
-		INC	L					;BUMP L TO DO INNER LOOP 256 TIMES
+RTST2:		LD	(HL),A				;WRITE TEST BYTE INTO MONITOR/GLOBALS
+		RLCA					;ROTATE BIT PATTERN IN A
+		INC	L				;BUMP L TO DO INNER LOOP 256 TIMES
 		JR	NZ,RTST2
 		INC	H
-		DJNZ	RTST2					;REPEAT 16 TIMES FOR 4096 BYTES
+		DJNZ	RTST2				;REPEAT 16 TIMES FOR 4096 BYTES
 
 		LD	C,16
 RTST3:		DEC	HL
 		RRCA
-		CP	(HL)					;VERIFY THAT TEST PATTERN IS WRITTEN
-		JR	NZ,$					;STICK FOREVER IF MONITOR RAM FAILURE
+		CP	(HL)				;VERIFY THAT TEST PATTERN IS WRITTEN
+		JR	NZ,$				;STICK FOREVER IF MONITOR RAM FAILURE
 		DJNZ	RTST3
 		DEC	C
 		JR	NZ,RTST3
 
 		ADD	A,A
-		JR	NZ,RTST1				;DO 8 PASSES OVER MEMORY
+		JR	NZ,RTST1			;DO 8 PASSES OVER MEMORY
 ;
 ;	NOW COPY MONITOR AND VARIABLES TO HIGH RAM
 ;
 		LD	HL,MONCOPY
 		LD	DE,MONITOR
 		LD	BC,MONSIZE
-		LDIR						;COPY RESIDENT CODE INTO RAM
+		LDIR					;COPY RESIDENT CODE INTO RAM
 
 		LD	HL,VARCOPY
 		LD	DE,glbvars
 		LD	BC,glbsize
-		LDIR						;INITIALIZE GLOBAL VARIABLES
+		LDIR					;INITIALIZE GLOBAL VARIABLES
 		XOR	A
 ZEROS:		LD	(DE),A
 		INC	E
-		JR	NZ,ZEROS				;FILL REST OF SCRATCHPAD WITH ZEROS
+		JR	NZ,ZEROS			;FILL REST OF SCRATCHPAD WITH ZEROS
 
 IF SALLYBUILD			
-		LD	HL, 00000h				; source
-		LD	DE, 08000h				; dest
+		LD	HL, 00000h			; source
+		LD	DE, 08000h			; dest
 		LD	BC, 02000h
 		LDIR
 		LD	HL, code8000
@@ -84,71 +84,71 @@ ENDIF	;SALLYBUILD
 ;
 ;	ESTABLISH STACK AND INTERRUPT VECTOR BASE
 ;
-		LD	SP,KEYBUF+16				;TEMP PLACE FOR STACK
+		LD	SP,KEYBUF+16			;TEMP PLACE FOR STACK
 		LD	A,HIGH RAM			
-		LD	I,A					;POINT I REGISTER TO VECTOR TABLE
-		IM	2					;SELECT VECTORED INTERRUPTS
+		LD	I,A				;POINT I REGISTER TO VECTOR TABLE
+		IM	2				;SELECT VECTORED INTERRUPTS
 ;			
 ;step 5 times in and then out to trk00.  
 ;set bit 6 for each online floppy in ff5eh percom block (16 bytes, byte 8 bit 6)
 ;
 REST:		LD	A, FBS+DRVSEL4+DRVSEL3+DRVSEL2+DRVSEL1	;INITIAL DRIVE PATTERN (ALL SELECTED) - select drive 1-4, Motor off, side 0, B/S=1, DD
 		OUT	(LATCH), A
-		LD	D,A					;KEEP PATTERN IN D (d = 4fh)
-		LD	B,5					;step 5 times
-REST1:		LD	A,STEPIN+NOWAITMTR+STEPRATE		;4b: 4 = step-in, b = NOWAITMTR+STEPRATE3
+		LD	D,A				;KEEP PATTERN IN D (d = 4fh)
+		LD	B,5				;step 5 times
+REST1:		LD	A,STEPIN+NOWAITMTR+STEPRATE	;4b: 4 = step-in, b = NOWAITMTR+STEPRATE3
 
 IF WD1772
-		CALL	SalyCMDOUT				;write A to FDC command and wait
+		CALL	SalyCMDOUT			;write A to FDC command and wait
 ELSE			
-		CALL	TYP1CMD					;STEP IN 5 TIMES AS PRECAUTION FOR
+		CALL	TYP1CMD				;STEP IN 5 TIMES AS PRECAUTION FOR
 ENDIF	;WD1772			
 			
-		DJNZ	REST1					; DRIVES THAT GET BEHIND TK0 SENSOR
-		LD	B,100					;DO 100 STEPS TOWARD TRACK ZERO (support 100 track drives)
+		DJNZ	REST1				; DRIVES THAT GET BEHIND TK0 SENSOR
+		LD	B,100				;DO 100 STEPS TOWARD TRACK ZERO (support 100 track drives)
 REST2:		LD	A,D			
-		OUT	(LATCH),A				;ISSUE SELECTS AND PAUSE A BIT
+		OUT	(LATCH),A			;ISSUE SELECTS AND PAUSE A BIT
 		EX	(SP),HL
 		EX	(SP),HL
-		LD	A,STEPOUT+NOWAITMTR+STEPRATE		;6b: 6 = step-out, b = NOWAITMTR+STEPRATE3
+		LD	A,STEPOUT+NOWAITMTR+STEPRATE	;6b: 6 = step-out, b = NOWAITMTR+STEPRATE3
 
 IF WD1772
-		CALL	SalyCMDOUT				;write A to FDC command and wait
+		CALL	SalyCMDOUT			;write A to FDC command and wait
 ELSE			
-		CALL	TYP1CMD					;ISSUE STEP OUT COMMAND TO DRIVES
+		CALL	TYP1CMD				;ISSUE STEP OUT COMMAND TO DRIVES
 ENDIF	;WD1772			
 			
-		LD	E,DRVSEL1				;PREPARE TO TEST TK0 INDICATORS
+		LD	E,DRVSEL1			;PREPARE TO TEST TK0 INDICATORS
 REST3:		LD	A,E			
 		OR	FBS			
-		OUT	(LATCH),A				;SELECT ONE DRIVE AT A TIME
-		EX	(SP),HL					;Use this benign operation pair
-		EX	(SP),HL					;to wait 38 T-states
+		OUT	(LATCH),A			;SELECT ONE DRIVE AT A TIME
+		EX	(SP),HL				;Use this benign operation pair
+		EX	(SP),HL				;to wait 38 T-states
 
 IF WD1772
 		IN	A, (STSREG)
 ELSE
-		CALL	FORCE					;FORCE INTERRUPT TO SET TYPE 1 STATUS
+		CALL	FORCE				;FORCE INTERRUPT TO SET TYPE 1 STATUS
 ENDIF	;WD1772			
 			
 		BIT	2, A			
-		JR	Z,REST3A				;JUMP IF TRACK ZERO NOT INDICATED
+		JR	Z,REST3A			;JUMP IF TRACK ZERO NOT INDICATED
 		LD	A,E			
 		CPL			
-		AND	D					;ELSE RESET SELECT BIT FOR DRIVE IN D
+		AND	D				;ELSE RESET SELECT BIT FOR DRIVE IN D
 		LD	D,A			
-REST3A:		SLA	E					;ADVANCE SELECT BIT
+REST3A:		SLA	E				;ADVANCE SELECT BIT
 		BIT	4,E			
-		JR	Z,REST3					;DO SAME FOR ALL 4 DRIVES
-		DJNZ	REST2					;THEN REPEAT STEP OUT 100 TIMES
+		JR	Z,REST3				;DO SAME FOR ALL 4 DRIVES
+		DJNZ	REST2				;THEN REPEAT STEP OUT 100 TIMES
 			
 IF WD1772			
-		LD	A, FDCRESET+FBS				;reset FDC and deselct
+		LD	A, FDCRESET+FBS			;reset FDC and deselct
 		OUT	(LATCH), A			
-		LD	A, FBS					;reset FDC and deselct
+		LD	A, FBS				;reset FDC and deselct
 		OUT	(LATCH), A			
 ELSE			
-		call	shutdown				;unload the heads and deselect the drives
+		call	shutdown			;unload the heads and deselect the drives
 ENDIF	;WD1772
 
 	IF SALLYRS = 1
@@ -167,22 +167,22 @@ cleardrivedata:	ld	(hl), a
 		LD	HL, drivedata + DSKBITS
 		LD	BC, 64
 	ENDIF
-		LD	A, 4					;PREP TO SET FLAGS FOR DRIVES PRESENT
+		LD	A, 4				;PREP TO SET FLAGS FOR DRIVES PRESENT
 REST4:		RR	D			
-		JR	C,REST4A				;JUMP IF DRIVE(N) NOT AT TRACK ZERO
-		SET	PRESENT,(HL)				;ELSE SET BIT IN ARRAY(HL)
+		JR	C,REST4A			;JUMP IF DRIVE(N) NOT AT TRACK ZERO
+		SET	PRESENT,(HL)			;ELSE SET BIT IN ARRAY(HL)
 REST4A:		ADD	HL,BC			
 		DEC	 A			
-		JR	NZ,REST4				;DO FOR ALL 4 DRIVES
+		JR	NZ,REST4			;DO FOR ALL 4 DRIVES
 ;			
 
-		LD	SP, IOBUFF				;NEW PLACE FOR STACK
+		LD	SP, IOBUFF			;NEW PLACE FOR STACK
 
 IF SALLYBUILD
 ;--------------------------------------------------
 ; firmware patch
 ;--------------------------------------------------
-		LD	A, SIONORMAL				;init Pokey-divisor
+		LD	A, SIONORMAL			;init Pokey-divisor
 		LD	(pokeydiv), A
 		
 		LD	A, 2
@@ -216,7 +216,7 @@ IF SALLYBUILD
 		LD	(SalyDISKID+6), HL
 
 	ENDIF
-		LD	A, 0c3h					;'JP' instruction
+		LD	A, 0c3h				;'JP' instruction
 		LD	(XMITBUF), A
 		LD	(RXBLOCK), A
 		LD	(CMDWAIT), A
@@ -247,7 +247,7 @@ IF SALLYBUILD
 
 ENDIF	;SALLYBUILD
 
-		JP	EMULATOR				;GO INITIALIZE FOR ATARI OR CP/M
+		JP	EMULATOR			;GO INITIALIZE FOR ATARI OR CP/M
 
 
 IF SALLYBUILD
@@ -255,7 +255,7 @@ IF SALLYBUILD
 ;--------------------------------------------------
 ; invalidate trackbuffer
 ;--------------------------------------------------
-invalidate:	ld	hl, 0ffffh				;reset drive / track buffer
+invalidate:	ld	hl, 0ffffh			;reset drive / track buffer
 		ld	(drive), hl
 		ret
 		
@@ -263,9 +263,9 @@ invalidate:	ld	hl, 0ffffh				;reset drive / track buffer
 ; hook SalyLogon
 ;--------------------------------------------------
 SalyLogon:
-		LD	(RWMAX),A				;DO LESS RETRIES IN ATARI MODE
+		LD	(RWMAX),A			;DO LESS RETRIES IN ATARI MODE
 
-		LD	A, 0c3h					;'JP' instruction
+		LD	A, 0c3h				;'JP' instruction
 		LD	(SEL4), A
 		LD	HL, SalySEL4
 		LD	(SEL4+1), HL
@@ -280,8 +280,8 @@ SalyLogon:
 SalyShutdn:
 		CALL	SalyResetFDC
 		LD	A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
-		OUT	(CTC1), A				;SOFWARE RESET CTC1
-		LD	A, 1					;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
+		OUT	(CTC1), A			;SOFWARE RESET CTC1
+		LD	A, 1				;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
 		OUT	(CTC1), A
 		RET
 	ENDIF
@@ -289,54 +289,54 @@ SalyShutdn:
 ;
 ;
 SalySEL4:
-		BIT	6, B					;8" found?
-		JR	Z, SalySEL4ex				;yes, do nothing
+		BIT	6, B				;8" found?
+		JR	Z, SalySEL4ex			;yes, do nothing
 
-		PUSH	BC					;save registers
+		PUSH	BC				;save registers
 		PUSH	DE
 		PUSH	HL
 		PUSH	IX
 
-		LD	A, B					;switch HD on
+		LD	A, B				;switch HD on
 		RES	6, A
 		OUT	(LATCH), A
 
-		PUSH	IX					;load HL with IX
+		PUSH	IX				;load HL with IX
 		POP	HL
 		LD	DE, dcb
 		LD	BC, 9
-		LDIR						;copy dcb
+		LDIR					;copy dcb
 			
 		LD	IX, dcb
 		LD	HL, idambuf
 		LD	(dcb + DSKPTR), HL
 		LD	HL, 6
 		LD	(dcb + DSKAUX), HL
-		LD	A, RIDCMD+4				;read address + settle delay
+		LD	A, RIDCMD+4			;read address + settle delay
 		LD	(CMDBYT), A
-		LD	A, 018h					;substitute JR	Z,xx by JR xx
+		LD	A, 018h				;substitute JR	Z,xx by JR xx
 		LD	(DISK3 + 031h), A
 		LD	B, 3
 SalySEL4A:
 		PUSH	BC
-		CALL	SalyDISK3				;DISK3: READ 6 BYTE ID RECORD
+		CALL	SalyDISK3			;DISK3: READ 6 BYTE ID RECORD
 		POP	BC
 		LD	A, (dcb + DSKSTS)
 		OR	A
 		JR	Z, SalySEL4B
 		DJNZ	SalySEL4A
 
-SalySEL4B:	LD	A, 028h					;reset JR Z,xx
+SalySEL4B:	LD	A, 028h				;reset JR Z,xx
 		LD	(DISK3 + 031h), A
 			
 		POP	IX
 		POP	HL
 		POP	DE
 		POP	BC
-		LD	A, (dcb + DSKSTS)			;check disk status
+		LD	A, (dcb + DSKSTS)		;check disk status
 		OR	A
-		JR	NZ, SalySEL4ex				;not zero, no HD
-		RES	6, B					;
+		JR	NZ, SalySEL4ex			;not zero, no HD
+		RES	6, B				;
 SalySEL4ex:             
 		LD	A, B
 		LD	D, 0
@@ -347,14 +347,14 @@ SalySEL4ex:
 ;--------------------------------------------------
 dskrd1:
 		LD	A, 2
-		LD	(direct), A				;clear direct
+		LD	(direct), A			;clear direct
 
-		LD	HL, (CFRAME + 2)			;load DAUX1/2, test if zero
+		LD	HL, (CFRAME + 2)		;load DAUX1/2, test if zero
 		LD	A, L
 		OR	H
-		JR	Z, dskrd2				;if zero, use direct sector number
-		CALL	SECTRAN					;else use original code, call SECTRAN
-		JP	SalyDISKRD2				;and procees
+		JR	Z, dskrd2			;if zero, use direct sector number
+		CALL	SECTRAN				;else use original code, call SECTRAN
+		JP	SalyDISKRD2			;and procees
 
 dskrd2:
 		LD	IX, DKIOCB
@@ -364,38 +364,38 @@ dskrd2:
 		CALL	DISKV
 		POP	HL
 
-		CALL	sec2track				;compute sector, track, side from direct sector
+		CALL	sec2track			;compute sector, track, side from direct sector
 		LD	(IX + DSKOP), GETSEC
 ;		CALL	dumpdcb
 		PUSH	HL
-		CALL	dskreadfn				;CALL DISK I/O HANDLER
+		CALL	dskreadfn			;CALL DISK I/O HANDLER
 		POP	HL
 
 		LD	A, (DKIOCB+DSKSTS)
-		CALL	SETSTAT					;call SETSTAT
-		LD	D, 0					;no invert
-		JP	SENDBUFF				;jump SENDBUFF
+		CALL	SETSTAT				;call SETSTAT
+		LD	D, 0				;no invert
+		JP	SENDBUFF			;jump SENDBUFF
 
 ;--------------------------------------------------
 ;compute sector, track, side from direct sector
 ;--------------------------------------------------
 sec2track:
-		XOR	A					;clear carry and a
-		LD	B, 0ffh					;also b
-		LD	HL, (dsector)				;compute track and side numer
-		LD	DE, 18					;18 secs per track
+		XOR	A				;clear carry and a
+		LD	B, 0ffh				;also b
+		LD	HL, (dsector)			;compute track and side numer
+		LD	DE, 18				;18 secs per track
 sec2track1:             
-		INC	B					;b holds track-number
+		INC	B				;b holds track-number
 		sbc	HL, DE
-		JR	NC, sec2track1				;subtract 18 as long carry clear
+		JR	NC, sec2track1			;subtract 18 as long carry clear
 		LD	A, L
-		ADD	19					;add 19 to get sector number + 1
+		ADD	19				;add 19 to get sector number + 1
 		LD	(DKIOCB+DSKSEC), A
-		SRL	B					;divide track by two, (we have two sides)
+		SRL	B				;divide track by two, (we have two sides)
 		LD	A, B
 		LD	(DKIOCB+DSKTRK), A
-		RRA						;shift-in side-number from previously lowest-bit
-		AND	080h					;mask out bit 0-6
+		RRA					;shift-in side-number from previously lowest-bit
+		AND	080h				;mask out bit 0-6
 		LD	HL, DKIOCB+DSKDRV
 		RES	7, (HL)
 		OR	(HL)
@@ -950,7 +950,13 @@ getskewtab:
 ;
 ;
 ;
-diskwritefn:	call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+diskputfn:	xor	a
+		jr	Z, diskwritefn3			;put without verify
+
+diskwritefn:	ld	a, 1				;write with verify
+diskwritefn3:	ld	(VFLAG), a
+
+		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 						
 diskwritefn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
@@ -999,13 +1005,38 @@ diskwritefn5:	ld	a, (hl)
 
 		ld	a, WRTCMD
 		call	diskop				;call diskio routine
-		
-		call	SETSTAT
+		jr	NZ, diskwritefn6		;bomb out if FDC error
+
+		ld	hl, VFLAG			
+		bit	0, (hl)
+		jr	Z, diskwritefn6			;EXIT OK IF NOT WRITE WITH VERIFY
+	
+		ld	hl, IOBUFF+LEN
+		ld	(DKIOCB+DSKPTR), hl
+		ld	a, GETSEC
+		call	diskop				;ELSE READ SECTOR BACK FOR VERIFY
+		jr	NZ, diskwritefn6		;BOMB AGAIN IF READ ERROR
+	
+		ld	hl, IOBUFF
+		ld	de, IOBUFF+LEN
+		ld	a, (DKIOCB + DSKAUX)
+		ld	b, a				;PREPARE TO COMPARE 128 OR 256 BYTES
+diskwritefn7:	ld	a, (de)
+		xor	(hl)
+		jr	NZ, diskwritefn8
+		inc	hl
+		inc	de
+		djnz	diskwritefn7			;fall through last time with acc=0
+
+diskwritefn6:	call	SETSTAT
 		call	settimer
 		
-		ld	a, e
+diskwritefn9:	ld	a, e
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
 
+diskwritefn8:	xor	a
+		call	ssts4				;set hardware status=0 but set bad r/w
+		jr	diskwritefn9
 
 ;
 ;
@@ -2322,21 +2353,21 @@ seroutfn:
 		LD	B, A
 		XOR	A
 		DI
-		OUT	(SEROUT), A				;startbit
-		CALL	time19600				;17
+		OUT	(SEROUT), A			;startbit
+		CALL	time19600			;17
 	
 		LD	A, B	
-		LD	B, 8					;7
+		LD	B, 8				;7
 serout1:	
-		OUT	(SEROUT), A				;11
-		CALL	time19600				;17
-		RRCA						;4
-		DJNZ	serout1					;8
+		OUT	(SEROUT), A			;11
+		CALL	time19600			;17
+		RRCA					;4
+		DJNZ	serout1				;8
 		EI	
 
-		LD	A, 1					;7 stopbit
-		OUT	(SEROUT), A				;11
-		CALL	time19600				;17
+		LD	A, 1				;7 stopbit
+		OUT	(SEROUT), A			;11
+		CALL	time19600			;17
 
 		POP	BC
 		POP	AF
@@ -2353,8 +2384,8 @@ serin2:
 		RLCA
 		JR	C, serin2
 
-		EX	(SP), HL				;19, 4.75uS
-		EX	(SP), HL				;19  9uS
+		EX	(SP), HL			;19, 4.75uS
+		EX	(SP), HL			;19  9uS
 
 		LD	B, 80h
 serin1:
@@ -2369,23 +2400,23 @@ serin1:
 		RET
 
 time19600:
-		LD	C, 9					;4
+		LD	C, 9				;4
 time19600a:
-		DEC	C					;4
-		JR	NZ, time19600a				;12/7
-		RET						;10
+		DEC	C				;4
+		JR	NZ, time19600a			;12/7
+		RET					;10
 
 	ENDIF
 ENDIF	; SALLYBUILD
 
 IF WD1772
 SalyCMDOUT:
-		OUT	(CMDREG),A				;OUTPUT DISK CONTROLLER COMMAND BYTE
+		OUT	(CMDREG),A			;OUTPUT DISK CONTROLLER COMMAND BYTE
 slyCMDT1:
 		LD	A,14
 slyCMDT2:
 		DEC	A
-		JR	NZ,slyCMDT2				;DELAY 56 MICROSECONDS
+		JR	NZ,slyCMDT2			;DELAY 56 MICROSECONDS
 CMDT3:
 		IN	A, (STSREG)
 		BIT	0, A
@@ -2422,30 +2453,25 @@ ITBLEN		EQU	$-INITAB
 
 	IF SALLYRS = 1
 ;
-DISKTAB:			;DISK COMMANDS
-	DEFW	DISKMAX
-
-	DEFB	'R'		;DISK READ
-	DEFB	'S'		;DISK STATUS
-	DEFB	'W'		;DISK WRITE
-	DEFB	'P'		;DISK PUT
-	DEFB	'N'		;N GET PARAMETERS
-	DEFB	'O'		;O PUT PARAMETERS
-	DEFB	'!'		;FORMAT DISK
-	DEFB	'?'		;? get speed byte
-	DEFB	'"'		;" format medium density
+DISKTAB:						;DISK COMMANDS
+	DEFW	DISKMAX			
+			
+	DEFB	'R'					;DISK READ
+	DEFB	'S'					;DISK STATUS
+	DEFB	'W'					;DISK WRITE
+	DEFB	'P'					;DISK PUT
+	DEFB	'N'					;N GET PARAMETERS
+	DEFB	'O'					;O PUT PARAMETERS
+	DEFB	'!'					;FORMAT DISK
+	DEFB	'?'					;? get speed byte
+	DEFB	'"'					;" format medium density
 
 	DEFW	diskformat
 	DEFW	getspeed
-;	DEFW	DISKINIT
 	DEFW 	diskformat
 	DEFW	PUTPARAMS
 	DEFW	GETPARAMS
-;	DEFW	DISKPUT
-;	DEFW	DISKWRITE	
-;	DEFW	DISKSTAT
-;	DEFW	DISKREAD
-	DEFW	diskwritefn
+	DEFW	diskputfn
 	DEFW	diskwritefn
 	DEFW	diskstatus
 	DEFW	diskreadfn
@@ -2456,30 +2482,30 @@ DISKMAX	EQU	($-(DISKTAB+2))/3
 ;
 ;
 FMTS:
-	DEFW	DD8N26		;DOUBLE DENSITY 8 INCH
-	DEFW	SKEW17
-	DEFB	26
-	DEFW	10416
-
-	DEFW	DD5N18		;DOUBLE DENSITY 5 INCH
-	DEFW	SKEWDD
-	DEFB	18
-	DEFW	6250
-
-	DEFW	SD8N26		;SINGLE DENSITY 8 INCH
-	DEFW	SKEW13
-	DEFB	26
-	DEFW	5208
-
-	DEFW	SD5N18		;SINGLE DENSITY 5 INCH
-	DEFW	SKEWSD
-	DEFB	18
-	DEFW	3125
-	
-	DEFW	DD5N26		;DOUBLE DENSITY 128B/sec 26 secs
-	DEFW	SKEWMD		;Medium or Enhanced density (ATARI 1050)
-	DEFB	26
-	DEFW	6500		;6238
+	DEFW	DD8N26					;DOUBLE DENSITY 8 INCH
+	DEFW	SKEW17			
+	DEFB	26			
+	DEFW	10416			
+			
+	DEFW	DD5N18					;DOUBLE DENSITY 5 INCH
+	DEFW	SKEWDD			
+	DEFB	18			
+	DEFW	6250			
+			
+	DEFW	SD8N26					;SINGLE DENSITY 8 INCH
+	DEFW	SKEW13			
+	DEFB	26			
+	DEFW	5208			
+			
+	DEFW	SD5N18					;SINGLE DENSITY 5 INCH
+	DEFW	SKEWSD			
+	DEFB	18			
+	DEFW	3125			
+				
+	DEFW	DD5N26					;DOUBLE DENSITY 128B/sec 26 secs
+	DEFW	SKEWMD					;Medium or Enhanced density (ATARI 1050)
+	DEFB	26			
+	DEFW	6500					;6238
 ;
 ;
 ;
@@ -2488,23 +2514,23 @@ DD5N26:	DEFB	1
 	DEFB	50, 4EH
 		
 	DEFB	12
-	DEFB	12,00H		;SECOND PART OF GAP 3
-	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-	DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
-	DEFB	1,0		;TRACK#
-	DEFB	1,00000000B	;SIDE
-	DEFB	1,0		;SECTOR#
-	DEFB	1,00000000B	;LENGTH
-	DEFB	1,0F7H		;GENERATE CRC
-	DEFB	22,4EH		;FIRST PART OF GAP 2
-	DEFB	12,00H		;SECOND PART OF GAP 2
-	DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
-	DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
-
-	DEFB	3
-	DEFB	1,0F7H		;GENERATE CRC BYTES
-	DEFB	18,00H
-	DEFB	32,4EH		;FIRST PART OF GAP 3
+	DEFB	12,00H					;SECOND PART OF GAP 3
+	DEFB	3,0F5H					;GENERATE SYNC=A1 HEX
+	DEFB	1,0FEH					;GENERATE ID ADDRESS MARK
+	DEFB	1,0					;TRACK#
+	DEFB	1,00000000B				;SIDE
+	DEFB	1,0					;SECTOR#
+	DEFB	1,00000000B				;LENGTH
+	DEFB	1,0F7H					;GENERATE CRC
+	DEFB	22,4EH					;FIRST PART OF GAP 2
+	DEFB	12,00H					;SECOND PART OF GAP 2
+	DEFB	3,0F5H					;GENERATE SYNC=A1 HEX
+	DEFB	1,0FBH					;GENERATE DATA ADDRESS MARK
+			
+	DEFB	3			
+	DEFB	1,0F7H					;GENERATE CRC BYTES
+	DEFB	18,00H			
+	DEFB	32,4EH					;FIRST PART OF GAP 3
 	
 SKEWMD:	DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
 	DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26
@@ -2542,13 +2568,13 @@ skewtab:	DW	SKEWSD
 		DW	SKEWDD
 		DW	SKEW17
 
-dcb:		DB	0					;DISK OPERATION CODE
-		DB	0					;DRIVE# (WITH SIDE# IN BIT 7)
-		DB	0					;TRACK#
-		DB	0					;SECTOR#
-		DW	0					;READ/WRITE POINTER
-		DW	0					;AUXILLIARY PARAMETERS (2 BYTES)
-		DB	0					;OPERATION COMPLETION STATUS
+dcb:		DB	0				;DISK OPERATION CODE
+		DB	0				;DRIVE# (WITH SIDE# IN BIT 7)
+		DB	0				;TRACK#
+		DB	0				;SECTOR#
+		DW	0				;READ/WRITE POINTER
+		DW	0				;AUXILLIARY PARAMETERS (2 BYTES)
+		DB	0				;OPERATION COMPLETION STATUS
 
 idambuf:
 idtrack:	db	0
@@ -2569,35 +2595,34 @@ drivedata:
 ;
 ;	... DATA STRUCTURE FOR DRIVE PARAMETER BLOCKS ...
 ;
-;NTRKS		EQU	0		;NUMBER OF TRACKS
-;STEPRT		EQU	1		;STEP RATE
-;NSECS		EQU	2		;SECTORS PER TRACK (HI/LOW)
-;NSIDES		EQU	4		;NUMBER OF SIDES
-;MEDIA		EQU	5		;MEDIA SIZE AND FORMAT BITS
-;SECLEN		EQU	6		;SECTOR LENGTH (HI/LOW)
-;DSKBITS	EQU	8		;MISC NAUGHTY BITS
-;SPARE0		EQU	9
-;SPARE1		EQU	10
-;SPARE2		EQU	11
-;	
-;CMDSTS		EQU	12		;COMMAND STATUS
-;HDWSTS		EQU	13		;HARDWARE STATUS
-;	
-;FLAGS		EQU	14		;FLAGS BYTE FOR DISK OPERATION
-;SPARE3		EQU	15
-
-PERCONFIG	equ	SPARE3
-
-PERTRACK	equ 	16
-MAXSEC	equ	17
-PERSTEPRATE	equ	19
-PERSKEWTAB	equ	20		;NSECS+1 bytes for sector skew
+;NTRKS		EQU	0			;NUMBER OF TRACKS
+;STEPRT		EQU	1			;STEP RATE
+;NSECS		EQU	2			;SECTORS PER TRACK (HI/LOW)
+;NSIDES		EQU	4			;NUMBER OF SIDES
+;MEDIA		EQU	5			;MEDIA SIZE AND FORMAT BITS
+;SECLEN		EQU	6			;SECTOR LENGTH (HI/LOW)
+;DSKBITS	EQU	8			;MISC NAUGHTY BITS
+;SPARE0		EQU	9	
+;SPARE1		EQU	10	
+;SPARE2		EQU	11	
+;		
+;CMDSTS		EQU	12			;COMMAND STATUS
+;HDWSTS		EQU	13			;HARDWARE STATUS
+;		
+;FLAGS		EQU	14			;FLAGS BYTE FOR DISK OPERATION
+;SPARE3		EQU	15	
+	
+PERCONFIG	equ	SPARE3	
+	
+PERTRACK	equ 	16	
+MAXSEC	equ	17	
+PERSTEPRATE	equ	19	
+PERSKEWTAB	equ	20			;NSECS+1 bytes for sector skew
 
 DDHD		equ	0
 
 		org	$ + 256
 		
-
 		include	version.asm
 		
 		di
@@ -2606,6 +2631,7 @@ DDHD		equ	0
 		ld	bc,08000h
 		ldir
 		jp	RAMTST
+		
 ENDIF	;SALLYBUILD
 ;
 ;

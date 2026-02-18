@@ -875,17 +875,22 @@ PUTPARAMS:
 	LDIR			;COPY NEW STUFF IN THE PLACE	
 
 	IF SALLYRS = 1	
-	bit	6, (IY + FLAGS)
-	jr	Z, PUTPARAMS1
-	ld	a, (IY + SECLEN)
+	
+	bit	6, (IY + FLAGS)				;check if DD or HD
+	jr	Z, PUTPARAMS1				;HD, exit
+	bit	7, (IY + FLAGS)				;FM or DD?
+	jr	NZ, PUTPARAMS1				;FM, exit
+	ld	a, (IY + SECLEN)			;seclen < 256?
 	or	a
 	jr	NZ, PUTPARAMS1
-	ld	(IY + NSECS + 1), 26
+	ld	(IY + NSECS + 1), 26			;medium density, make 26 sectors
 PUTPARAMS1:
 	call	computeflags
 	call	computemaxsec	;compute maxsector
 	call	dumppercom
+	
 	ENDIF
+	
 	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
 ;	ret
 ;
