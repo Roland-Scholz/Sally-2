@@ -780,7 +780,8 @@ diskstatus5:	ld	hl, statbytes
 		ld	bc, 4
 		ldir					;COPY PARAMS TO OUTPUT BUFFER
 			
-diskstatus4:	ld	d, 00h				;true data
+diskstatus4:	call	settimer
+		ld	d, 00h				;true data
 		ld	a, (siorc)			;get rc to br returned
 ;		call	seroutfn	
 		ld	e, a	
@@ -1012,8 +1013,8 @@ diskwritefn5:	ld	a, (hl)
 		jr	Z, diskwritefn6			;EXIT OK IF NOT WRITE WITH VERIFY
 	
 		ld	hl, IOBUFF+LEN
-		ld	(DKIOCB+DSKPTR), hl
-		ld	a, GETSEC
+		ld	(DKIOCB + DSKPTR), hl
+		ld	a, RDCMD
 		call	diskop				;ELSE READ SECTOR BACK FOR VERIFY
 		jr	NZ, diskwritefn6		;BOMB AGAIN IF READ ERROR
 	
@@ -1145,17 +1146,18 @@ diskformat6:	res	7, a
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	ld	(IY + PERSTEPRATE), STEPRATE0
+computeflags:	ld	(IY + PERSTEPRATE), STEPRATE3	;3ms in DD Mode
 		call	getdrivelatch
 		ld	b, a				;start with HD, MFM
 		
 		ld	hl, IOBUFF+LEN-256		;256 byte return buffer
 		bit	DENSTY, (IY + MEDIA)    
-		jr	NZ, computeflags1         
+		jr	NZ, computeflags1   		;DD or HD
+		
 		ld	HL, IOBUFF+LEN-128		;128 byte return buffer
-		set	6, b				;and no HD,0
-		ld	(IY + PERSTEPRATE), STEPRATE3
-		ld	a, (IY + NSECS + 1)
+		set	6, b				;and no HD
+		
+		ld	a, (IY + NSECS + 1)		;if 26 sectors, then no FM
 		cp	26
 		jr	Z, computeflags4
 		set	7, b				;set single density (FM)
@@ -1164,13 +1166,13 @@ computeflags:	ld	(IY + PERSTEPRATE), STEPRATE0
 ; HD/DD selection
 ; number sector >= 26 and sector-size > 128 then hd
 ;
-computeflags1:	bit	7, (IY + SECLEN + 1)		;bit 7 - low byte (128) = 1?
-		jr	NZ, computeflags3		;probably medium density
-		ld	a, (IY + NSECS + 1)
+computeflags1:	ld	a, (IY + NSECS + 1)
 		cp	26
 		jr	NC, computeflags4		;>= 26 HD
-computeflags3:	set	6, b				;< 26 sectores, normal DD
-computeflags4:	ld	a, b
+		set	6, b				;< 26 sectores, no HD
+		jr	computeflags2
+computeflags4:	ld	(IY + PERSTEPRATE), STEPRATE0	;3ms in HD mode
+computeflags2:	ld	a, b
 		ld	(IY + FLAGS), a
 		ret
 		
