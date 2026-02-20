@@ -900,13 +900,12 @@ readtrk3:	push	bc
 		
 		ld	a, RDCMD
 		call	diskop				;call diskio routine
+		pop	hl	
+		pop	bc
 		jr	Z, readtrk4
 		jp	setsioerror
 		
-readtrk4:	pop	hl
-		pop	bc
-
-		djnz	readtrk2
+readtrk4:	djnz	readtrk2
 
 		ld	(IX + DSKSEC), c
 		ret
@@ -931,7 +930,6 @@ computesecbuf1:	dec	a
 computesecbuf2:	ld	de, TRKBUFFER
 		add	hl, de
 		ret
-
 
 ;--------------------------------------------------
 ; compute hl = pointer to skewtab of this drive
@@ -1063,6 +1061,7 @@ diskformat:
 		ld	(siorc), a
 
 		call	computeflags
+		ld	(IY + PERSTEPRATE), STEPRATE1	;slowest steprate
 		
 		ld	(OUTCPY), a
 		out	(LATCH), a
@@ -1103,7 +1102,8 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	(OUTCPY), a
 		ld	(IY + FLAGS), a
 		out	(LATCH), a
-;		ld	(IY + NSECS + 1), 26
+		ld	(IY + NSIDES), 0
+		ld	(IY + NTRKS), 40
 
 diskformat1:	call	seraddr
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
@@ -1137,41 +1137,65 @@ diskformat6:	res	7, a
 		call	dumppercom
 		
 		POP	HL
+		call	seraddr
+		push	hl
+		ld	b, 16
+diskformat3:	ld	a, (hl)
+		inc	hl
+		call	serhexspace
+		djnz	diskformat3
+		pop	hl
+		
 		LD	D,0
 		ld	a, (siorc)
+		call	seroutfn
 		ld	e, a
+		call	settimer			;THEN RESTART THE DISK TIMER
 		jp	SENDBUFF			;SEND BAD SECTOR DATA FRAME
-;		JP	ACTIVON		;THEN RESTART THE DISK TIMER
 	
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	ld	(IY + PERSTEPRATE), STEPRATE3	;3ms in DD Mode
+computeflags:	ld	(IY + PERSTEPRATE), STEPRATE1	;12ms in DD mode, 6ms in HD mode
 		call	getdrivelatch
 		ld	b, a				;start with HD, MFM
+
+		ld	a, (siocmd)
+		cp	'"'
+		jr	NZ, computeflags4
+		ld	(IY + MEDIA), 0
+		ld	(IY + NSECS + 1), 26
 		
-		ld	hl, IOBUFF+LEN-256		;256 byte return buffer
+computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
 		bit	DENSTY, (IY + MEDIA)    
 		jr	NZ, computeflags1   		;DD or HD
 		
 		ld	HL, IOBUFF+LEN-128		;128 byte return buffer
-		set	6, b				;and no HD
+		set	6, b				;and no HD	
 		
 		ld	a, (IY + NSECS + 1)		;if 26 sectors, then no FM
 		cp	26
-		jr	Z, computeflags4
+		jr	Z, computeflags5
 		set	7, b				;set single density (FM)
-		jr	computeflags4
+		jr	computeflags5
 ;
 ; HD/DD selection
 ; number sector >= 26 and sector-size > 128 then hd
 ;
 computeflags1:	ld	a, (IY + NSECS + 1)
 		cp	26
-		jr	NC, computeflags4		;>= 26 HD
+		jr	NC, computeflags3		;>= 26 HD
 		set	6, b				;< 26 sectores, no HD
+computeflags5:	ld	(IY + PERSTEPRATE), STEPRATE0	;6ms in DD mode
+		ld	a, (IY + NTRKS)
+		cp	80
+		jr	NZ, computeflags2
+		ld	(IY + PERSTEPRATE), STEPRATE3	;3ms in DD mode
 		jr	computeflags2
-computeflags4:	ld	(IY + PERSTEPRATE), STEPRATE0	;3ms in HD mode
+computeflags3:	ld	a, (IY + NTRKS)
+		cp	80
+		jr	NZ, computeflags2
+		ld	(IY + PERSTEPRATE), STEPRATE0	;3ms in HD mode
 computeflags2:	ld	a, b
 		ld	(IY + FLAGS), a
 		ret
@@ -1247,7 +1271,8 @@ diskanalyse:	ld	a, 'C'
 		ld	(IY + MEDIA), 4			;set DD (MFM)
 		ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
 		ld	(IY + NSIDES), 0
-		ld	(IY + PERSTEPRATE), STEPRATE0	;select 6ms/3ms
+
+		ld	(IY + PERSTEPRATE), STEPRATE1	;select 12ms/6ms, in fact 6ms as we are starting with HD
 		
 		call	getdrivelatch			;get select bit for drive in A
 		ld	(IY + FLAGS), a
@@ -1259,21 +1284,30 @@ diskanalyse:	ld	a, 'C'
 		call	getperiod
 		jr	NC, diskanalyse3		;if no period, error
 
-diskanalyse2:	ld	a, '-'				;DSKBITS (PRESENT)
+diskanalyse2:	ld	a, '-'
 		call	seroutfn
-		ld	(IY + FLAGS), 0
+		ld	a, (IY + FLAGS)
+		and	00001111b
+		or	11000000b
+		ld	(IY + FLAGS), a
+		ld	(IY + NSECS + 1), 40
+		ld	(IY + SECLEN + 1), 128
+		call	computemaxsec
+		
+		or	a
+		ret
 		jp	setsioerror
 		
-diskanalyse3:	ld	a, (IY + FLAGS)	
+diskanalyse3:	ld	a, (IY + FLAGS)			;try to get IDAM on track 0
 		out	(LATCH), a	
-		call 	tryidam	
-		jr	z, diskanalyse1	
+		call 	checkidam		
+		jr	Z, diskanalyse1			;found one
 
 		bit 	6, (IY + FLAGS)			;DD already set?
 		jr	nz, diskanalyse4		;yes	
 		set	6, (IY + FLAGS)			;switch back to DD
 		res	DDHD, (IY + PERCONFIG)		;reset DDHD
-		ld	(IY + PERSTEPRATE), STEPRATE3	;set to 3ms in DD mode
+		ld	(IY + PERSTEPRATE), STEPRATE0	;set to 6ms in DD mode
 		jr	diskanalyse3	
 			
 diskanalyse4:	bit 	7, (IY + FLAGS)			;FM already set?
@@ -1286,19 +1320,27 @@ diskanalyse4:	bit 	7, (IY + FLAGS)			;FM already set?
 ; arrive here if IDAM has been found
 ; check for track 41 to be readable
 ;
-diskanalyse1:	ld	a, 40				;check for track 41
+diskanalyse1:	call	tryidam				;get IDAM with its values
+		ld	a, (idseclen)			;get seclen	
+		
+		ld	(IY + PERSECLEN), a		;save
+		ld	a, 40				;check for track 41
 		ld	(IY + NTRKS), a
 		ld	(IX + DSKTRK), a
 		call	seektrack
-		call 	tryidam
-		jr	nz, diskanalyse8
+		call 	checkidam
+		jr	NZ, diskanalyse8		;not found
+		call	tryidam				;get values
 ;
 ; track 41 was readable, check if ID holds also track 41
 ; if not is was a 40 TRK drive and the head hit the bottom
 ;
 		ld	a, (idtrack)
 		cp	(IY + NTRKS)
-		jr	nz, diskanalyse8
+		jr	NZ, diskanalyse8
+		ld	a, (idseclen)
+		cp	(IY + PERSECLEN)
+		jr	NZ, diskanalyse8
 		
 ;
 ; now check for track 77
@@ -1307,35 +1349,45 @@ diskanalyse1:	ld	a, 40				;check for track 41
 		ld	(IY + NTRKS), a			;assume at least 77 tracks
 		ld	(IX + DSKTRK), a
 		call	seektrack
-		call 	tryidam
-		jr	nz, diskanalyse8
-
+		
+		call 	checkidam
+		jr	NZ, diskanalyse8		;not found
+		call	tryidam
+		
 		ld	a, (idtrack)
 		cp	(IY + NTRKS)
-		jr	nz, diskanalyse8
+		jr	NZ, diskanalyse8
+		ld	a, (idseclen)
+		cp	(IY + PERSECLEN)
+		jr	NZ, diskanalyse8
 
-		ld	a, (idseclen)			;check seclen
-		and	a, 3
-		cp	1				;has to be a 256 byte sector
-		jr	nz, diskanalyse8
-		
 		ld	(IY + NTRKS), 80
+		ld	(IY + PERSTEPRATE), STEPRATE0	;set to 3ms in HD mode
+		bit	6, (IY + FLAGS)			;check DD/HD
+		jr	Z, diskanalyse8			;HD, exit
+		ld	(IY + PERSTEPRATE), STEPRATE3	;set to 3ms in DD mode		
+		ld	a, '3'
+		call	seroutfn
 		
 diskanalyse8:	call	restoretrack			;restore and check other side
 	
 		set	5, (IY + FLAGS)			;set side 1
 		ld	a, (IY + FLAGS)
 		out	(LATCH), a
-		call 	tryidam
-		jr	nz, diskanalyse6
-		
+		call 	checkidam
+		jr	NZ, diskanalyse6		;not found		
+		call	tryidam				;get values
+		ld	a, (idseclen)
+		cp	(IY + PERSECLEN)
+		jr	NZ, diskanalyse6
+
 		inc	(IY + NSIDES)
 
 diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 		ld	a, (IY + FLAGS)
 		out	(LATCH), a
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
-
+		
 		call	readskew
 ;		call 	tryidam				;read fresh IDAM (could be CRC error from above)	
 
@@ -1353,7 +1405,8 @@ compseclen:	add	hl, hl
 ;		call	seraddr		
 		
 		call	computemaxsec
-
+		call	dumppercom
+		
 		ld	a, 'C'
 		ld	(siorc), a
 		ld	a, (IY + FLAGS)			;return LATCH bytes
@@ -1395,6 +1448,7 @@ readskew1:	push	bc
 		pop	hl
 		pop	de
 		pop	bc
+		jr	NZ, readskew
 		
 		ld	a, (idsector)			;is read sector known at start position?
 		cp	(hl)
@@ -1411,18 +1465,8 @@ readskew5:	xor	a
 		ld	(IY + NSECS + 1), l
 		ld	(IY + NSECS), 0
 		ld	a, l
-;		call	sercr
-;		call	serhex		
-;		call	sercr
-;		ld	b, 36
-;readskew2:	ld	a, (hl)
-;		or	a
-;		ret	Z
-;		call	serhexspace
-;		inc	hl
-;		djnz	readskew2
-
-readskew3:	ret
+		
+		ret
 		
 ;--------------------------------------------------
 ; checkmaxsec
@@ -1582,7 +1626,7 @@ waitstatus1:	LD	A,14
 		in	a, (STSREG)
 		or	a
 		bit	0, a
-		ret	z
+		ret	Z
 		
 		dec	bc
 		ld	a, b
@@ -1593,10 +1637,40 @@ waitstatus1:	LD	A,14
 		ret
 	
 ;--------------------------------------------------
+; checkidam
+; just sees if a IDAM can be read
+;--------------------------------------------------
+checkidam:	ld	a, RIDCMD
+		out	(CMDREG), a
+		
+		call	settimer50ms
+		
+checkidam1:	ld	a, 14
+checkidam2:	dec	a
+		jr	NZ, checkidam2
+		
+		in	a, (STSREG)
+		bit	0, a
+		jr	NZ, checkidam1
+		
+		ld	b, a
+		ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
+		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
+		ld	a, b
+		
+		and	00011000b			;mask out RNF, CRC
+		push	af
+		call	serhexspace
+		in	a, (DATREG)			;clear DRQ
+		pop	af
+		ret
+
+		
+;--------------------------------------------------
 ; tryidam
 ;--------------------------------------------------
 tryidam:	call	readidam			;try to get an id in MFM / HD
-		and	00011100b			;mask out further bits		
+		and	00011100b			;mask out RNF, CRC, LD
 		ret
 	
 ;--------------------------------------------------
@@ -1702,21 +1776,77 @@ seektrack:
 seektrack1:	out	(CMDREG), a			;issue step command
 		jp	waitstatus
 
+
+;--------------------------------------------------
+; set timer for checkidam 50ms
+;--------------------------------------------------
+settimer50ms:
+		di
+		ld	a, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+		out	(CTC3), a			;PUT CTC3 IN TIMER MODE, PRESCALE 256
+		xor	a				;TIME CONSTANT OF 0 WHICH MEANS 256
+		out	(CTC3), a			;COUNT MOD 256
+		ld	a, 3
+		ld	(DRVTMR), a			;STOP DRIVES AFTER 255 INTERRUPTS
+		push	hl
+		ld	hl, dotimer50ms
+		ld	(CTCVEC+6), hl			;SET VECTOR TO ACTIVITY-CHECK ROUTINE
+		pop	hl
+		ei
+		ret
+
+;--------------------------------------------------
+; handler for checkidam 50ms
+;--------------------------------------------------		
+dotimer50ms:	push	af
+
+		ld	a, (DRVTMR)
+		dec	a
+		ld	(DRVTMR), a
+
+		jr	Z, dotimer50ms2			;exit if 50ms elapsed
+
+		pop	af
+		ei
+		reti
+
+dotimer50ms2:	ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
+		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
+
+		pop	af
+		pop	hl				;point reti to last call address
+		ld	a, FINCMD
+		out	(CMDREG), a
+		ld	a, 14
+dotimer50ms1:	dec	a
+		jr	NZ, dotimer50ms1
+		in	a, (DATREG)
+		ld	a, 18h				;set error
+		or	a
+		reti
+
+;--------------------------------------------------
+; set timer to keep motor spinning
+;--------------------------------------------------
 settimer:
 		di
 		ld	A, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
-		out	(CTC3),A	;PUT CTC3 IN TIMER MODE, PRESCALE 256
-		xor	A		;TIME CONSTANT OF 0 WHICH MEANS 256
-		out	(CTC3),A	;COUNT MOD 256
+		out	(CTC3),A			;PUT CTC3 IN TIMER MODE, PRESCALE 256
+		xor	A				;TIME CONSTANT OF 0 WHICH MEANS 256
+		out	(CTC3),A			;COUNT MOD 256
 		dec	A
 		ld	(DRVTMR),A			;STOP DRIVES AFTER 255 INTERRUPTS
+		push	hl
 		ld	HL, dotimer
 		ld	(CTCVEC+6),HL			;SET VECTOR TO ACTIVITY-CHECK ROUTINE
+		pop	hl
 		ei
 		ret
-;
-;
-;
+		
+;--------------------------------------------------
+; count down DRVTMR
+; if timed out, reset FDC and set latch to 64
+;--------------------------------------------------
 dotimer:	PUSH	AF
 		
 		in	a, (TRKREG)	
@@ -1734,6 +1864,8 @@ dotimer:	PUSH	AF
 		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
 		ld	(DRVOFF), a			;SET 'DRVOFF' FLAG TO NON-ZERO VALUE
 		ld	(drive), a			;invalid track buffer
+		ld	a, 64
+		out	(LATCH), a
 	
 dotimer1:	pop	af
 		ei
@@ -1742,33 +1874,26 @@ dotimer1:	pop	af
 ;--------------------------------------------------
 ; cmdwaitfn
 ;--------------------------------------------------
-cmdwaitfn:;	in	a, (STSREG)
-	;	rla
-	;	jr	c, cmdwaitfn1
-	;	xor	a
-	;	out	(LATCH), a
-	;	call	invalidate
-		
-cmdwaitfn1:	ld	A, (CMDFLG)
+cmdwaitfn:	ld	A, (CMDFLG)
 		or	A				;see if command frame has arrived
 		ret	Z				;exit if nothing has happened
 
 ;		call	sercmd
 		
-		LD	A, (CMDFLG)
-		CP	1
+		ld	A, (CMDFLG)
+		cp	1
 
-		DI						;else reset interrupt and start again
-		LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL	;software reset ctc0
-		OUT	(CTC0), A				;perform the reset
+		di						;else reset interrupt and start again
+		ld	a, CTC_D1_SW_RST + CTC_D0_CONTROL	;software reset ctc0
+		out	(CTC0), a				;perform the reset
 		out	(CTC3), a
-		EI
+		ei
 
 ;		JP	Z, CMDL4				;good cmd-frame
 								;fall through
 		JR	NZ, togglebaud
 	IF SALLYRS = 1
-;		call	sercmd					;5-byte command frame
+		;call	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
@@ -2124,9 +2249,7 @@ dumppercom3:	inc	hl
 		ld	a, 'F'
 		call	seroutfn
 		ld	a, (IY + FLAGS)
-		call	serhex
-		
-		call	sercr
+		call	serhexspace
 
 		push	iy
 		pop	hl
@@ -2136,15 +2259,19 @@ dumppercom3:	inc	hl
 		inc	hl
 		push	hl
 		ld	h, (hl)
-		inc	hl
 		ld	l, a
 		ld	a, 'M'
 		call	seroutfn
 		call	seraddr
-				
-		call	sercr
-		
+
 		pop	hl
+		inc	hl
+		ld	a, 's'
+		call	seroutfn
+		ld	a, (hl)
+		call	serhexspace
+		call	sercr
+
 		inc	hl
 		inc	hl
 		ld	b, 36
@@ -2507,7 +2634,7 @@ FMTS:
 	DEFW	DD5N26					;DOUBLE DENSITY 128B/sec 26 secs
 	DEFW	SKEWMD					;Medium or Enhanced density (ATARI 1050)
 	DEFB	26			
-	DEFW	6500					;6238
+	DEFW	6300					;6238
 ;
 ;
 ;
@@ -2532,7 +2659,7 @@ DD5N26:	DEFB	1
 	DEFB	3			
 	DEFB	1,0F7H					;GENERATE CRC BYTES
 	DEFB	18,00H			
-	DEFB	32,4EH					;FIRST PART OF GAP 3
+	DEFB	28,4EH					;FIRST PART OF GAP 3
 	
 SKEWMD:	DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
 	DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26
@@ -2617,9 +2744,10 @@ drivedata:
 PERCONFIG	equ	SPARE3	
 	
 PERTRACK	equ 	16	
-MAXSEC	equ	17	
-PERSTEPRATE	equ	19	
-PERSKEWTAB	equ	20			;NSECS+1 bytes for sector skew
+MAXSEC		equ	17			;2-bytes max sectors	
+PERSTEPRATE	equ	19
+PERSECLEN	equ	20			;seclen in disk encoding (0-3)
+PERSKEWTAB	equ	21			;NSECS+1 bytes for sector skew
 
 DDHD		equ	0
 
