@@ -87,8 +87,8 @@ FORM4:	IN	A,(STSREG)
 	BIT	0,A
 	JR	NZ,FORM4
 	
-	IF	SALLYRS = 1
-	bit	6, a		;mask out write protect
+	IF	WD1772 = 1
+	bit	6, a		;check write protect
 	jr	NZ, FORMX
 	ENDIF
 	
@@ -108,7 +108,6 @@ FORM5:	LD	A,(IX)
 FORM51:	CALL	TYP2CMD		;read sector discarding the data
 	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
 	JR	Z,FORM6		;JUMP IF SECTOR READ OK
-	call	serhexspace
 	AND	10000000B
 	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
 	

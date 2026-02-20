@@ -185,12 +185,12 @@ IF SALLYBUILD
 		LD	A, SIONORMAL			;init Pokey-divisor
 		LD	(pokeydiv), A
 		
-		LD	A, 2
-		LD	(direct), A
-		
 		call	invalidate
 		
 	IF SALLYRS = 0
+		LD	A, 2
+		LD	(direct), A
+		
 		LD	HL, DISKTAB+2
 		LD	DE, dsktb+3
 		LD	BC, 3*7
@@ -769,7 +769,7 @@ diskstatus3:	bit	SEC256, a
 		
 diskstatus5:	ld	hl, statbytes
 		ld	(hl), a
-;		call	serhex
+		;call	serhex
 		ld	a,(IY+HDWSTS)
 		cpl
 		inc	hl
@@ -1050,22 +1050,33 @@ diskformat:
 		OR	L                       
 		RET	NZ				;REFUSE TO FORMAT IF SPOOLER ACTIVE
 						
-		ld	a, (IY + NTRKS) 		;REFUSE TO FORMAT IF PARAMS NOT SET
-		or	a                       
-		ret	Z                       
+;		ld	a, (IY + NTRKS) 		;REFUSE TO FORMAT IF PARAMS NOT SET
+;		or	a                       
+;		ret	Z                       
 						
-		call	SENDACK                 
+		call	SENDACK                 	;send acknowledge
+		
 		call	STOPTMR				;THEN KILL CTC3 TO STOP DISK TIMER
 						
 		ld	a, 'C'
 		ld	(siorc), a
 
-		call	computeflags
+		ld	a, (IY + PERCONFIG)
+		or	a
+		jr	NZ, diskformat4			;has PERCOM been set?
+		
+		call	clearpercom
+		ld	(IY + DSKBITS), 40h
+		ld	(IY + NSECS + 1), 18
+		ld	(IY + NTRKS), 40
+		ld	(IY + SECLEN + 1), 128
+		
+diskformat4:	call	computeflags
 		ld	(IY + PERSTEPRATE), STEPRATE1	;slowest steprate
 		
 		ld	(OUTCPY), a
 		out	(LATCH), a
-		call	serhex
+		;call	serhex
 
 		push	af
 		call	restoretrack
@@ -1088,7 +1099,6 @@ diskformat2:	add	HL,BC
 		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
 		
 diskformat5:	ld	a, (siocmd)			;check for medium density
-		call	serhexspace
 		cp	'"'
 		jr	NZ, diskformat1
 		ld	hl, (FMTPTR)
@@ -1105,7 +1115,7 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	(IY + NSIDES), 0
 		ld	(IY + NTRKS), 40
 
-diskformat1:	call	seraddr
+diskformat1:	;call	seraddr
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	A,(DKIOCB+DSKSTS)
 		and	11000000B
@@ -1122,33 +1132,26 @@ diskformat1:	call	seraddr
 		pop	IY
 
 
-diskformat6:	res	7, a
-		push	af
-		ld	a, ':'
-		call	seroutfn
-		pop	af
-		call	serhex
+diskformat6:	res	7, a				;mask out MOTOR ON
 		CALL	SETSTAT				;UPDATE STATUS AS SPECIFIED BY ACC
 		
 		ld	(IY + FLAGS), 0
-;		call	serinfn
-		call	diskanalyse			;compute maxsec
-;		call	restoretrack
-		call	dumppercom
+		call	diskanalyse			;anaylse disk
+		call	dumppercom			;show results
 		
-		POP	HL
-		call	seraddr
-		push	hl
-		ld	b, 16
-diskformat3:	ld	a, (hl)
-		inc	hl
-		call	serhexspace
-		djnz	diskformat3
-		pop	hl
-		
+;		pop	HL
+;		call	seraddr
+;		push	hl
+;		ld	b, 16
+;diskformat3:	ld	a, (hl)
+;		inc	hl
+;		call	serhexspace
+;		djnz	diskformat3
+
+		pop	hl		
 		LD	D,0
 		ld	a, (siorc)
-		call	seroutfn
+		;call	seroutfn
 		ld	e, a
 		call	settimer			;THEN RESTART THE DISK TIMER
 		jp	SENDBUFF			;SEND BAD SECTOR DATA FRAME
@@ -1200,27 +1203,17 @@ computeflags2:	ld	a, b
 		ld	(IY + FLAGS), a
 		ret
 		
-;--------------------------------------------------
-; compsiobufbuf
-; siorc default to 'C' - complete
-; copy percom sector length to IX + DSKAUX
-; computer start of serial buffer (IOBUF+LEN - seclen)
-;--------------------------------------------------
-compsiobuf:
-		ld	a, 'C'
-		ld	(siorc), a
 
-		ld	h, (IY + SECLEN)	;compute start of disk-data
-		ld	l, (IY + SECLEN + 1)	;in transfer buffer
-		ld	(DKIOCB + DSKAUX), hl
-		ex	de, hl
-		or	a
-		ld	hl, IOBUFF+LEN
-		sbc	hl, de
-		ld	(DKIOCB + DSKPTR), hl
-		ld	(siobuffer), hl
+;--------------------------------------------------
+; clearpercom
+;--------------------------------------------------
+clearpercom:	ld	hl, drivedata
+		xor	a
+		ld	b, a
+clearpercom1:	ld 	(hl), a
+		inc	hl
+		djnz	clearpercom1
 		ret
-
 ;--------------------------------------------------
 ; adjustsiobufbuf
 ; if sector < 4, copy data to IOBUF+LEN - 128
@@ -1269,7 +1262,7 @@ diskanalyse:	ld	a, 'C'
 		ret	NZ				;no continue without disk analysis
 		
 		ld	(IY + MEDIA), 4			;set DD (MFM)
-		ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
+		;ld	(IY + PERCONFIG), 3		;set SIZE and DDHD
 		ld	(IY + NSIDES), 0
 
 		ld	(IY + PERSTEPRATE), STEPRATE1	;select 12ms/6ms, in fact 6ms as we are starting with HD
@@ -1306,7 +1299,7 @@ diskanalyse3:	ld	a, (IY + FLAGS)			;try to get IDAM on track 0
 		bit 	6, (IY + FLAGS)			;DD already set?
 		jr	nz, diskanalyse4		;yes	
 		set	6, (IY + FLAGS)			;switch back to DD
-		res	DDHD, (IY + PERCONFIG)		;reset DDHD
+		;res	DDHD, (IY + PERCONFIG)		;reset DDHD
 		ld	(IY + PERSTEPRATE), STEPRATE0	;set to 6ms in DD mode
 		jr	diskanalyse3	
 			
@@ -1366,8 +1359,6 @@ diskanalyse1:	call	tryidam				;get IDAM with its values
 		bit	6, (IY + FLAGS)			;check DD/HD
 		jr	Z, diskanalyse8			;HD, exit
 		ld	(IY + PERSTEPRATE), STEPRATE3	;set to 3ms in DD mode		
-		ld	a, '3'
-		call	seroutfn
 		
 diskanalyse8:	call	restoretrack			;restore and check other side
 	
@@ -1656,13 +1647,13 @@ checkidam2:	dec	a
 		ld	b, a
 		ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
 		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
+		in	a, (DATREG)			;clear DRQ
 		ld	a, b
 		
 		and	00011000b			;mask out RNF, CRC
-		push	af
-		call	serhexspace
-		in	a, (DATREG)			;clear DRQ
-		pop	af
+;		push	af
+;		call	serhexspace
+;		pop	af
 		ret
 
 		
@@ -1893,7 +1884,7 @@ cmdwaitfn:	ld	A, (CMDFLG)
 								;fall through
 		JR	NZ, togglebaud
 	IF SALLYRS = 1
-		;call	sercmd					;5-byte command frame
+		call	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
@@ -2741,15 +2732,14 @@ drivedata:
 ;FLAGS		EQU	14			;FLAGS BYTE FOR DISK OPERATION
 ;SPARE3		EQU	15	
 	
-PERCONFIG	equ	SPARE3	
-	
-PERTRACK	equ 	16	
+PERCONFIG	equ	15			;has percom been set?
+PERTRACK	equ 	16			;track for drive
 MAXSEC		equ	17			;2-bytes max sectors	
-PERSTEPRATE	equ	19
-PERSECLEN	equ	20			;seclen in disk encoding (0-3)
+PERSTEPRATE	equ	19			;steprate in FDC encoding
+PERSECLEN	equ	20			;seclen in FDC encoding (0-3)
 PERSKEWTAB	equ	21			;NSECS+1 bytes for sector skew
 
-DDHD		equ	0
+;DDHD		equ	0
 
 		org	$ + 256
 		

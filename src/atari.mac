@@ -880,6 +880,9 @@ PUTPARAMS:
 	call	computemaxsec	;compute maxsector
 	call	dumppercom
 	
+	ld	a, (IX + DSKDRV)
+	ld	(IY + PERCONFIG), a
+	
 	ENDIF
 	
 	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
