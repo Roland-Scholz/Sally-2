@@ -70,8 +70,8 @@ START:		lda	#0
 		beq	DONACK
 		cmp	#'P'
 		beq	DOPERCOM
-		cmp	#'R'
-		beq	DORESET
+;		cmp	#'R'
+;		beq	DORESET
 		cmp	#'S'
 		beq	DOGETSTAT
 		cmp	#'T'
@@ -262,15 +262,14 @@ READPER1:	sta	DCOMND
 
 SETADR:		lda	#0
 		sta	DSTATS
+		sta	DBYTLO
+		sta	DBYTHI
 		lda	#'S'
 		sta	DCOMND
 		lda	#'Z'
 		sta	DDEVIC
 		lda	#1
 		sta	DUNIT
-		lda	#0
-		sta	DBYTLO
-		sta	DBYTHI
 		lda	SALLYADR
 		sta	DAUX1
 		lda	SALLYADR+1
@@ -301,7 +300,7 @@ GETRAM1:	lda	#<BUFFER
 		sta	DBYTHI
 		jmp	SIOV
 		
-GOTOADR:	jsr	SETADR
+GOTOADR:	;jsr	SETADR
 		lda	#'Z'
 		sta	DDEVIC
 		lda	#1
@@ -310,13 +309,12 @@ GOTOADR:	jsr	SETADR
 		sta	DCOMND
 		lda	#0
 		sta	DSTATS
+		sta	DBYTLO
+		sta	DBYTHI
 		lda	SALLYADR
 		sta	DAUX1
 		lda	SALLYADR+1
 		sta	DAUX2
-		lda	#0
-		sta	DBYTLO
-		sta	DBYTHI
 		jmp	SIOV
 ;
 ;
@@ -545,7 +543,7 @@ upload1:	jsr	readfile			;read a page from file
 		
 uploadex:	jmp	START
 
-RESET:		lda	#$39
+RESET:		lda	#0
 		sta	SALLYADR
 		lda	#0
 		sta	SALLYADR+1		
@@ -943,7 +941,7 @@ SALLYMSG:	.byte	CLS
 		.byte	"F - Format", EOL
 		.byte	"N - Test NACK (Cmd 'X')", EOL
 		.byte	"P - Percom Block Config", EOL
-		.byte	"R - Reset Sally", EOL
+		;.byte	"R - Reset Sally", EOL
 		.byte	"S - Get Status", EOL
 		.byte	"T - Test (read) all sectors", EOL
 		.byte	"U - upload sally2.com", EOL

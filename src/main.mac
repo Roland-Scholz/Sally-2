@@ -8,6 +8,21 @@
 ; Code executed after Reset
 ;--------------------------------------------------
 		INCLUDE SYSINIT.MAC
+
+	IF SALLYRS = 1
+		include atarirs.mac
+	ENDIF
+	
+		include	version.asm
+		
+		di
+		ld	hl,08000h
+		ld	de,00000h
+		ld	bc,08000h
+		ldir
+		jp	RAMTST
+
+	
 ;
 ;	PHASE TO RAM-RESIDENT PART OF PROGRAM
 ;
@@ -48,7 +63,9 @@ ENDIF	;SALLYBUILD
 ;	CODE PAST THIS POINT IS ONLY USED IN ATARI DISK MODE
 ;
 		INCLUDE	BITBANG.MAC
+	IF SALLYRS = 0
 		INCLUDE	ATARI.MAC
+	ENDIF
 		INCLUDE	FORMAT.MAC
 ;
 ;
