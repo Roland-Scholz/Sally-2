@@ -660,12 +660,12 @@ diskwritefn1:	call	SENDACK				;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
 		jr	C, diskwritefn4			;no carry, ok
 			
 		call	sec2trk				;compute head / track / sec and seek
-		ld	a, (DKIOCB + DSKSEC)
-		call	serhexspace
-		ld	a, (DKIOCB + DSKTRK)
-		call	serhexspace
-		ld	a, (OUTCPY)
-		call	serhexspace
+;		ld	a, (DKIOCB + DSKSEC)
+;		call	serhexspace
+;		ld	a, (DKIOCB + DSKTRK)
+;		call	serhexspace
+;		ld	a, (OUTCPY)
+;		call	serhexspace
 
 		call	invalidate
 		

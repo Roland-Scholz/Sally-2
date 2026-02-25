@@ -17,6 +17,7 @@ copy /Y /B percom.com + percom_run.com autorun.ar0
 
 ..\%TOOLS%\xfddos -i mydos90k.atr autorun.ar0
 ..\%TOOLS%\xfddos -i mydos90k.atr ..\firmware\Sally2\sally2.com
+..\%TOOLS%\xfddos -i mydos90k.atr ..\..\res\FMTDIR.XEX
 
 mkdir obj 2> nul > nul
 mkdir lst 2> nul > nul
