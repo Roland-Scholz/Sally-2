@@ -493,7 +493,14 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 			
 		call	readtrk	
 			
-trkmatch:	call	computesecbuf	
+trkmatch:	;ld	a, (DKIOCB + DSKSEC)
+		;call	serhexspace
+		;ld	a, (DKIOCB + DSKTRK)
+		;call	serhexspace
+		;ld	a, (OUTCPY)
+		;call	serhexspace
+		
+		call	computesecbuf	
 
 diskreadfn3:	ld	de, IOBUFF+LEN-128		;make 128 byte sectors
 		ld	bc, 128
@@ -520,9 +527,6 @@ diskreadfn1:	push	de
 		ld	e, a
 		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME	
 
-;
-;
-;
 ;--------------------------------------------------
 ; read entire track 
 ;--------------------------------------------------
@@ -530,15 +534,15 @@ readtrk:	;ret
 		ld	(drive), bc
 
 		call	readidam
-		jr	Z, readtrk5			;no error proceed
+		jp	NZ, readtrk5			;no error proceed
 		
-		ld	a, (IY + FLAGS)
-		res	7, a				;switch from FM to MFM
-		ld	(IY + FLAGS), a			;make MD disk
-		ld	(OUTCPY), a
-		out	(LATCH), a
-		ld	(IY + NSECS + 1), 26
-		jr	readtrk
+;		ld	a, (IY + FLAGS)
+;		res	7, a				;switch from FM to MFM
+;		ld	(IY + FLAGS), a			;make MD disk
+;		ld	(OUTCPY), a
+;		out	(LATCH), a
+;		ld	(IY + NSECS + 1), 26
+;		jr	readtrk
 
 readtrk5:	ld	h, (IY + SECLEN)		;copy SECLEN to DSKAUX
 		ld	l, (IY + SECLEN + 1)
@@ -546,8 +550,13 @@ readtrk5:	ld	h, (IY + SECLEN)		;copy SECLEN to DSKAUX
 		
 		call	getskewtab			;load HL with address of skewtab
 
-		ld	a, (idsector)
-		ld	b, (IY + NSECS + 1)		;loop over #secs	
+		ld	b, (IY + NSECS + 1)		;loop over #secs
+		ld	a, (IY + NTRKS)			;if high-capacity disk (NTRKS=1)
+		dec	a
+		jr	NZ, readtrk6
+		ld	b, (IY + PERSECS)		;take PERSECS as number of sectors
+
+readtrk6:	ld	a, (idsector)
 		ld	c, (IX + DSKSEC)		;save DISKSEC in C
 		
 ;		call	serhex
@@ -651,6 +660,12 @@ diskwritefn1:	call	SENDACK				;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
 		jr	C, diskwritefn4			;no carry, ok
 			
 		call	sec2trk				;compute head / track / sec and seek
+		ld	a, (DKIOCB + DSKSEC)
+		call	serhexspace
+		ld	a, (DKIOCB + DSKTRK)
+		call	serhexspace
+		ld	a, (OUTCPY)
+		call	serhexspace
 
 		call	invalidate
 		
@@ -734,7 +749,7 @@ diskformat:
 		ld	(IY + NSECS + 1), 18
 		ld	(IY + SECLEN + 1), 128
 				
-diskformat4:	call	computeflags			;MD will be take care of here
+diskformat4:	call	computeflags			;MD will be taken care of here
 
 		ld	(OUTCPY), a
 		out	(LATCH), a
@@ -762,12 +777,27 @@ diskformat2:	add	HL,BC
 		
 diskformat5:	ld	a, (siocmd)			;check for medium density
 		cp	'"'
-		jr	NZ, diskformat1
+		jr	NZ, diskformat7
 		ld	hl, (FMTPTR)
 		ld	bc, 4 * FMTLEN
 		add	hl, bc
-
-diskformat1:	;call	seraddr
+		
+diskformat7:	ld	a, (IY + NTRKS)			;if NTRKS = 1
+		dec	a
+		jr	NZ, diskformat1			;and 1680h = 5760 secs
+		ld	a, (IY + NSECS)
+		cp	16h
+		jr	NZ, diskformat1
+		ld	a, (IY + NSECS + 1)
+		cp	80h
+		jr	NZ, diskformat1
+		ld	hl, (FMTPTR)			;format 1.44MB
+		ld	bc, 5 * FMTLEN
+		add	hl, bc
+		ld	(IY + PERTRKS), 80
+		ld	(IY + PERSECS), 36
+		
+diskformat1:	call	seraddr
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	A,(DKIOCB+DSKSTS)
 		and	11000000B
@@ -776,7 +806,11 @@ diskformat1:	;call	seraddr
 		ld	a,(iy+nsides)			;set for SS/DS init
 		ld	(sides),a
 		ld	a,(iy+ntrks)			;set for number of tracks
-		ld	(tracks),a
+		cp	1
+		jr	NZ, diskformat8
+		ld	(sides), a
+		ld	a, (IY + PERTRKS)
+diskformat8:	ld	(tracks),a
 		push	IX
 		push	IY
 		call	FORMAT				;CALL FORMAT SUBROUTINE
@@ -791,14 +825,15 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 		call	diskanalyse			;anaylse disk
 ;		call	dumppercom			;show results
 		
-;		pop	hl
-;		call	seraddr
-;		push	hl
-;		ld	b, 16
-;diskformat3:	ld	a, (hl)
-;		inc	hl
-;		call	serhexspace
-;		djnz	diskformat3
+		pop	hl
+		call	seraddr
+		push	hl
+		ld	b, 16
+diskformat3:	ld	a, (hl)
+		ld	(hl), 255
+		inc	hl
+		call	serhexspace
+		djnz	diskformat3
 
 		pop	hl		
 		LD	D, 0
@@ -1048,7 +1083,24 @@ compseclen:	add	hl, hl
 ;		call	seraddr		
 
 		call	computemaxsec
-		call	dumppercom
+
+		ld	a, (IY + NSECS + 1)			;adjust for 1.44MB
+		cp	36
+		jr	NZ, diskanalyse5
+		ld	(IY + PERSECS), a
+		ld	a, (IY + NTRKS)
+		ld	(IY + PERTRKS), a
+		ld	(IY + NTRKS), 1
+		ld	a, (IY + MAXSEC)
+		ld	(IY + NSECS + 1), a
+		ld	a, (IY + MAXSEC + 1)
+		ld	(IY + NSECS), a
+		ld	a, (IY + NSIDES)
+		ld	(IY + PERSIDES), a
+		ld	(IY + NSIDES), 0
+		
+		
+diskanalyse5:	call	dumppercom
 		
 		ld	a, 'C'
 		ld	(siorc), a
@@ -1379,29 +1431,43 @@ diskop2:	in	A, (STSREG)
 ;--------------------------------------------------
 sec2trk:	ld	hl, (siosector)			;sector from SIO 
 		dec	hl				;minus 1	
-		xor	a				;track to zero
-		ld	d, a	
 		ld	e, (IY + NSECS + 1)		;load DE with assumed sec per track
-			
-sec2trk2:	or	a				;compute track number siosector / NSECS
-		sbc	hl, de
-		jr	c, sec2trk1
+		
+		ld	b, (IY + NTRKS)
+		dec	b
+		jr	NZ, sec2trk6
+		ld	e, (IY + PERSECS)		;load DE with assumed sec per track from internal
+		
+sec2trk6:	inc	b
+		xor	a				;track to zero
+		ld	d, a
+		
+sec2trk2:	sbc	hl, de				;compute track number siosector / NSECS
+		jr	C, sec2trk1
 		inc	a
 		jr	sec2trk2
 		
 sec2trk1:	ld	(DKIOCB + DSKTRK), a		;track to be read
-		cp	(IY + NTRKS)			;check if > NTRKS
+		dec	b
+		jr	NZ, sec2trk4
+		sub	(IY + PERTRKS)
+		jr	sec2trk5
+sec2trk4	sub	(IY + NTRKS)			;check if > NTRKS
+sec2trk5:	inc	b
 		jr	C, sec2trk3	
-		sub	(IY + NTRKS)	
 		ld	(DKIOCB + DSKTRK), a	
 		ld	a, (OUTCPY)	
 		set	5, a				;set head 1
 		ld	(OUTCPY), a	
 		out	(LATCH), a	
 		
-sec2trk3:	ld	a, l	
-		add	a, (IY + NSECS + 1)		;add NSECS we have subtracted too much 
-		inc 	a				;offset by 1
+sec2trk3:	ld	a, l
+		dec	b
+		jr	NZ, sec2trk7
+		add	a, (IY + PERSECS)
+		jr	sec2trk8
+sec2trk7:	add	a, (IY + NSECS + 1)		;add NSECS we have subtracted too much 
+sec2trk8:	inc 	a				;offset by 1
 		ld	(DKIOCB + DSKSEC), a		;store in IOCB
 							;fall through
 							
@@ -1551,33 +1617,33 @@ GETPARAMS1	PUSH	IY
 ;	... PERCOM 'O' COMMAND PROCESSOR ...
 ;--------------------------------------------------
 PUTPARAMS:
-	CALL	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-	RET	C		;EXIT IF NOT A DRIVE IN OUR BOX
-
-	CALL	SENDACK
-	CALL	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
-	RET	NZ
-
-	LD	DE,12
-	OR	A
-	SBC	HL,DE
-	RET	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
-
-	CALL	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
-;	SET	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
-	LD	HL,IOBUFF
-	PUSH	IY
-	POP	DE		;POINT DE TO PARAMETERS FOR DRIVE(N)
-	LD	BC,12
-	LDIR			;COPY NEW STUFF IN THE PLACE	
+		call	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
+		ret	C		;EXIT IF NOT A DRIVE IN OUR BOX
 	
-	call	dumppercom
-	call	computeflags
-	call	computemaxsec				;compute maxsector
-	call	dumppercom	
-	set	PERCONF, (IY + DSKBITS)			;mark percom-block configured
+		call	SENDACK
+		call	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
+		ret	NZ
 	
-	JP	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
+		ld	de, 12
+		or	a
+		sbc	hl, de
+		ret	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
+	
+		call	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
+;		set	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
+		ld	hl, IOBUFF
+		push	iy
+		pop	de		;POINT DE TO PARAMETERS FOR DRIVE(N)
+		ld	bc, 12
+		ldir			;COPY NEW STUFF IN THE PLACE	
+		
+		call	dumppercom
+		call	computeflags
+		call	computemaxsec				;compute maxsector
+		call	dumppercom	
+		set	PERCONF, (IY + DSKBITS)			;mark percom-block configured
+		
+		jp	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
 	
 ;--------------------------------------------------
 ; command 'S' Disk status 
@@ -1746,6 +1812,9 @@ dumppercom3:	inc	hl
 
 		inc	hl
 		inc	hl
+		inc	hl
+		inc	hl
+		inc	hl
 		ld	b, 36
 		
 dumppercom2:	ld	a, (hl)
@@ -1820,6 +1889,12 @@ FMTS:
 		DEFW	SKEWMD				;Medium or Enhanced density (ATARI 1050)
 		DEFB	26			
 		DEFW	6300				;6238
+		
+		DEFW	DD5N18
+		DEFW	SKEW36
+		DEFB	36
+		DEFW	(12500-76)
+		
 ;
 ;
 ;
@@ -1848,6 +1923,11 @@ DD5N26:		DEFB	1
 	
 SKEWMD:		DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
 		DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26
+		
+SKEW36:		DEFB	1, 3, 5, 7,  9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35
+		DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36
+
+
 	
 ;--------------------------------------------------
 ; variables and data structure
@@ -1876,14 +1956,17 @@ SPARE2		EQU	11
 CMDSTS		EQU	12			;COMMAND STATUS
 HDWSTS		EQU	13			;HARDWARE STATUS
 FLAGS		EQU	14			;FLAGS BYTE FOR DISK OPERATION
-SPARE3		EQU	15	
+;SPARE3		EQU	15	
 	
 PERCONFIG	equ	15			;has percom been set?
 PERTRACK	equ 	16			;track for drive
 MAXSEC		equ	17			;2-bytes max sectors	
 PERSTEPRATE	equ	19			;steprate in FDC encoding
 PERSECLEN	equ	20			;seclen in FDC encoding (0-3)
-PERSKEWTAB	equ	21			;NSECS+1 bytes for sector skew
+PERTRKS		equ	21			;if NTRKS = 1, number of tracks
+PERSECS		equ	22			;if NTRKS = 1, number of secs
+PERSIDES	equ 	23			;if NTRKS = 1, number of heads	
+PERSKEWTAB	equ	24			;NSECS+1 bytes for sector skew
 ;
 ; Bits for FLAGS
 ;

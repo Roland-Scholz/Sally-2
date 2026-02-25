@@ -53,7 +53,8 @@ FORM2:	LD	(HL),076H	;STORE 'HALT' OPCODE
 	LD	A,0C9H
 	LD	(HL),A		;STORE 'RET' OPCODE AT END
 	LD	(0066H),A	;ALSO PLUNK ONE DOWN AT NMI VECTOR
-	INC	HL
+;	INC	HL
+	LD	HL, 8000h
 	LD	(TRKPTR),HL	;SAVE ADDRESS TO BEGIN TRACK IMAGE
 
 	XOR	A
@@ -72,16 +73,22 @@ FORM3A:	LD	IX,(FRMPTR)	;GET SELECTED FORMAT DATA POINTER
 	ld	(outcpy),a	;else flip side select bit in latch
 	out	(latch),a
 form3b:	call	build
+;	ld	a, 'b'
+;	call	seroutfn
 	LD	A,(TRACK)
 	OUT	(TRKREG),A
 	LD	HL,(TRKPTR)	;POINT TO START OF TRACK IMAGE
 	DI
 	LD	A,WRTKDLY	;write track + 30ms settle delay
 	CALL	CMDOUT		;ISSUE WRITE TRACK COMMAND
+;	ld	a, 'c'
+;	call	seroutfn
 	LD	A,(TRKSIZ)
 	LD	B,A		;LOAD B WITH TRACK SIZE MOD 256
 	LD	C,DATREG
 	CALL	IOBUFF+LEN	;EXECUTE WRITE TRACK FROM BUFFER
+;	ld	a, 'd'
+;	call	seroutfn
 	EI
 FORM4:	IN	A,(STSREG)
 	BIT	0,A
@@ -213,9 +220,16 @@ BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
 	JR	NZ,BUILD3
 
 	LD	HL,(TRKPTR)
-	LD	BC,10200
+;	call	seraddr
+;	ex	de, hl
+;	call	seraddr
+;	ex 	de, hl
+	
+;	LD	BC,10200
+	LD	BC,12500
 	ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
 	SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
+;	call	seraddr
 	LD	B,H
 	LD	C,L
 	LD	H,D
