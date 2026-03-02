@@ -704,7 +704,7 @@ cmdwaitfn:	ld	A, (CMDFLG)
 		or	A				;see if command frame has arrived
 		ret	Z				;exit if nothing has happened
 
-;		call	sercmd
+		;call	sercmd
 		
 		ld	A, (CMDFLG)
 		cp	1
@@ -719,7 +719,7 @@ cmdwaitfn:	ld	A, (CMDFLG)
 								;fall through
 		JR	NZ, togglebaud
 	IF SALLYRS = 1
-;		call	sercmd					;5-byte command frame
+		call	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
@@ -734,7 +734,7 @@ togglebaud:
 		LD	A, SIONORMAL
 togglebaud1:
 		LD	(pokeydiv), A
-;		CALL	serhex
+		CALL	serhexspace
 		JP	CMDL5
 
 ;--------------------------------------------------

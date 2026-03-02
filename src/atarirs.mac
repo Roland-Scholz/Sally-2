@@ -723,11 +723,14 @@ diskwritefn8:	xor	a
 ; command '!' and '"' format and format medium
 ;--------------------------------------------------
 diskformat:
+		ld	a,'*'
+		call	seroutfn
+		
 		CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		RET	C				;EXIT IF NOT A DRIVE IN OUR BOX
 						
-		LD	HL,(PCOUNT)             
-		LD	A,H                     
+		LD	HL, (PCOUNT)             
+		LD	A, H                     
 		OR	L                       
 		RET	NZ				;REFUSE TO FORMAT IF SPOOLER ACTIVE
 						
@@ -742,14 +745,13 @@ diskformat:
 		ld	a, 'C'
 		ld	(siorc), a
 
-		bit	PERCONF, (IY + DSKBITS)
+		ld	a, (IY + FLAGS)
+		or	a
 		jr	NZ, diskformat4			;has PERCOM been set?
 
-		ld	(IY + NTRKS), 40		;no make SD Disk
-		ld	(IY + NSECS + 1), 18
-		ld	(IY + SECLEN + 1), 128
-				
-diskformat4:	call	computeflags			;MD will be taken care of here
+		call	makesddisk
+
+diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 
 		ld	(OUTCPY), a
 		out	(LATCH), a
@@ -853,7 +855,7 @@ computeflags:	ld	(IY + PERSTEPRATE), STEPRATE1	;12ms in DD mode, 6ms in HD mode
 		ld	a, (siocmd)
 		cp	'"'
 		jr	NZ, computeflags4
-		ld	(IY + MEDIA), 0
+		ld	(IY + MEDIA), 0			;make MD disk
 		ld	(IY + NSECS + 1), 26
 		ld	(IY + NSIDES), 0
 		ld	(IY + NTRKS), 40
@@ -902,6 +904,24 @@ clearpercom1:	ld 	(hl), a
 		inc	hl
 		djnz	clearpercom1
 		ret
+
+;--------------------------------------------------
+; clearpercom
+;--------------------------------------------------
+makesddisk:	ld	b, 12				;clear percom
+		push	iy
+		pop	hl
+		xor	a
+makesddisk1:	ld	(hl), a
+		inc	hl 
+		djnz	makesddisk1
+		
+		ld	(IY + NTRKS), 40		;make SD Disk
+		ld	(IY + NSECS + 1), 18
+		ld	(IY + SECLEN + 1), 128
+		set	PRESENT, (IY + DSKBITS)
+		ret
+
 ;--------------------------------------------------
 ; adjustsiobufbuf
 ; if sector < 4, copy data to IOBUF+LEN - 128
@@ -969,14 +989,13 @@ diskanalyse2:	ld	a, '-'
 		ld	a, (IY + FLAGS)
 		and	00001111b
 		or	11000000b
-		ld	(IY + FLAGS), a
+		ld	(IY + FLAGS), a			;make 90k Disk
 		ld	(IY + NSECS + 1), 40
 		ld	(IY + SECLEN + 1), 128
-		call	computemaxsec
-		
-		or	a
+		call	computemaxsec		
+		or	a				;clear carry
 		ret
-		jp	setsioerror
+;		jp	setsioerror
 		
 diskanalyse3:	ld	a, (IY + FLAGS)			;try to get IDAM on track 0
 		out	(LATCH), a	
@@ -986,7 +1005,6 @@ diskanalyse3:	ld	a, (IY + FLAGS)			;try to get IDAM on track 0
 		bit 	6, (IY + FLAGS)			;DD already set?
 		jr	nz, diskanalyse4		;yes	
 		set	6, (IY + FLAGS)			;switch back to DD
-		;res	DDHD, (IY + PERCONFIG)		;reset DDHD
 		ld	(IY + PERSTEPRATE), STEPRATE0	;set to 6ms in DD mode
 		jr	diskanalyse3	
 			
@@ -1041,7 +1059,7 @@ diskanalyse1:	call	tryidam				;get IDAM with its values
 		cp	(IY + PERSECLEN)
 		jr	NZ, diskanalyse8
 
-		ld	(IY + NTRKS), 80
+		ld	(IY + NTRKS), 80		
 		ld	(IY + PERSTEPRATE), STEPRATE0	;set to 3ms in HD mode
 		bit	6, (IY + FLAGS)			;check DD/HD
 		jr	Z, diskanalyse8			;HD, exit
@@ -1100,7 +1118,7 @@ compseclen:	add	hl, hl
 		ld	(IY + NSIDES), 0
 		
 		
-diskanalyse5:	call	dumppercom
+diskanalyse5:	;call	dumppercom
 		
 		ld	a, 'C'
 		ld	(siorc), a
@@ -1585,33 +1603,45 @@ dotimer1:	pop	af
 ;	... PERCOM 'N' COMMAND PROCESSOR ...
 ;--------------------------------------------------
 GETPARAMS:
-		CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
-		RET	C				;EXIT IF NOT A DRIVE IN OUR BOX
-	
-;		CALL	HASPARMS
-;		RET	Z				;EXIT IF DISK PARAMS NOT KNOWN
-	
-		CALL	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
-
-		call	diskanalyse
+		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 		
+		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+		
+		ld	a, 'C'
+		ld	(siorc), a
+		
+		ld	a, (IY + FLAGS)
+		or	a
+		jr	NZ, GETPARAMS1
+		
+		call	makesddisk
+		call	computemaxsec
+		call	computeflags
+		push	iy
+		pop	hl
+		ld	bc, PERSKEWTAB
+		add	hl, bc
+		ex	de, hl
+		ld	hl, SKEWSD
+		ld	bc, 18
+		ldir
+
+GETPARAMS1:	push	iy
+		pop	hl
+		ld	de, IOBUFF+LEN-12
+		push	de
+		ld	bc, 12
+		ldir	;COPY PARAMS TO OUTPUT BUFFER
+
 		call	dumppercom
-
-;		SET	CONFIG,(IY+FLAGS)
-GETPARAMS1	PUSH	IY
-		POP	HL
-		LD	DE,IOBUFF+LEN-12
-		PUSH	DE
-		LD	BC,12
-		LDIR	;COPY PARAMS TO OUTPUT BUFFER
-		
 		call	settimer
 
-		POP	HL
+		pop	hl
 		ld	d, 0
 		ld	a, (siorc)
 		ld	e, a
-		JP	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
 		
 ;--------------------------------------------------
 ;	... PERCOM 'O' COMMAND PROCESSOR ...
@@ -1871,7 +1901,8 @@ FMTS:
 		DEFW	10416			
 				
 		DEFW	DD5N18				;DOUBLE DENSITY 5 INCH
-		DEFW	SKEWDD			
+		;DEFW	SKEWDD			
+		DEFW	SKEWSD
 		DEFB	18			
 		DEFW	6250			
 				
@@ -1952,21 +1983,18 @@ DSKBITS		EQU	8			;MISC NAUGHTY BITS
 SPARE0		EQU	9	
 SPARE1		EQU	10	
 SPARE2		EQU	11	
-		
+
 CMDSTS		EQU	12			;COMMAND STATUS
 HDWSTS		EQU	13			;HARDWARE STATUS
 FLAGS		EQU	14			;FLAGS BYTE FOR DISK OPERATION
-;SPARE3		EQU	15	
-	
-PERCONFIG	equ	15			;has percom been set?
-PERTRACK	equ 	16			;track for drive
-MAXSEC		equ	17			;2-bytes max sectors	
-PERSTEPRATE	equ	19			;steprate in FDC encoding
-PERSECLEN	equ	20			;seclen in FDC encoding (0-3)
-PERTRKS		equ	21			;if NTRKS = 1, number of tracks
-PERSECS		equ	22			;if NTRKS = 1, number of secs
-PERSIDES	equ 	23			;if NTRKS = 1, number of heads	
-PERSKEWTAB	equ	24			;NSECS+1 bytes for sector skew
+PERTRACK	equ 	15			;track for drive
+MAXSEC		equ	16			;2-bytes max sectors	
+PERSTEPRATE	equ	18			;steprate in FDC encoding
+PERSECLEN	equ	19			;seclen in FDC encoding (0-3)
+PERTRKS		equ	20			;if NTRKS = 1, number of tracks
+PERSECS		equ	21			;if NTRKS = 1, number of secs
+PERSIDES	equ 	22			;if NTRKS = 1, number of heads	
+PERSKEWTAB	equ	23			;NSECS+1 bytes for sector skew
 ;
 ; Bits for FLAGS
 ;
