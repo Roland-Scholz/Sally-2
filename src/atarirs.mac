@@ -722,10 +722,7 @@ diskwritefn8:	xor	a
 ;--------------------------------------------------
 ; command '!' and '"' format and format medium
 ;--------------------------------------------------
-diskformat:
-		ld	a,'*'
-		call	seroutfn
-		
+diskformat:		
 		CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		RET	C				;EXIT IF NOT A DRIVE IN OUR BOX
 						
@@ -784,7 +781,14 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	bc, 4 * FMTLEN
 		add	hl, bc
 		
-diskformat7:	ld	a, (IY + NTRKS)			;if NTRKS = 1
+diskformat7:	ld	a, (IY + NSECS + 1)		;check if 36 secs, if so make HD disk
+		cp	36
+		jr	NZ, diskformat9
+		ld	(IY + NTRKS), 1
+		ld	(IY + NSECS), 16h
+		ld	(IY + NSECS + 1), 80h
+		
+diskformat9:	ld	a, (IY + NTRKS)			;if NTRKS = 1
 		dec	a
 		jr	NZ, diskformat1			;and 1680h = 5760 secs
 		ld	a, (IY + NSECS)
@@ -832,7 +836,7 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 		push	hl
 		ld	b, 16
 diskformat3:	ld	a, (hl)
-		ld	(hl), 255
+		;ld	(hl), 255
 		inc	hl
 		call	serhexspace
 		djnz	diskformat3
@@ -1626,6 +1630,7 @@ GETPARAMS:
 		ld	hl, SKEWSD
 		ld	bc, 18
 		ldir
+		ld	(hl), 0
 
 GETPARAMS1:	push	iy
 		pop	hl
@@ -1658,20 +1663,20 @@ PUTPARAMS:
 		or	a
 		sbc	hl, de
 		ret	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
-	
+
 		call	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
 ;		set	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
 		ld	hl, IOBUFF
 		push	iy
 		pop	de		;POINT DE TO PARAMETERS FOR DRIVE(N)
 		ld	bc, 12
-		ldir			;COPY NEW STUFF IN THE PLACE	
+		ldir			;COPY NEW STUFF IN THE PLACE
 		
 		call	dumppercom
 		call	computeflags
 		call	computemaxsec				;compute maxsector
-		call	dumppercom	
-		set	PERCONF, (IY + DSKBITS)			;mark percom-block configured
+		set	PRESENT, (IY + DSKBITS)			;mark percom-block configured
+		call	dumppercom
 		
 		jp	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
 	
@@ -1904,7 +1909,7 @@ FMTS:
 		;DEFW	SKEWDD			
 		DEFW	SKEWSD
 		DEFB	18			
-		DEFW	6250			
+		DEFW	6250				
 				
 		DEFW	SD8N26				;SINGLE DENSITY 8 INCH
 		DEFW	SKEW13			
@@ -1924,7 +1929,7 @@ FMTS:
 		DEFW	DD5N18
 		DEFW	SKEW36
 		DEFB	36
-		DEFW	(12500-76)
+		DEFW	12050
 		
 ;
 ;
