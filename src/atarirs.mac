@@ -749,7 +749,6 @@ diskformat:
 		call	makesddisk
 
 diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
-
 		ld	(OUTCPY), a
 		out	(LATCH), a
 		
@@ -764,13 +763,11 @@ diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 		ld	hl , 1
 		ld	(SEQNUM), HL			;RESET BAD SECTOR COUNTER
 		ld	HL, (FMTPTR)			;pointer to formats
-		ld	DE, FMTSTUFF
-		ld	BC, FMTLEN
 		rlca
 		rlca
 		and	00000011B
 		jr	Z, diskformat5
-diskformat2:	add	HL,BC
+diskformat2:	add	HL, BC
 		dec	A
 		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
 		
@@ -803,7 +800,8 @@ diskformat9:	ld	a, (IY + NTRKS)			;if NTRKS = 1
 		ld	(IY + PERTRKS), 80
 		ld	(IY + PERSECS), 36
 		
-diskformat1:	call	seraddr
+diskformat1:	ld	DE, FMTSTUFF
+		ld	BC, FMTLEN
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	A,(DKIOCB+DSKSTS)
 		and	11000000B
@@ -831,18 +829,18 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 		call	diskanalyse			;anaylse disk
 ;		call	dumppercom			;show results
 		
-		pop	hl
-		call	seraddr
-		push	hl
-		ld	b, 16
-diskformat3:	ld	a, (hl)
-		;ld	(hl), 255
-		inc	hl
-		call	serhexspace
-		djnz	diskformat3
+;		pop	hl
+;		call	seraddr
+;		push	hl
+;		ld	b, 16
+;diskformat3:	ld	a, (hl)
+;		;ld	(hl), 255
+;		inc	hl
+;		call	serhexspace
+;		djnz	diskformat3
 
 		pop	hl		
-		LD	D, 0
+		ld	d, 0
 		ld	a, (siorc)
 		;call	seroutfn
 		ld	e, a
