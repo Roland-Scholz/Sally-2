@@ -742,11 +742,11 @@ diskformat:
 		ld	a, 'C'
 		ld	(siorc), a
 
-		ld	a, (IY + FLAGS)
-		or	a
-		jr	NZ, diskformat4			;has PERCOM been set?
+;		ld	a, (IY + FLAGS)
+;		or	a
+;		jr	NZ, diskformat4			;has PERCOM been set?
 
-		call	makesddisk
+;		call	makesddisk
 
 diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 		ld	(OUTCPY), a
@@ -778,22 +778,18 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	bc, 4 * FMTLEN
 		add	hl, bc
 		
-diskformat7:	ld	a, (IY + NSECS + 1)		;check if 36 secs, if so make HD disk
-		cp	36
-		jr	NZ, diskformat9
-		ld	(IY + NTRKS), 1
-		ld	(IY + NSECS), 16h
-		ld	(IY + NSECS + 1), 80h
-		
-diskformat9:	ld	a, (IY + NTRKS)			;if NTRKS = 1
-		dec	a
-		jr	NZ, diskformat1			;and 1680h = 5760 secs
-		ld	a, (IY + NSECS)
-		cp	16h
-		jr	NZ, diskformat1
-		ld	a, (IY + NSECS + 1)
+diskformat7:	ld	a, (IY + MAXSEC)
 		cp	80h
 		jr	NZ, diskformat1
+		ld	a, (IY + MAXSEC + 1)
+		cp	16h
+		jr	NZ, diskformat1
+		bit	2, (iy + MEDIA)			;check double density
+		jr	Z, diskformat1
+		ld	a, (iy + SECLEN + 1)		;low-byte seclen = 0
+		or	a
+		jr	NZ, diskformat1
+		
 		ld	hl, (FMTPTR)			;format 1.44MB
 		ld	bc, 5 * FMTLEN
 		add	hl, bc
@@ -897,18 +893,30 @@ computeflags2:	ld	a, b
 		
 
 ;--------------------------------------------------
-; clearpercom
+; clearpercom, clear all 256 bytes drivedata
 ;--------------------------------------------------
 clearpercom:	ld	hl, drivedata
+		push	hl
 		xor	a
 		ld	b, a
 clearpercom1:	ld 	(hl), a
 		inc	hl
 		djnz	clearpercom1
+		
+		pop	iy
+		ld	de, 64
+		ld	b, 4
+clearpercom2:	ld	(iy + NTRKS), 40		;make SD Disk
+		ld	(iy + NSECS + 1), 18
+		ld	(iy + SECLEN + 1), 128
+		ld	(iy + MAXSEC), 0d0h		;720 secs
+		ld	(iy + MAXSEC + 1), 2
+		add	iy, de
+		djnz	clearpercom2
 		ret
 
 ;--------------------------------------------------
-; clearpercom
+; makesddisk
 ;--------------------------------------------------
 makesddisk:	ld	b, 12				;clear percom
 		push	iy
@@ -965,13 +973,17 @@ adjustsiobuf2:	ld	a, (siosector + 1)		;hi-byte <> 0
 diskanalyse:	ld	a, 'C'
 		ld	(siorc), a
 		
+		ld	a, (iy + PERSKEWTAB)		;skewtab filled?
+		or	a
+		jr	Z, diskanalyse9
+		
 		ld	a, (IY + FLAGS)			;check if percom empty
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
 		out	(LATCH), a
 		or	a
 		ret	NZ				;no continue without disk analysis
 		
-		ld	(IY + MEDIA), 4			;set DD (MFM)
+diskanalyse9:	ld	(IY + MEDIA), 4			;set DD (MFM)
 		ld	(IY + NSIDES), 0
 
 		ld	(IY + PERSTEPRATE), STEPRATE1	;select 12ms/6ms, in fact 6ms as we are starting with HD
@@ -1120,7 +1132,7 @@ compseclen:	add	hl, hl
 		ld	(IY + NSIDES), 0
 		
 		
-diskanalyse5:	;call	dumppercom
+diskanalyse5:	call	dumppercom
 		
 		ld	a, 'C'
 		ld	(siorc), a
@@ -1610,25 +1622,26 @@ GETPARAMS:
 		
 		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 		
-		ld	a, 'C'
-		ld	(siorc), a
+;		ld	a, 'C'
+;		ld	(siorc), a
 		
-		ld	a, (IY + FLAGS)
-		or	a
-		jr	NZ, GETPARAMS1
+;		ld	a, (IY + FLAGS)
+;		or	a
+;		jr	NZ, GETPARAMS1
 		
-		call	makesddisk
-		call	computemaxsec
-		call	computeflags
-		push	iy
-		pop	hl
-		ld	bc, PERSKEWTAB
-		add	hl, bc
-		ex	de, hl
-		ld	hl, SKEWSD
-		ld	bc, 18
-		ldir
-		ld	(hl), 0
+;		call	makesddisk
+;		call	computemaxsec
+;		call	computeflags
+
+;		push	iy
+;		pop	hl
+;		ld	bc, PERSKEWTAB
+;		add	hl, bc
+;		ex	de, hl
+;		ld	hl, SKEWSD
+;		ld	bc, 18
+;		ldir
+;		ld	(hl), 0
 
 GETPARAMS1:	push	iy
 		pop	hl
@@ -1638,12 +1651,12 @@ GETPARAMS1:	push	iy
 		ldir	;COPY PARAMS TO OUTPUT BUFFER
 
 		call	dumppercom
-		call	settimer
+		;call	settimer
 
 		pop	hl
-		ld	d, 0
-		ld	a, (siorc)
-		ld	e, a
+		ld	de, 'C'
+;		ld	a, (siorc)
+;		ld	e, a
 		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
 		
 ;--------------------------------------------------
@@ -1674,6 +1687,7 @@ PUTPARAMS:
 		call	computeflags
 		call	computemaxsec				;compute maxsector
 		set	PRESENT, (IY + DSKBITS)			;mark percom-block configured
+		
 		call	dumppercom
 		
 		jp	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
@@ -1686,15 +1700,16 @@ diskstatus:	CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 	
 		CALL	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 	
-		call	diskanalyse	
-		jr	C, diskstatus4	
+;		call	diskanalyse	
+;		jr	C, diskstatus4	
 			
 		call	waitstatus			;get idle status for motor on
 		ld	b, a				;save status from FDC
-				
-		ld	a, not BADRW	
-		and	(IY + CMDSTS)			;keep BADRW
-			
+;		call	serhex
+		
+		ld	a, (IY + CMDSTS)	
+		and	4				;keep BADRW
+
 		bit	7, b				;motor on?
 		jr	z, diskstatus1			;no
 		set	ACTIVE, a	
@@ -1707,19 +1722,20 @@ diskstatus2:	bit	6, (IX + DSKSTS)		;last command wp?
 		jr	z, diskstatus3			;no
 		set	WRPROT, a	
 	
-diskstatus3:	bit	SEC256, a
+diskstatus3:	bit	SEC256, a			;is single density?
 		jr	NZ, diskstatus5
-		ld	b, a
+		ld	b, a				;and 26 secs
 		ld	a, (IY + NSECS + 1)
 		cp	26
 		ld	a, b
 		jr	NZ, diskstatus5
-		set	7, a
+		set	7, a				;set medium density
 		
 diskstatus5:	ld	hl, statbytes
 		ld	(hl), a
-		;call	serhex
-		ld	a,(IY+HDWSTS)
+;		call	serhex
+		ld	a, (IY+HDWSTS)
+;		call	serhex
 		cpl
 		inc	hl
 		ld	(hl), a
@@ -1729,11 +1745,7 @@ diskstatus5:	ld	hl, statbytes
 		ld	bc, 4
 		ldir					;COPY PARAMS TO OUTPUT BUFFER
 			
-diskstatus4:	call	settimer
-		ld	d, 00h				;true data
-		ld	a, (siorc)			;get rc to br returned
-;		call	seroutfn	
-		ld	e, a	
+diskstatus4:	ld	de, 'C'				;true data
 		ld	hl, IOBUFF+LEN-4	
 		JP	SENDBUFF			;SEND 'C' or 'E' AND PARAMS DATA FRAME		
 

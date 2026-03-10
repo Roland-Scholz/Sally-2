@@ -60,6 +60,8 @@ START:		lda	#0
 		jsr	PRTWORD
 		
 		jsr	GETKEY
+		cmp	#'?'
+		beq	DOSPEED
 		cmp	#'D'
 		beq	DODUMP
 		cmp	#'F'
@@ -85,6 +87,7 @@ START:		lda	#0
 		bne	START
 EXIT:		rts
 
+DOSPEED:	jmp	SPEED
 DODUMP:		jmp	DUMP
 DOFORMAT:	jmp	FORMAT
 DOGOTO:		jmp	GOTO
@@ -94,6 +97,28 @@ DORESET:	jmp	RESET
 DOTESTSEC:	jmp	TESTSEC
 DOUPLOAD:	jmp	UPLOAD
 DOVERSION:	jmp	VERSION
+
+SPEED:		lda	#'1'
+		sta	DDEVIC
+		lda	#'?'
+		sta	DCOMND
+		lda	#CREAD
+		sta	DSTATS
+		lda	#<BUFFER
+		sta	DBUFLO
+		lda	#>BUFFER
+		sta	DBUFHI
+		lda	#1
+		sta	DAUX1
+		sta	DBYTLO
+		lda	#0
+		sta	DAUX2
+		sta	DBYTHI
+		jsr	CALLSIO
+		lda	BUFFER
+		jsr	puthex
+		jsr	GETKEY
+		jmp	START
 
 DOPERCOM:	lda	#<PERTXT0
 		sta	PTR
@@ -936,6 +961,7 @@ SALLYMSG:	.byte	CLS
 		.byte	"* Sally 2 tools  *", EOL
 		.byte	"******************", EOL
 		.byte	EOL
+		.byte	"? - Get speedbyte", EOL
 		.byte	"D - Dump memory", EOL
 		.byte	"G - Goto address", EOL
 		.byte	"F - Format", EOL
