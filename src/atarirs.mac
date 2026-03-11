@@ -123,7 +123,11 @@ CMDL4a:	CALL	CALLHL		;GO TO COMMAND PROCESSOR @HL
 ;
 CMDL5:	LD	HL,PWRWAIT
 	LD	(FSMVEC),HL	;SET FSM VECTOR BACK TO IDLE STATE
-	RET
+	ld	a, (OUTCPY)
+	and	15
+	ret	Z
+	jp	settimer
+;	RET
 ;
 ;
 ;
@@ -519,7 +523,7 @@ diskreadfn4:	ld	de, IOBUFF+LEN-256		;make 256 byte sector
 diskreadfn1:	push	de
 		ldir
 		
-		call	settimer
+;		call	settimer
 		
 		pop	hl
 		ld	d, 0ffh				;invert data
@@ -710,7 +714,7 @@ diskwritefn7:	ld	a, (de)
 		djnz	diskwritefn7			;fall through last time with acc=0
 
 diskwritefn6:	call	SETSTAT
-		call	settimer
+;		call	settimer
 		
 diskwritefn9:	ld	a, e
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
@@ -840,7 +844,7 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 		ld	a, (siorc)
 		;call	seroutfn
 		ld	e, a
-		call	settimer			;THEN RESTART THE DISK TIMER
+;		call	settimer			;THEN RESTART THE DISK TIMER
 		jp	SENDBUFF			;SEND BAD SECTOR DATA FRAME
 	
 ;--------------------------------------------------
@@ -894,6 +898,7 @@ computeflags2:	ld	a, b
 
 ;--------------------------------------------------
 ; clearpercom, clear all 256 bytes drivedata
+; and make 4x SD PERCOM
 ;--------------------------------------------------
 clearpercom:	ld	hl, drivedata
 		push	hl
@@ -904,15 +909,16 @@ clearpercom1:	ld 	(hl), a
 		djnz	clearpercom1
 		
 		pop	iy
-		ld	de, 64
-		ld	b, 4
+		ld	bc, 64
+		ld	e, 4
 clearpercom2:	ld	(iy + NTRKS), 40		;make SD Disk
 		ld	(iy + NSECS + 1), 18
 		ld	(iy + SECLEN + 1), 128
 		ld	(iy + MAXSEC), 0d0h		;720 secs
 		ld	(iy + MAXSEC + 1), 2
-		add	iy, de
-		djnz	clearpercom2
+		add	iy, bc
+		dec	e
+		jr	NZ, clearpercom2
 		ret
 
 ;--------------------------------------------------
@@ -1569,18 +1575,15 @@ dotimer50ms1:	dec	a
 ;--------------------------------------------------
 ; set timer to keep motor spinning
 ;--------------------------------------------------
-settimer:
-		di
+settimer:	di
 		ld	A, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
 		out	(CTC3),A			;PUT CTC3 IN TIMER MODE, PRESCALE 256
 		xor	A				;TIME CONSTANT OF 0 WHICH MEANS 256
 		out	(CTC3),A			;COUNT MOD 256
-		dec	A
+		dec	a
 		ld	(DRVTMR),A			;STOP DRIVES AFTER 255 INTERRUPTS
-		push	hl
-		ld	HL, dotimer
+settimer1:	ld	HL, dotimer
 		ld	(CTCVEC+6),HL			;SET VECTOR TO ACTIVITY-CHECK ROUTINE
-		pop	hl
 		ei
 		ret
 		
@@ -1595,22 +1598,22 @@ dotimer:	PUSH	AF
 		ld	a, SKCMD
 		out	(CMDREG), a	
 		
-		ld	a, (DRVTMR)
+dotimer2:	ld	a, (DRVTMR)
 		dec	a
 		ld	(DRVTMR), a
 		jr	NZ, dotimer1			;EXIT IF 4 SECONDS NOT ELAPSED
 	
 		call	shutdown
-		ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
-		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
-		ld	(DRVOFF), a			;SET 'DRVOFF' FLAG TO NON-ZERO VALUE
-		ld	(drive), a			;invalid track buffer
+		call	STOPTMR
 		ld	a, 64
+		ld	(DRVOFF), a			;SET 'DRVOFF' FLAG TO NON-ZERO VALUE
+		ld	(drive), a			;invalidate track buffer
 		out	(LATCH), a
+		ld	(OUTCPY), a
 	
 dotimer1:	pop	af
 		ei
-		RETI
+		reti
 	
 ;
 ;--------------------------------------------------
@@ -1621,76 +1624,52 @@ GETPARAMS:
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 		
 		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
-		
-;		ld	a, 'C'
-;		ld	(siorc), a
-		
-;		ld	a, (IY + FLAGS)
-;		or	a
-;		jr	NZ, GETPARAMS1
-		
-;		call	makesddisk
-;		call	computemaxsec
-;		call	computeflags
-
-;		push	iy
-;		pop	hl
-;		ld	bc, PERSKEWTAB
-;		add	hl, bc
-;		ex	de, hl
-;		ld	hl, SKEWSD
-;		ld	bc, 18
-;		ldir
-;		ld	(hl), 0
 
 GETPARAMS1:	push	iy
 		pop	hl
 		ld	de, IOBUFF+LEN-12
 		push	de
 		ld	bc, 12
-		ldir	;COPY PARAMS TO OUTPUT BUFFER
+		ldir					;COPY PARAMS TO OUTPUT BUFFER
 
 		call	dumppercom
-		;call	settimer
-
+		
 		pop	hl
 		ld	de, 'C'
-;		ld	a, (siorc)
-;		ld	e, a
 		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
 		
 ;--------------------------------------------------
 ;	... PERCOM 'O' COMMAND PROCESSOR ...
 ;--------------------------------------------------
 PUTPARAMS:
-		call	DRVINDEX	;POINT IY TO DRIVE'S DATA AREA
-		ret	C		;EXIT IF NOT A DRIVE IN OUR BOX
+		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 	
 		call	SENDACK
-		call	RECVBUFF	;ATTEMPT TO READ DATA FRAME FROM ATARI
+		call	RECVBUFF			;ATTEMPT TO READ DATA FRAME FROM ATARI
 		ret	NZ
 	
 		ld	de, 12
 		or	a
 		sbc	hl, de
-		ret	NZ		;ERROR IF DATA FRAME NOT 12 BYTES
+		ret	NZ				;ERROR IF DATA FRAME NOT 12 BYTES
 
-		call	SENDACK		;ELSE SEND 'ACK' FOR DATA FRAME
-;		set	CONFIG,(IY+FLAGS)  ;INDICATE DRIVE IS NOW CONFIGURED
+		call	SENDACK				;ELSE SEND 'ACK' FOR DATA FRAME
+;		set	CONFIG,(IY+FLAGS)  		;INDICATE DRIVE IS NOW CONFIGURED
 		ld	hl, IOBUFF
 		push	iy
-		pop	de		;POINT DE TO PARAMETERS FOR DRIVE(N)
+		pop	de				;POINT DE TO PARAMETERS FOR DRIVE(N)
 		ld	bc, 12
-		ldir			;COPY NEW STUFF IN THE PLACE
+		ldir					;COPY NEW STUFF IN THE PLACE
 		
 		call	dumppercom
 		call	computeflags
-		call	computemaxsec				;compute maxsector
-		set	PRESENT, (IY + DSKBITS)			;mark percom-block configured
+		call	computemaxsec			;compute maxsector
+		set	PRESENT, (IY + DSKBITS)		;mark percom-block configured
 		
 		call	dumppercom
 		
-		jp	SENDCOMP	;SEND 'COMPLETE' BACK TO ATARI
+		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
 	
 ;--------------------------------------------------
 ; command 'S' Disk status 

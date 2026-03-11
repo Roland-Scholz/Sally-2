@@ -176,7 +176,7 @@ IF SALLYBUILD
 ;--------------------------------------------------
 		LD	A, SIONORMAL			;init Pokey-divisor
 		LD	(pokeydiv), A
-		
+
 		call	invalidate
 		
 	IF SALLYRS = 0

@@ -244,7 +244,7 @@
  176:				;--------------------------------------------------
  177:  878+7	00C3  3E28    			LD	A, SIONORMAL			;init Pokey-divisor
  178:  885+13	00C5  32F204  			LD	(pokeydiv), A
- 179:						
+ 179:				
  180:  898+17	00C8  CD4501  			call	invalidate
  181:						
  182:     -	0001          		IF SALLYRS = 0
@@ -1199,10 +1199,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-28-g" 
+   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-29-g" 
 	              792D312E
 	              302E352D
-	              32382D67
+	              32392D67
 **** ..\src\main.mac ****
   17:						
   18: 6080+4	063B  F3      			di
