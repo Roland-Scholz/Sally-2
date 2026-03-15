@@ -767,6 +767,7 @@ diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 		ld	hl , 1
 		ld	(SEQNUM), HL			;RESET BAD SECTOR COUNTER
 		ld	HL, (FMTPTR)			;pointer to formats
+		ld	BC, FMTLEN
 		rlca
 		rlca
 		and	00000011B
@@ -800,7 +801,8 @@ diskformat7:	ld	a, (IY + MAXSEC)
 		ld	(IY + PERTRKS), 80
 		ld	(IY + PERSECS), 36
 		
-diskformat1:	ld	DE, FMTSTUFF
+diskformat1:	call	seraddr
+		ld	DE, FMTSTUFF
 		ld	BC, FMTLEN
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	A,(DKIOCB+DSKSTS)
@@ -1918,7 +1920,7 @@ FMTS:
 		DEFW	DD5N18
 		DEFW	SKEW36
 		DEFB	36
-		DEFW	12050
+		DEFW	12150
 		
 ;
 ;
