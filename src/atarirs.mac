@@ -429,38 +429,37 @@ Z80MAX	EQU	($-(Z80TAB+2))/3
 ;
 SETSTAT:
 	OR	A
-	JR	NZ,SSTS1	;JUMP IF SOME DISK ERROR INDICATED
+	JR	NZ,SSTS1				;JUMP IF SOME DISK ERROR INDICATED
 
-	LD	(IY+HDWSTS),A	;ELSE STORE ZEROS IN HARDWARE STATUS
-	LD	E,'C'		;LOAD E WITH 'COMPLETE' CHARACTER
-	RES	BADRW,(IY+CMDSTS)
+	LD	(IY + HDWSTS), A			;ELSE STORE ZEROS IN HARDWARE STATUS
+	LD	E, 'C'					;LOAD E WITH 'COMPLETE' CHARACTER
+	RES	BADRW,(IY + CMDSTS)
 	RES	WRPROT, (IY + CMDSTS)
 	RET
 ;
 ;	ACC HOLDS NON-ZERO VALUE INDICATING A DISK ERROR
 ;
-SSTS1:	BIT	6,A		;BIT HOLDS WPROT STATUS AFTER WRITE
-	JR	Z,SSTS2
+SSTS1:	BIT	6, a					;BIT HOLDS WPROT STATUS AFTER WRITE
+	JR	Z, SSTS2
 
 	AND	10011111B
 	SET	WRPROT, (IY + CMDSTS)
+SSTS2:	BIT	5, A					;HOLDS DD MARK STATUS AFTER READ
+	JR	Z, SSTS3
 
-SSTS2:	BIT	5,A		;HOLDS DD MARK STATUS AFTER READ
-	JR	Z,SSTS3
+	OR	01100000B				;CREATE 1771 DD ADDRESS MARK STATUS
 
-	OR	01100000B	;CREATE 1771 DD ADDRESS MARK STATUS
+SSTS3:	;LD	C,A
+	;AND	10000001B				;TEST FOR 'READY' OR 'BUSY' BITS SET
+	;LD	A,C
+	;JR	Z,SSTS4					;JUMP IF NOT READY/BUSY LOCK UP
 
-SSTS3:	LD	C,A
-	AND	10000001B	;TEST FOR 'READY' OR 'BUSY' BITS SET
-	LD	A,C
-	JR	Z,SSTS4		;JUMP IF NOT READY/BUSY LOCK UP
+	;AND	01111110B				;ELSE CLEAR BOTH BITS AND REPLACE
+	;OR	00010000B				; WITH 'RNF' ERROR BIT INSTEAD
 
-	AND	01111110B	;ELSE CLEAR BOTH BITS AND REPLACE
-	OR	00010000B	; WITH 'RNF' ERROR BIT INSTEAD
-
-SSTS4:	LD	(IY+HDWSTS),A	;STORE HARDWARE STATUS FOR ATARI
-	LD	E,'E'		;LOAD E WITH 'ERROR' CHARACTER
-	SET	BADRW,(IY+CMDSTS)
+SSTS4:	LD	(IY + HDWSTS), A			;STORE HARDWARE STATUS FOR ATARI
+	LD	E, 'E'					;LOAD E WITH 'ERROR' CHARACTER
+	SET	BADRW, (IY + CMDSTS)
 	RET
 
 
@@ -475,7 +474,7 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 		call	isspinning	
 		jr	C, diskreadfn3	
 					
-		call	diskanalyse	
+		call	diskanalyse			;analyse and set 'C'
 		jr	C, diskreadfn3	
 				
 		call	checkmaxsec			;check if sio sector > max sector
@@ -495,16 +494,9 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 		sbc	hl, bc				;or above, carry clear!
 		jr	z, trkmatch	
 			
-		call	readtrk	
-			
-trkmatch:	;ld	a, (DKIOCB + DSKSEC)
-		;call	serhexspace
-		;ld	a, (DKIOCB + DSKTRK)
-		;call	serhexspace
-		;ld	a, (OUTCPY)
-		;call	serhexspace
-		
-		call	computesecbuf	
+		call	readtrk
+
+trkmatch:	call	computesecbuf	
 
 diskreadfn3:	ld	de, IOBUFF+LEN-128		;make 128 byte sectors
 		ld	bc, 128
@@ -523,8 +515,6 @@ diskreadfn4:	ld	de, IOBUFF+LEN-256		;make 256 byte sector
 diskreadfn1:	push	de
 		ldir
 		
-;		call	settimer
-		
 		pop	hl
 		ld	d, 0ffh				;invert data
 		ld	a, (siorc)
@@ -540,14 +530,6 @@ readtrk:	;ret
 		call	readidam
 		jp	NZ, readtrk5			;no error proceed
 		
-;		ld	a, (IY + FLAGS)
-;		res	7, a				;switch from FM to MFM
-;		ld	(IY + FLAGS), a			;make MD disk
-;		ld	(OUTCPY), a
-;		out	(LATCH), a
-;		ld	(IY + NSECS + 1), 26
-;		jr	readtrk
-
 readtrk5:	ld	h, (IY + SECLEN)		;copy SECLEN to DSKAUX
 		ld	l, (IY + SECLEN + 1)
 		ld	(DKIOCB + DSKAUX), hl
@@ -587,12 +569,14 @@ readtrk3:	push	bc
 		call	diskop				;call diskio routine
 		pop	hl	
 		pop	bc
-		jr	Z, readtrk4
-		jp	setsioerror
+		jr	NZ, readtrk4			;some error occured
 		
-readtrk4:	djnz	readtrk2
+		djnz	readtrk2
 
-		ld	(IX + DSKSEC), c
+readtrk4:	ld	(IX + DSKSEC), c
+		call	SETSTAT
+		ld	a, e
+		ld	(siorc), a
 		ret
 
 ;--------------------------------------------------
@@ -664,14 +648,8 @@ diskwritefn1:	call	SENDACK				;SEND 'ACK' IF BLOCKSIZE IS 128 OR 256
 		jr	C, diskwritefn4			;no carry, ok
 			
 		call	sec2trk				;compute head / track / sec and seek
-;		ld	a, (DKIOCB + DSKSEC)
-;		call	serhexspace
-;		ld	a, (DKIOCB + DSKTRK)
-;		call	serhexspace
-;		ld	a, (OUTCPY)
-;		call	serhexspace
 
-		call	invalidate
+		call	invalidate			;
 		
 		ld	hl, IOBUFF
 		ld	(DKIOCB + DSKPTR), hl
@@ -714,7 +692,6 @@ diskwritefn7:	ld	a, (de)
 		djnz	diskwritefn7			;fall through last time with acc=0
 
 diskwritefn6:	call	SETSTAT
-;		call	settimer
 		
 diskwritefn9:	ld	a, e
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
@@ -734,23 +711,13 @@ diskformat:
 		LD	A, H                     
 		OR	L                       
 		RET	NZ				;REFUSE TO FORMAT IF SPOOLER ACTIVE
-						
-;		ld	a, (IY + NTRKS) 		;REFUSE TO FORMAT IF PARAMS NOT SET
-;		or	a                       
-;		ret	Z                       
-						
+												
 		call	SENDACK                 	;send acknowledge
 		
 		call	STOPTMR				;THEN KILL CTC3 TO STOP DISK TIMER
-						
+		
 		ld	a, 'C'
 		ld	(siorc), a
-
-;		ld	a, (IY + FLAGS)
-;		or	a
-;		jr	NZ, diskformat4			;has PERCOM been set?
-
-;		call	makesddisk
 
 diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 		ld	(OUTCPY), a
@@ -761,33 +728,26 @@ diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
 		call	restoretrack
 		pop	af
 		
-		push	hl
-	
+		push	hl	
 		ld	(SEQPTR), hl			;STORE POINTER FOR BAD SECTOR LIST
 		ld	hl , 1
 		ld	(SEQNUM), HL			;RESET BAD SECTOR COUNTER
-		ld	HL, (FMTPTR)			;pointer to formats
-		ld	BC, FMTLEN
 		rlca
 		rlca
 		and	00000011B
-		jr	Z, diskformat5
-diskformat2:	add	HL, BC
-		dec	A
-		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
+		ld	b, a			
 		
 diskformat5:	ld	a, (siocmd)			;check for medium density
 		cp	'"'
 		jr	NZ, diskformat7
-		ld	hl, (FMTPTR)
-		ld	bc, 4 * FMTLEN
-		add	hl, bc
+		ld	b, 4
+		jr	diskformat1
 		
-diskformat7:	ld	a, (IY + MAXSEC)
-		cp	80h
-		jr	NZ, diskformat1
-		ld	a, (IY + MAXSEC + 1)
-		cp	16h
+diskformat7:	ld	de, 1680h
+		ld	l, (iy + MAXSEC)
+		ld	h, (iy + MAXSEC + 1)
+		or	a
+		sbc	hl, de
 		jr	NZ, diskformat1
 		bit	2, (iy + MEDIA)			;check double density
 		jr	Z, diskformat1
@@ -795,28 +755,34 @@ diskformat7:	ld	a, (IY + MAXSEC)
 		or	a
 		jr	NZ, diskformat1
 		
-		ld	hl, (FMTPTR)			;format 1.44MB
-		ld	bc, 5 * FMTLEN
-		add	hl, bc
-		ld	(IY + PERTRKS), 80
-		ld	(IY + PERSECS), 36
+		ld	b, 5				;format 1.44MB
+		ld	(iy + PERTRKS), 80
+		ld	(iy + PERSECS), 36
 		
-diskformat1:	call	seraddr
-		ld	DE, FMTSTUFF
-		ld	BC, FMTLEN
+diskformat1:	ld	hl, (FMTPTR)
+		ld	a, b
+		ld	bc, FMTLEN
+		or	a
+		jr	Z, diskformat9
+diskformat2:	add	hl, bc
+		dec	a
+		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
+
+diskformat9:	call	seraddr
+		ld	de, FMTSTUFF
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
-		ld	A,(DKIOCB+DSKSTS)
+		ld	a, (DKIOCB + DSKSTS)
 		and	11000000B
 		jr	NZ, diskformat6			;ERROR IF NOT READY OR WRITE PROTECTED
 	
-		ld	a,(iy+nsides)			;set for SS/DS init
-		ld	(sides),a
-		ld	a,(iy+ntrks)			;set for number of tracks
+		ld	a, (iy + nsides)		;set for SS/DS init
+		ld	(sides), a
+		ld	a,( iy + ntrks)			;set for number of tracks
 		cp	1
 		jr	NZ, diskformat8
 		ld	(sides), a
 		ld	a, (IY + PERTRKS)
-diskformat8:	ld	(tracks),a
+diskformat8:	ld	(tracks), a
 		push	IX
 		push	IY
 		call	FORMAT				;CALL FORMAT SUBROUTINE
@@ -825,10 +791,12 @@ diskformat8:	ld	(tracks),a
 
 
 diskformat6:	res	7, a				;mask out MOTOR ON
+		call	serhexspace
 		CALL	SETSTAT				;UPDATE STATUS AS SPECIFIED BY ACC
 		
 		ld	(IY + FLAGS), 0
 		call	diskanalyse			;anaylse disk
+
 ;		call	dumppercom			;show results
 		
 ;		pop	hl
@@ -841,12 +809,12 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 ;		call	serhexspace
 ;		djnz	diskformat3
 
+		call	invalidate
+		
 		pop	hl		
 		ld	d, 0
 		ld	a, (siorc)
-		;call	seroutfn
 		ld	e, a
-;		call	settimer			;THEN RESTART THE DISK TIMER
 		jp	SENDBUFF			;SEND BAD SECTOR DATA FRAME
 	
 ;--------------------------------------------------
@@ -1462,7 +1430,8 @@ diskop2:	in	A, (STSREG)
 		bit	0, A
 		jr	NZ, diskop2			;loop till busy bit goes away
 
-		and	01111101b			
+		and	01111100b
+		ld	(DKIOCB + DSKSTS), a
 		ret
 		
 ;--------------------------------------------------
@@ -1699,7 +1668,7 @@ diskstatus1:	bit	DENSTY, (IY + MEDIA)		;double density?
 		jr	z, diskstatus2			;no
 		set	SEC256, a	
 	
-diskstatus2:	bit	6, (IX + DSKSTS)		;last command wp?
+diskstatus2:	bit	WRPROT, (IY + CMDSTS)		;last command wp?
 		jr	z, diskstatus3			;no
 		set	WRPROT, a	
 	

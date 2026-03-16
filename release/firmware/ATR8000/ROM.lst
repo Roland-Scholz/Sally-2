@@ -319,879 +319,877 @@
  251: 1448+10	0145  21FFFF  	invalidate:	ld	hl, 0ffffh			;reset drive / track buffer
  252: 1458+16	0148  22F304  			ld	(drive), hl
  253: 1474+10	014B  C9      			ret
- 254:						
- 255:				
+ 254:				
+ 255:     -	0001          		IF SALLYRS = 0
  256:				
- 257:     -	0001          		IF SALLYRS = 0
- 258:				
+ 257:				;--------------------------------------------------
+ 258:				; hook SalyLogon
  259:				;--------------------------------------------------
- 260:				; hook SalyLogon
- 261:				;--------------------------------------------------
- 262:     -	014C          	SalyLogon:
- 263: 1484+13	014C  3233FF  			LD	(RWMAX), A			;DO LESS RETRIES IN ATARI MODE
- 264:				
- 265: 1497+7	014F  3EC3    			LD	A, 0c3h				;'JP' instruction
- 266: 1504+13	0151  3267F1  			LD	(SEL4), A
- 267: 1517+10	0154  215D01  			LD	HL, SalySEL4
- 268: 1527+16	0157  2268F1  			LD	(SEL4+1), HL
- 269:     -	0000          		IF WD1772
- 272:					ENDIF
- 273: 1543+10	015A  C381F7  			JP	SalyLOGN2
- 274:				
- 275:     -	0000          		IF WD1772
- 284:					ENDIF
+ 260:     -	014C          	SalyLogon:
+ 261: 1484+13	014C  3233FF  			LD	(RWMAX), A			;DO LESS RETRIES IN ATARI MODE
+ 262:				
+ 263: 1497+7	014F  3EC3    			LD	A, 0c3h				;'JP' instruction
+ 264: 1504+13	0151  3267F1  			LD	(SEL4), A
+ 265: 1517+10	0154  215D01  			LD	HL, SalySEL4
+ 266: 1527+16	0157  2268F1  			LD	(SEL4+1), HL
+ 267:     -	0000          		IF WD1772
+ 270:					ENDIF
+ 271: 1543+10	015A  C381F7  			JP	SalyLOGN2
+ 272:				
+ 273:     -	0000          		IF WD1772
+ 282:					ENDIF
+ 283:				;
+ 284:				;
  285:				;
- 286:				;
- 287:				;
- 288:				
- 289:     -	015D          	SalySEL4:
- 290: 1553+8	015D  CB70    			BIT	6, B				;8" found?
- 291: 1561+7+5	015F  2850    			JR	Z, SalySEL4ex			;yes, do nothing
- 292:				
- 293: 1568+11	0161  C5      			PUSH	BC				;save registers
- 294: 1579+11	0162  D5      			PUSH	DE
- 295: 1590+11	0163  E5      			PUSH	HL
- 296: 1601+15	0164  DDE5    			PUSH	IX
- 297:				
- 298: 1616+4	0166  78      			LD	A, B				;switch HD on
- 299: 1620+8	0167  CBB7    			RES	6, A
- 300: 1628+11	0169  D330    			OUT	(LATCH), A
- 301:				
- 302: 1639+15	016B  DDE5    			PUSH	IX				;load HL with IX
- 303: 1654+10	016D  E1      			POP	HL
- 304: 1664+10	016E  112206  			LD	DE, dcb
- 305: 1674+10	0171  010900  			LD	BC, 9
- 306: 1684+16+5	0174  EDB0    			LDIR					;copy dcb
- 307:							
- 308: 1700+14	0176  DD212206			LD	IX, dcb
- 309: 1714+10	017A  21EC04  			LD	HL, idambuf
- 310: 1724+16	017D  222606  			LD	(dcb + DSKPTR), HL
- 311: 1740+10	0180  210600  			LD	HL, 6
- 312: 1750+16	0183  222806  			LD	(dcb + DSKAUX), HL
- 313: 1766+7	0186  3EC4    			LD	A, RIDCMD+4			;read address + settle delay
- 314: 1773+13	0188  32C5FF  			LD	(CMDBYT), A
- 315: 1786+7	018B  3E18    			LD	A, 018h				;substitute JR	Z,xx by JR xx
- 316: 1793+13	018D  3200F1  			LD	(DISK3 + 031h), A
- 317: 1806+7	0190  0603    			LD	B, 3
- 318:     -	0192          	SalySEL4A:
- 319: 1813+11	0192  C5      			PUSH	BC
- 320: 1824+17	0193  CDD5F0  			CALL	SalyDISK3			;DISK3: READ 6 BYTE ID RECORD
- 321: 1841+10	0196  C1      			POP	BC
- 322: 1851+13	0197  3A2A06  			LD	A, (dcb + DSKSTS)
- 323: 1864+4	019A  B7      			OR	A
- 324: 1868+7+5	019B  2802    			JR	Z, SalySEL4B
- 325: 1875+8+5	019D  10F3    			DJNZ	SalySEL4A
- 326:				
- 327: 1883+7	019F  3E28    	SalySEL4B:	LD	A, 028h				;reset JR Z,xx
- 328: 1890+13	01A1  3200F1  			LD	(DISK3 + 031h), A
- 329:							
- 330: 1903+14	01A4  DDE1    			POP	IX
- 331: 1917+10	01A6  E1      			POP	HL
- 332: 1927+10	01A7  D1      			POP	DE
- 333: 1937+10	01A8  C1      			POP	BC
- 334: 1947+13	01A9  3A2A06  			LD	A, (dcb + DSKSTS)		;check disk status
- 335: 1960+4	01AC  B7      			OR	A
- 336: 1964+7+5	01AD  2002    			JR	NZ, SalySEL4ex			;not zero, no HD
- 337: 1971+8	01AF  CBB0    			RES	6, B				;
- 338:     -	01B1          	SalySEL4ex:             
- 339: 1979+4	01B1  78      			LD	A, B
- 340: 1983+7	01B2  1600    			LD	D, 0
- 341: 1990+10	01B4  C36AF1  			JP	SEL5
- 342:				
+ 286:				
+ 287:     -	015D          	SalySEL4:
+ 288: 1553+8	015D  CB70    			BIT	6, B				;8" found?
+ 289: 1561+7+5	015F  2850    			JR	Z, SalySEL4ex			;yes, do nothing
+ 290:				
+ 291: 1568+11	0161  C5      			PUSH	BC				;save registers
+ 292: 1579+11	0162  D5      			PUSH	DE
+ 293: 1590+11	0163  E5      			PUSH	HL
+ 294: 1601+15	0164  DDE5    			PUSH	IX
+ 295:				
+ 296: 1616+4	0166  78      			LD	A, B				;switch HD on
+ 297: 1620+8	0167  CBB7    			RES	6, A
+ 298: 1628+11	0169  D330    			OUT	(LATCH), A
+ 299:				
+ 300: 1639+15	016B  DDE5    			PUSH	IX				;load HL with IX
+ 301: 1654+10	016D  E1      			POP	HL
+ 302: 1664+10	016E  112206  			LD	DE, dcb
+ 303: 1674+10	0171  010900  			LD	BC, 9
+ 304: 1684+16+5	0174  EDB0    			LDIR					;copy dcb
+ 305:							
+ 306: 1700+14	0176  DD212206			LD	IX, dcb
+ 307: 1714+10	017A  21EC04  			LD	HL, idambuf
+ 308: 1724+16	017D  222606  			LD	(dcb + DSKPTR), HL
+ 309: 1740+10	0180  210600  			LD	HL, 6
+ 310: 1750+16	0183  222806  			LD	(dcb + DSKAUX), HL
+ 311: 1766+7	0186  3EC4    			LD	A, RIDCMD+4			;read address + settle delay
+ 312: 1773+13	0188  32C5FF  			LD	(CMDBYT), A
+ 313: 1786+7	018B  3E18    			LD	A, 018h				;substitute JR	Z,xx by JR xx
+ 314: 1793+13	018D  3200F1  			LD	(DISK3 + 031h), A
+ 315: 1806+7	0190  0603    			LD	B, 3
+ 316:     -	0192          	SalySEL4A:
+ 317: 1813+11	0192  C5      			PUSH	BC
+ 318: 1824+17	0193  CDD5F0  			CALL	SalyDISK3			;DISK3: READ 6 BYTE ID RECORD
+ 319: 1841+10	0196  C1      			POP	BC
+ 320: 1851+13	0197  3A2A06  			LD	A, (dcb + DSKSTS)
+ 321: 1864+4	019A  B7      			OR	A
+ 322: 1868+7+5	019B  2802    			JR	Z, SalySEL4B
+ 323: 1875+8+5	019D  10F3    			DJNZ	SalySEL4A
+ 324:				
+ 325: 1883+7	019F  3E28    	SalySEL4B:	LD	A, 028h				;reset JR Z,xx
+ 326: 1890+13	01A1  3200F1  			LD	(DISK3 + 031h), A
+ 327:							
+ 328: 1903+14	01A4  DDE1    			POP	IX
+ 329: 1917+10	01A6  E1      			POP	HL
+ 330: 1927+10	01A7  D1      			POP	DE
+ 331: 1937+10	01A8  C1      			POP	BC
+ 332: 1947+13	01A9  3A2A06  			LD	A, (dcb + DSKSTS)		;check disk status
+ 333: 1960+4	01AC  B7      			OR	A
+ 334: 1964+7+5	01AD  2002    			JR	NZ, SalySEL4ex			;not zero, no HD
+ 335: 1971+8	01AF  CBB0    			RES	6, B				;
+ 336:     -	01B1          	SalySEL4ex:             
+ 337: 1979+4	01B1  78      			LD	A, B
+ 338: 1983+7	01B2  1600    			LD	D, 0
+ 339: 1990+10	01B4  C36AF1  			JP	SEL5
+ 340:				
+ 341:				;--------------------------------------------------
+ 342:				; hook for read directSector if aux1/2 = 0
  343:				;--------------------------------------------------
- 344:				; hook for read directSector if aux1/2 = 0
- 345:				;--------------------------------------------------
- 346:     -	01B7          	dskrd1:
- 347: 2000+7	01B7  3E02    			LD	A, 2
- 348: 2007+13	01B9  321706  			LD	(direct), A			;clear direct
- 349:				
- 350: 2020+16	01BC  2AFDC2  			LD	HL, (CFRAME + 2)		;load DAUX1/2, test if zero
- 351: 2036+4	01BF  7D      			LD	A, L
- 352: 2040+4	01C0  B4      			OR	H
- 353: 2044+7+5	01C1  2806    			JR	Z, dskrd2			;if zero, use direct sector number
- 354: 2051+17	01C3  CD1DFA  			CALL	SECTRAN				;else use original code, call SECTRAN
- 355: 2068+10	01C6  C39BF9  			JP	SalyDISKRD2			;and procees
- 356:				
- 357:     -	01C9          	dskrd2:
- 358: 2078+14	01C9  DD2198FF			LD	IX, DKIOCB
- 359: 2092+19	01CD  DD360000			LD	(IX + DSKOP), TSTRDY
- 360:				;		CALL	dumpdcb
- 361: 2111+11	01D1  E5      			PUSH	HL
- 362: 2122+17	01D2  CD0FF0  			CALL	DISKV
- 363: 2139+10	01D5  E1      			POP	HL
- 364:				
- 365: 2149+17	01D6  CDED01  			CALL	sec2track			;compute sector, track, side from direct sector
- 366: 2166+19	01D9  DD360001			LD	(IX + DSKOP), GETSEC
- 367:				;		CALL	dumpdcb
- 368: 2185+11	01DD  E5      			PUSH	HL
- 369: 2196+17	01DE  CD9C02  			CALL	dskreadfn			;CALL DISK I/O HANDLER
- 370: 2213+10	01E1  E1      			POP	HL
- 371:				
- 372: 2223+13	01E2  3AA0FF  			LD	A, (DKIOCB+DSKSTS)
- 373: 2236+17	01E5  CDE8F9  			CALL	SETSTAT				;call SETSTAT
- 374: 2253+7	01E8  1600    			LD	D, 0				;no invert
- 375: 2260+10	01EA  C36CF6  			JP	SENDBUFF			;jump SENDBUFF
- 376:				
+ 344:     -	01B7          	dskrd1:
+ 345: 2000+7	01B7  3E02    			LD	A, 2
+ 346: 2007+13	01B9  321706  			LD	(direct), A			;clear direct
+ 347:				
+ 348: 2020+16	01BC  2AFDC2  			LD	HL, (CFRAME + 2)		;load DAUX1/2, test if zero
+ 349: 2036+4	01BF  7D      			LD	A, L
+ 350: 2040+4	01C0  B4      			OR	H
+ 351: 2044+7+5	01C1  2806    			JR	Z, dskrd2			;if zero, use direct sector number
+ 352: 2051+17	01C3  CD1DFA  			CALL	SECTRAN				;else use original code, call SECTRAN
+ 353: 2068+10	01C6  C39BF9  			JP	SalyDISKRD2			;and procees
+ 354:				
+ 355:     -	01C9          	dskrd2:
+ 356: 2078+14	01C9  DD2198FF			LD	IX, DKIOCB
+ 357: 2092+19	01CD  DD360000			LD	(IX + DSKOP), TSTRDY
+ 358:				;		CALL	dumpdcb
+ 359: 2111+11	01D1  E5      			PUSH	HL
+ 360: 2122+17	01D2  CD0FF0  			CALL	DISKV
+ 361: 2139+10	01D5  E1      			POP	HL
+ 362:				
+ 363: 2149+17	01D6  CDED01  			CALL	sec2track			;compute sector, track, side from direct sector
+ 364: 2166+19	01D9  DD360001			LD	(IX + DSKOP), GETSEC
+ 365:				;		CALL	dumpdcb
+ 366: 2185+11	01DD  E5      			PUSH	HL
+ 367: 2196+17	01DE  CD9C02  			CALL	dskreadfn			;CALL DISK I/O HANDLER
+ 368: 2213+10	01E1  E1      			POP	HL
+ 369:				
+ 370: 2223+13	01E2  3AA0FF  			LD	A, (DKIOCB+DSKSTS)
+ 371: 2236+17	01E5  CDE8F9  			CALL	SETSTAT				;call SETSTAT
+ 372: 2253+7	01E8  1600    			LD	D, 0				;no invert
+ 373: 2260+10	01EA  C36CF6  			JP	SENDBUFF			;jump SENDBUFF
+ 374:				
+ 375:				;--------------------------------------------------
+ 376:				;compute sector, track, side from direct sector
  377:				;--------------------------------------------------
- 378:				;compute sector, track, side from direct sector
- 379:				;--------------------------------------------------
- 380:     -	01ED          	sec2track:
- 381: 2270+4	01ED  AF      			XOR	A				;clear carry and a
- 382: 2274+7	01EE  06FF    			LD	B, 0ffh				;also b
- 383: 2281+16	01F0  2A1506  			LD	HL, (dsector)			;compute track and side numer
- 384: 2297+10	01F3  111200  			LD	DE, 18				;18 secs per track
- 385:     -	01F6          	sec2track1:             
- 386: 2307+4	01F6  04      			INC	B				;b holds track-number
- 387: 2311+15	01F7  ED52    			sbc	HL, DE
- 388: 2326+7+5	01F9  30FB    			JR	NC, sec2track1			;subtract 18 as long carry clear
- 389: 2333+4	01FB  7D      			LD	A, L
- 390: 2337+7	01FC  C613    			ADD	19				;add 19 to get sector number + 1
- 391: 2344+13	01FE  329BFF  			LD	(DKIOCB+DSKSEC), A
- 392: 2357+8	0201  CB38    			SRL	B				;divide track by two, (we have two sides)
- 393: 2365+4	0203  78      			LD	A, B
- 394: 2369+13	0204  329AFF  			LD	(DKIOCB+DSKTRK), A
- 395: 2382+4	0207  1F      			RRA					;shift-in side-number from previously lowest-bit
- 396: 2386+7	0208  E680    			AND	080h				;mask out bit 0-6
- 397: 2393+10	020A  2199FF  			LD	HL, DKIOCB+DSKDRV
- 398: 2403+15	020D  CBBE    			RES	7, (HL)
- 399: 2418+7	020F  B6      			OR	(HL)
- 400: 2425+7	0210  77      			LD	(HL), A
- 401:							
- 402:				;		CALL	serhex
- 403:				;		CALL	serspace
- 404:				;		LD	A, 'S'
- 405:				;		CALL	seroutfn
- 406:				;		LD	A, (DKIOCB+DSKSEC)
- 407:				;		CALL	serhex
- 408:				;		CALL	serspace
- 409:				;		LD	A, 'T'
- 410:				;		CALL	seroutfn
- 411:				;		LD	A, (DKIOCB+DSKTRK)
- 412:				;		CALL	serhex
- 413:				;		CALL	sercr
- 414:							
- 415: 2432+10	0211  210002  			LD	HL, 512
- 416: 2442+16	0214  229EFF  			LD	(DKIOCB+DSKAUX), HL
- 417: 2458+10	0217  2100C1  			LD	HL, IOBUFF
- 418: 2468+16	021A  229CFF  			LD	(DKIOCB+DSKPTR), HL
- 419: 2484+14	021D  DD2198FF			LD	IX, DKIOCB
- 420: 2498+10	0221  C9      			RET     
- 421:				
+ 378:     -	01ED          	sec2track:
+ 379: 2270+4	01ED  AF      			XOR	A				;clear carry and a
+ 380: 2274+7	01EE  06FF    			LD	B, 0ffh				;also b
+ 381: 2281+16	01F0  2A1506  			LD	HL, (dsector)			;compute track and side numer
+ 382: 2297+10	01F3  111200  			LD	DE, 18				;18 secs per track
+ 383:     -	01F6          	sec2track1:             
+ 384: 2307+4	01F6  04      			INC	B				;b holds track-number
+ 385: 2311+15	01F7  ED52    			sbc	HL, DE
+ 386: 2326+7+5	01F9  30FB    			JR	NC, sec2track1			;subtract 18 as long carry clear
+ 387: 2333+4	01FB  7D      			LD	A, L
+ 388: 2337+7	01FC  C613    			ADD	19				;add 19 to get sector number + 1
+ 389: 2344+13	01FE  329BFF  			LD	(DKIOCB+DSKSEC), A
+ 390: 2357+8	0201  CB38    			SRL	B				;divide track by two, (we have two sides)
+ 391: 2365+4	0203  78      			LD	A, B
+ 392: 2369+13	0204  329AFF  			LD	(DKIOCB+DSKTRK), A
+ 393: 2382+4	0207  1F      			RRA					;shift-in side-number from previously lowest-bit
+ 394: 2386+7	0208  E680    			AND	080h				;mask out bit 0-6
+ 395: 2393+10	020A  2199FF  			LD	HL, DKIOCB+DSKDRV
+ 396: 2403+15	020D  CBBE    			RES	7, (HL)
+ 397: 2418+7	020F  B6      			OR	(HL)
+ 398: 2425+7	0210  77      			LD	(HL), A
+ 399:							
+ 400:				;		CALL	serhex
+ 401:				;		CALL	serspace
+ 402:				;		LD	A, 'S'
+ 403:				;		CALL	seroutfn
+ 404:				;		LD	A, (DKIOCB+DSKSEC)
+ 405:				;		CALL	serhex
+ 406:				;		CALL	serspace
+ 407:				;		LD	A, 'T'
+ 408:				;		CALL	seroutfn
+ 409:				;		LD	A, (DKIOCB+DSKTRK)
+ 410:				;		CALL	serhex
+ 411:				;		CALL	sercr
+ 412:							
+ 413: 2432+10	0211  210002  			LD	HL, 512
+ 414: 2442+16	0214  229EFF  			LD	(DKIOCB+DSKAUX), HL
+ 415: 2458+10	0217  2100C1  			LD	HL, IOBUFF
+ 416: 2468+16	021A  229CFF  			LD	(DKIOCB+DSKPTR), HL
+ 417: 2484+14	021D  DD2198FF			LD	IX, DKIOCB
+ 418: 2498+10	0221  C9      			RET     
+ 419:				
+ 420:				;--------------------------------------------------
+ 421:				; hook for setDirectSector if aux1/2 = 0
  422:				;--------------------------------------------------
- 423:				; hook for setDirectSector if aux1/2 = 0
- 424:				;--------------------------------------------------
- 425: 2508+11	0222  E5      	dwrt:		PUSH	HL
- 426: 2519+16	0223  22A9FF  			LD	(LOGSIZ),HL			;SAVE DATA BLOCK LENGTH
- 427:				
- 428: 2535+16	0226  2AFDC2  			LD	HL, (CFRAME + 2)		;load DAUX1/2
- 429: 2551+4	0229  7D      			LD	A, L
- 430: 2555+4	022A  B4      			OR	H
- 431: 2559+7+5	022B  2804    			JR	Z, dwrta			;if zero, do special stuff
- 432:				
- 433: 2566+10	022D  E1      			POP	HL				;otherwise continue
- 434: 2576+10	022E  C320F9  			JP	SalyDISKWRT2			;normal
+ 423: 2508+11	0222  E5      	dwrt:		PUSH	HL
+ 424: 2519+16	0223  22A9FF  			LD	(LOGSIZ),HL			;SAVE DATA BLOCK LENGTH
+ 425:				
+ 426: 2535+16	0226  2AFDC2  			LD	HL, (CFRAME + 2)		;load DAUX1/2
+ 427: 2551+4	0229  7D      			LD	A, L
+ 428: 2555+4	022A  B4      			OR	H
+ 429: 2559+7+5	022B  2804    			JR	Z, dwrta			;if zero, do special stuff
+ 430:				
+ 431: 2566+10	022D  E1      			POP	HL				;otherwise continue
+ 432: 2576+10	022E  C320F9  			JP	SalyDISKWRT2			;normal
+ 433:				
+ 434: 2586+17	0231  CD5BFC  	dwrta:		CALL	SENDACK
  435:				
- 436: 2586+17	0231  CD5BFC  	dwrta:		CALL	SENDACK
- 437:				
- 438: 2603+10	0234  211706  			LD	HL, direct			;direct
- 439:				;		LD	A, (HL)
- 440:				;		CALL	serhex
- 441: 2613+11	0237  35      			DEC	(HL)
- 442: 2624+7+5	0238  2813    			JR	Z, dwrtd			;first sector
- 443: 2631+10	023A  FA5A02  			JP	M, dwrtb			;second sector
- 444:				
- 445: 2641+7	023D  0640    			LD	B, 64
- 446: 2648+8+5	023F  10FE    			DJNZ	$				;wait some time
- 447:				
- 448: 2656+16	0241  2A00C1  			LD	HL, (IOBUFF)			;save 2-byte sector number (0-xxxx)
- 449: 2672+16	0244  221506  			LD	(dsector), HL
- 450:				
- 451: 2688+10	0247  E1      	dwrtc:		POP	HL
- 452: 2698+7	0248  3E43    			LD	A, 'C'
- 453: 2705+10	024A  C368FC  			JP	SENDCHAR
- 454:				
- 455: 2715+10	024D  2100C1  	dwrtd:		LD	HL, IOBUFF
- 456: 2725+10	0250  1102C3  			LD	DE, IOBUFF+LEN+2
- 457: 2735+10	0253  010001  			LD	BC, 0100h			;rec first half
- 458: 2745+16+5	0256  EDB0    			LDIR
- 459: 2761+12	0258  18ED    			JR	dwrtc
+ 436: 2603+10	0234  211706  			LD	HL, direct			;direct
+ 437:				;		LD	A, (HL)
+ 438:				;		CALL	serhex
+ 439: 2613+11	0237  35      			DEC	(HL)
+ 440: 2624+7+5	0238  2813    			JR	Z, dwrtd			;first sector
+ 441: 2631+10	023A  FA5A02  			JP	M, dwrtb			;second sector
+ 442:				
+ 443: 2641+7	023D  0640    			LD	B, 64
+ 444: 2648+8+5	023F  10FE    			DJNZ	$				;wait some time
+ 445:				
+ 446: 2656+16	0241  2A00C1  			LD	HL, (IOBUFF)			;save 2-byte sector number (0-xxxx)
+ 447: 2672+16	0244  221506  			LD	(dsector), HL
+ 448:				
+ 449: 2688+10	0247  E1      	dwrtc:		POP	HL
+ 450: 2698+7	0248  3E43    			LD	A, 'C'
+ 451: 2705+10	024A  C368FC  			JP	SENDCHAR
+ 452:				
+ 453: 2715+10	024D  2100C1  	dwrtd:		LD	HL, IOBUFF
+ 454: 2725+10	0250  1102C3  			LD	DE, IOBUFF+LEN+2
+ 455: 2735+10	0253  010001  			LD	BC, 0100h			;rec first half
+ 456: 2745+16+5	0256  EDB0    			LDIR
+ 457: 2761+12	0258  18ED    			JR	dwrtc
+ 458:				
+ 459: 2773+10	025A  3602    	dwrtb:		LD	(HL), 2				;direct = 2
  460:				
- 461: 2773+10	025A  3602    	dwrtb:		LD	(HL), 2				;direct = 2
- 462:				
- 463: 2783+10	025C  210002  			LD	HL, 512				;LOGSIZ 512 bytes in this case
- 464: 2793+16	025F  22A9FF  			LD	(LOGSIZ), HL
- 465:							
- 466: 2809+10	0262  2100C1  			LD	HL, IOBUFF
- 467: 2819+10	0265  1100C2  			LD	DE, IOBUFF+0100h
- 468: 2829+10	0268  010001  			LD	BC, 0100h
- 469: 2839+16+5	026B  EDB0    			LDIR    
- 470: 2855+10	026D  2102C3  			LD	HL, IOBUFF+LEN+2
- 471: 2865+10	0270  1100C1  			LD	DE, IOBUFF
- 472: 2875+10	0273  010001  			LD	BC, 0100h
- 473: 2885+16+5	0276  EDB0    			LDIR
+ 461: 2783+10	025C  210002  			LD	HL, 512				;LOGSIZ 512 bytes in this case
+ 462: 2793+16	025F  22A9FF  			LD	(LOGSIZ), HL
+ 463:							
+ 464: 2809+10	0262  2100C1  			LD	HL, IOBUFF
+ 465: 2819+10	0265  1100C2  			LD	DE, IOBUFF+0100h
+ 466: 2829+10	0268  010001  			LD	BC, 0100h
+ 467: 2839+16+5	026B  EDB0    			LDIR    
+ 468: 2855+10	026D  2102C3  			LD	HL, IOBUFF+LEN+2
+ 469: 2865+10	0270  1100C1  			LD	DE, IOBUFF
+ 470: 2875+10	0273  010001  			LD	BC, 0100h
+ 471: 2885+16+5	0276  EDB0    			LDIR
+ 472:				
+ 473: 2901+17	0278  CDED01  			CALL	sec2track
  474:				
- 475: 2901+17	0278  CDED01  			CALL	sec2track
- 476:				
- 477: 2918+19	027B  DD360002			LD	(IX + DSKOP), PUTSEC
- 478: 2937+17	027F  CD8402  			CALL	dskwrite
- 479:				
- 480: 2954+12	0282  18C3    			JR	dwrtc
+ 475: 2918+19	027B  DD360002			LD	(IX + DSKOP), PUTSEC
+ 476: 2937+17	027F  CD8402  			CALL	dskwrite
+ 477:				
+ 478: 2954+12	0282  18C3    			JR	dwrtc
+ 479:				;--------------------------------------------------
+ 480:				; dskwrite: write through sector
  481:				;--------------------------------------------------
- 482:				; dskwrite: write through sector
- 483:				;--------------------------------------------------
- 484:     -	0284          	dskwrite:
- 485:				;		LD	A, 'W';
- 486:				;		CALL	seroutfn
+ 482:     -	0284          	dskwrite:
+ 483:				;		LD	A, 'W';
+ 484:				;		CALL	seroutfn
+ 485:				
+ 486:				;		JP	DISKV
  487:				
- 488:				;		JP	DISKV
- 489:				
- 490: 2966+17	0284  CD5803  			CALL	checktrack
- 491: 2983+7+5	0287  2010    			JR	NZ, dskwrite1
- 492:				
- 493:				;		LD	HL, (LOGSIZ)
- 494:				;		CALL	seraddr
- 495:				
- 496: 2990+17	0289  CD3B03  			CALL	compbufadr
- 497:				;		CALL	seraddr
- 498:				
- 499: 3007+4	028C  EB      			EX	DE, HL
- 500: 3011+19	028D  DD6605  			LD	H, (IX + DSKPTR+1)
- 501: 3030+19	0290  DD6E04  			LD	L, (IX + DSKPTR)
- 502: 3049+20	0293  ED4BA9FF			LD	BC, (LOGSIZ)
+ 488: 2966+17	0284  CD5803  			CALL	checktrack
+ 489: 2983+7+5	0287  2010    			JR	NZ, dskwrite1
+ 490:				
+ 491:				;		LD	HL, (LOGSIZ)
+ 492:				;		CALL	seraddr
+ 493:				
+ 494: 2990+17	0289  CD3B03  			CALL	compbufadr
+ 495:				;		CALL	seraddr
+ 496:				
+ 497: 3007+4	028C  EB      			EX	DE, HL
+ 498: 3011+19	028D  DD6605  			LD	H, (IX + DSKPTR+1)
+ 499: 3030+19	0290  DD6E04  			LD	L, (IX + DSKPTR)
+ 500: 3049+20	0293  ED4BA9FF			LD	BC, (LOGSIZ)
+ 501:				
+ 502: 3069+16+5	0297  EDB0    			LDIR
  503:				
- 504: 3069+16+5	0297  EDB0    			LDIR
- 505:				
- 506:     -	0299          	dskwrite1:
- 507: 3085+10	0299  C30FF0  			JP	DISKV
- 508:				
- 509:				
+ 504:     -	0299          	dskwrite1:
+ 505: 3085+10	0299  C30FF0  			JP	DISKV
+ 506:				
+ 507:				
+ 508:				;--------------------------------------------------
+ 509:				; dskreadfn: cache a track
  510:				;--------------------------------------------------
- 511:				; dskreadfn: cache a track
- 512:				;--------------------------------------------------
- 513:     -	029C          	dskreadfn:
- 514:				;		LD	A, 'R'
- 515:				;		CALL	debug
- 516:				
- 517: 3095+17	029C  CD5803  			CALL	checktrack
- 518: 3112+10	029F  CA1B03  			JP	Z, match
- 519:				; 		ld	a, 'N'
- 520:				;		CALL	seroutfn
- 521: 3122+20	02A2  ED53F304			LD	(drive), DE			;save new drive and track
- 522: 3142+15	02A6  DDE5    			PUSH	IX				;save IX
- 523:				
- 524: 3157+15	02A8  DDE5    			PUSH	IX				;load HL with IX
- 525: 3172+10	02AA  E1      			POP	HL
- 526: 3182+10	02AB  112206  			LD	DE, dcb
- 527: 3192+10	02AE  010900  			LD	BC, 9
- 528: 3202+16+5	02B1  EDB0    			LDIR					;copy dcb
+ 511:     -	029C          	dskreadfn:
+ 512:				;		LD	A, 'R'
+ 513:				;		CALL	debug
+ 514:				
+ 515: 3095+17	029C  CD5803  			CALL	checktrack
+ 516: 3112+10	029F  CA1B03  			JP	Z, match
+ 517:				; 		ld	a, 'N'
+ 518:				;		CALL	seroutfn
+ 519: 3122+20	02A2  ED53F304			LD	(drive), DE			;save new drive and track
+ 520: 3142+15	02A6  DDE5    			PUSH	IX				;save IX
+ 521:				
+ 522: 3157+15	02A8  DDE5    			PUSH	IX				;load HL with IX
+ 523: 3172+10	02AA  E1      			POP	HL
+ 524: 3182+10	02AB  112206  			LD	DE, dcb
+ 525: 3192+10	02AE  010900  			LD	BC, 9
+ 526: 3202+16+5	02B1  EDB0    			LDIR					;copy dcb
+ 527:							
+ 528: 3218+14	02B3  DD212206			LD	IX, dcb				;load IX with new dcb
  529:							
- 530: 3218+14	02B3  DD212206			LD	IX, dcb				;load IX with new dcb
- 531:							
- 532: 3232+13	02B7  3A2906  			LD	A, (dcb + DSKAUX+1)		;get sector length high-byte
- 533: 3245+7	02BA  FE02    			CP	2
- 534: 3252+7+5	02BC  2020    			JR	NZ, readtrack2			;no MS-DOS disk
- 535:				
- 536:				
- 537: 3259+10	02BE  210010  			LD	HL, TRKBUFFER
- 538: 3269+10	02C1  010112  			LD	BC, 18 * 256 + 1		;b=18, c = 1
- 539:				
- 540:     -	02C4          	readtrack3:
- 541: 3279+16	02C4  222606  			LD	(dcb + DSKPTR), HL
- 542: 3295+19	02C7  DD7103  			LD	(IX + DSKSEC),	C
+ 530: 3232+13	02B7  3A2906  			LD	A, (dcb + DSKAUX+1)		;get sector length high-byte
+ 531: 3245+7	02BA  FE02    			CP	2
+ 532: 3252+7+5	02BC  2020    			JR	NZ, readtrack2			;no MS-DOS disk
+ 533:				
+ 534:				
+ 535: 3259+10	02BE  210010  			LD	HL, TRKBUFFER
+ 536: 3269+10	02C1  010112  			LD	BC, 18 * 256 + 1		;b=18, c = 1
+ 537:				
+ 538:     -	02C4          	readtrack3:
+ 539: 3279+16	02C4  222606  			LD	(dcb + DSKPTR), HL
+ 540: 3295+19	02C7  DD7103  			LD	(IX + DSKSEC),	C
+ 541:				
+ 542:				;		CALL	dumpdcb
  543:				
- 544:				;		CALL	dumpdcb
- 545:				
- 546: 3314+11	02CA  E5      			PUSH	HL
- 547: 3325+11	02CB  C5      			PUSH	BC
- 548: 3336+17	02CC  CD0FF0  			CALL	DISKV
- 549: 3353+10	02CF  C1      			POP	BC
- 550: 3363+10	02D0  E1      			POP	HL
- 551:				;		CALL	dumpsec 
- 552: 3373+13	02D1  3A2A06  			LD	A, (dcb + DSKSTS)		;error occured?
- 553: 3386+4	02D4  B7      			OR	A
- 554: 3390+7+5	02D5  2036    			JR	NZ, readtrack4			;yes
- 555: 3397+4	02D7  24      			INC	H
- 556: 3401+4	02D8  24      			INC	H
- 557: 3405+4	02D9  0C      			INC	C
- 558: 3409+8+5	02DA  10E8    			DJNZ	readtrack3
- 559: 3417+12	02DC  183B    			JR	readtrack5
- 560:				
- 561:     -	02DE          	readtrack2:
- 562: 3429+7	02DE  0600    			LD	B, 0				;compute skew-list from media type
- 563: 3436+19	02E0  FD4E05  			LD	C, (IY + MEDIA)
- 564: 3455+10	02E3  211A06  			LD	HL, skewtab
- 565: 3465+11	02E6  09      			ADD	HL, BC
- 566: 3476+7	02E7  7E      			LD	A, (HL)
- 567: 3483+6	02E8  23      			INC	HL
- 568: 3489+7	02E9  66      			LD	H, (HL)
- 569: 3496+4	02EA  6F      			LD	L, A
- 570: 3500+19	02EB  FD4603  			LD	B, (IY + NSECS+1)
- 571:				
- 572:     -	02EE          	readtrack1:
- 573: 3519+16	02EE  221806  			LD	(secptr), HL
- 574:				
- 575:     -	02F1          	readtrack:
- 576: 3535+16	02F1  2A1806  			LD	HL, (secptr)
- 577: 3551+7	02F4  7E      			LD	A, (HL)
- 578: 3558+13	02F5  322506  			LD	(dcb + DSKSEC), A
- 579: 3571+6	02F8  23      			INC	HL
- 580: 3577+16	02F9  221806  			LD	(secptr), HL
- 581:				
- 582: 3593+11	02FC  C5      			PUSH	BC
- 583: 3604+17	02FD  CD3B03  			CALL	compbufadr
- 584: 3621+16	0300  222606  			LD	(dcb + DSKPTR), HL
- 585:				;		CALL	dumpdcb
- 586: 3637+17	0303  CD0FF0  			CALL	DISKV
- 587: 3654+10	0306  C1      			POP	BC
- 588:				
- 589: 3664+13	0307  3A2A06  			LD	A, (dcb + DSKSTS)		;error occured?
- 590: 3677+4	030A  B7      			OR	A
- 591: 3681+7+5	030B  280A    			JR	Z, readtrack6			;no
- 592:     -	030D          	readtrack4:             
- 593: 3688+10	030D  21FFFF  			LD	HL, 0ffffh
- 594: 3698+16	0310  22F304  			LD	(drive), HL
- 595: 3714+14	0313  DDE1    			POP	IX				;yes, store in original dcb
- 596: 3728+12	0315  181E    			JR	match2
- 597:     -	0317          	readtrack6:             
- 598: 3740+8+5	0317  10D8    			DJNZ	readtrack
- 599:     -	0319          	readtrack5:
- 600: 3748+14	0319  DDE1    			POP	IX
- 601:				
- 602:     -	031B          	match:
- 603:				;		ld	a, 'M'
- 604:				;		CALL	seroutfn
- 605:						
- 606: 3762+17	031B  CD3B03  			CALL	compbufadr
- 607: 3779+19	031E  DD5605  			LD	D, (IX + DSKPTR+1)
- 608: 3798+19	0321  DD5E04  			LD	E, (IX + DSKPTR)
- 609: 3817+20	0324  ED4BA9FF			LD	BC, (LOGSIZ)
- 610: 3837+13	0328  3A2906  			LD	A, (dcb + DSKAUX+1)		;get sector length high-byte
- 611: 3850+7	032B  FE02    			CP	2
- 612: 3857+7+5	032D  2003    			JR	NZ, match1
- 613: 3864+10	032F  010002  			LD	BC, 512
- 614:     -	0332          	match1:
- 615: 3874+16+5	0332  EDB0    			LDIR
- 616:				
- 617: 3890+4	0334  AF      			XOR	A
- 618:     -	0335          	match2:
- 619: 3894+19	0335  DD7708  			LD	(IX + DSKSTS), A
- 620:				
- 621:     -	0000          		IF	WD1772
- 624:					ENDIF
- 625: 3913+10	0338  C33CF0  			JP	ACTIVON
- 626:				
- 627:				
+ 544: 3314+11	02CA  E5      			PUSH	HL
+ 545: 3325+11	02CB  C5      			PUSH	BC
+ 546: 3336+17	02CC  CD0FF0  			CALL	DISKV
+ 547: 3353+10	02CF  C1      			POP	BC
+ 548: 3363+10	02D0  E1      			POP	HL
+ 549:				;		CALL	dumpsec 
+ 550: 3373+13	02D1  3A2A06  			LD	A, (dcb + DSKSTS)		;error occured?
+ 551: 3386+4	02D4  B7      			OR	A
+ 552: 3390+7+5	02D5  2036    			JR	NZ, readtrack4			;yes
+ 553: 3397+4	02D7  24      			INC	H
+ 554: 3401+4	02D8  24      			INC	H
+ 555: 3405+4	02D9  0C      			INC	C
+ 556: 3409+8+5	02DA  10E8    			DJNZ	readtrack3
+ 557: 3417+12	02DC  183B    			JR	readtrack5
+ 558:				
+ 559:     -	02DE          	readtrack2:
+ 560: 3429+7	02DE  0600    			LD	B, 0				;compute skew-list from media type
+ 561: 3436+19	02E0  FD4E05  			LD	C, (IY + MEDIA)
+ 562: 3455+10	02E3  211A06  			LD	HL, skewtab
+ 563: 3465+11	02E6  09      			ADD	HL, BC
+ 564: 3476+7	02E7  7E      			LD	A, (HL)
+ 565: 3483+6	02E8  23      			INC	HL
+ 566: 3489+7	02E9  66      			LD	H, (HL)
+ 567: 3496+4	02EA  6F      			LD	L, A
+ 568: 3500+19	02EB  FD4603  			LD	B, (IY + NSECS+1)
+ 569:				
+ 570:     -	02EE          	readtrack1:
+ 571: 3519+16	02EE  221806  			LD	(secptr), HL
+ 572:				
+ 573:     -	02F1          	readtrack:
+ 574: 3535+16	02F1  2A1806  			LD	HL, (secptr)
+ 575: 3551+7	02F4  7E      			LD	A, (HL)
+ 576: 3558+13	02F5  322506  			LD	(dcb + DSKSEC), A
+ 577: 3571+6	02F8  23      			INC	HL
+ 578: 3577+16	02F9  221806  			LD	(secptr), HL
+ 579:				
+ 580: 3593+11	02FC  C5      			PUSH	BC
+ 581: 3604+17	02FD  CD3B03  			CALL	compbufadr
+ 582: 3621+16	0300  222606  			LD	(dcb + DSKPTR), HL
+ 583:				;		CALL	dumpdcb
+ 584: 3637+17	0303  CD0FF0  			CALL	DISKV
+ 585: 3654+10	0306  C1      			POP	BC
+ 586:				
+ 587: 3664+13	0307  3A2A06  			LD	A, (dcb + DSKSTS)		;error occured?
+ 588: 3677+4	030A  B7      			OR	A
+ 589: 3681+7+5	030B  280A    			JR	Z, readtrack6			;no
+ 590:     -	030D          	readtrack4:             
+ 591: 3688+10	030D  21FFFF  			LD	HL, 0ffffh
+ 592: 3698+16	0310  22F304  			LD	(drive), HL
+ 593: 3714+14	0313  DDE1    			POP	IX				;yes, store in original dcb
+ 594: 3728+12	0315  181E    			JR	match2
+ 595:     -	0317          	readtrack6:             
+ 596: 3740+8+5	0317  10D8    			DJNZ	readtrack
+ 597:     -	0319          	readtrack5:
+ 598: 3748+14	0319  DDE1    			POP	IX
+ 599:				
+ 600:     -	031B          	match:
+ 601:				;		ld	a, 'M'
+ 602:				;		CALL	seroutfn
+ 603:						
+ 604: 3762+17	031B  CD3B03  			CALL	compbufadr
+ 605: 3779+19	031E  DD5605  			LD	D, (IX + DSKPTR+1)
+ 606: 3798+19	0321  DD5E04  			LD	E, (IX + DSKPTR)
+ 607: 3817+20	0324  ED4BA9FF			LD	BC, (LOGSIZ)
+ 608: 3837+13	0328  3A2906  			LD	A, (dcb + DSKAUX+1)		;get sector length high-byte
+ 609: 3850+7	032B  FE02    			CP	2
+ 610: 3857+7+5	032D  2003    			JR	NZ, match1
+ 611: 3864+10	032F  010002  			LD	BC, 512
+ 612:     -	0332          	match1:
+ 613: 3874+16+5	0332  EDB0    			LDIR
+ 614:				
+ 615: 3890+4	0334  AF      			XOR	A
+ 616:     -	0335          	match2:
+ 617: 3894+19	0335  DD7708  			LD	(IX + DSKSTS), A
+ 618:				
+ 619:     -	0000          		IF	WD1772
+ 622:					ENDIF
+ 623: 3913+10	0338  C33CF0  			JP	ACTIVON
+ 624:				
+ 625:				
+ 626:				;--------------------------------------------------
+ 627:				; HL = TRKBUF + DSKSEC * (128/256/512)
  628:				;--------------------------------------------------
- 629:				; HL = TRKBUF + DSKSEC * (128/256/512)
- 630:				;--------------------------------------------------
- 631:     -	033B          	compbufadr:
- 632: 3923+10	033B  210010  			LD	HL, TRKBUFFER
- 633: 3933+19	033E  DD4603  			LD	B, (IX + DSKSEC)
- 634: 3952+4	0341  05      			DEC	B
- 635: 3956+7	0342  0E00    			LD	C, 0
- 636: 3963+13	0344  3A2906  			LD	A, (dcb + DSKAUX + 1)		;load seclen highbyte
- 637: 3976+4	0347  B7      			OR	A
- 638: 3980+7+5	0348  2808    			JR	Z, compbufadr2			;if zero, assume 128 bytes length
- 639: 3987+7	034A  FE01    			CP	1
- 640: 3994+7+5	034C  2808    			JR	Z, compbufadr1			;if 1, assume 256 bytes
- 641: 4001+8	034E  CB20    			SLA	B				;512 bytes
- 642: 4009+12	0350  1804    			JR	compbufadr1
- 643:     -	0352          	compbufadr2:
- 644: 4021+8	0352  CB38    			SRL	B				;128 bytes
- 645: 4029+8	0354  CB19    			RR	C
- 646:     -	0356          	compbufadr1:
- 647: 4037+11	0356  09      			ADD	HL, BC
- 648: 4048+10	0357  C9      			RET
- 649:				
- 650:     -	0358          	checktrack:
- 651: 4058+16	0358  2AF304  			LD	HL, (drive)			;load
- 652: 4074+19	035B  DD5602  			LD	D, (IX + DSKTRK)		;high
- 653: 4093+19	035E  DD5E01  			LD	E, (IX + DSKDRV)		;low
- 654: 4112+4	0361  B7      			OR	A				;clear carry
- 655: 4116+15	0362  ED52    			SBC	HL, DE
- 656: 4131+10	0364  C9      			RET
- 657:				;
- 658:				
- 659:					ENDIF
- 660:					
- 661:				;--------------------------------------------------
- 662:				;--------------------------------------------------
+ 629:     -	033B          	compbufadr:
+ 630: 3923+10	033B  210010  			LD	HL, TRKBUFFER
+ 631: 3933+19	033E  DD4603  			LD	B, (IX + DSKSEC)
+ 632: 3952+4	0341  05      			DEC	B
+ 633: 3956+7	0342  0E00    			LD	C, 0
+ 634: 3963+13	0344  3A2906  			LD	A, (dcb + DSKAUX + 1)		;load seclen highbyte
+ 635: 3976+4	0347  B7      			OR	A
+ 636: 3980+7+5	0348  2808    			JR	Z, compbufadr2			;if zero, assume 128 bytes length
+ 637: 3987+7	034A  FE01    			CP	1
+ 638: 3994+7+5	034C  2808    			JR	Z, compbufadr1			;if 1, assume 256 bytes
+ 639: 4001+8	034E  CB20    			SLA	B				;512 bytes
+ 640: 4009+12	0350  1804    			JR	compbufadr1
+ 641:     -	0352          	compbufadr2:
+ 642: 4021+8	0352  CB38    			SRL	B				;128 bytes
+ 643: 4029+8	0354  CB19    			RR	C
+ 644:     -	0356          	compbufadr1:
+ 645: 4037+11	0356  09      			ADD	HL, BC
+ 646: 4048+10	0357  C9      			RET
+ 647:				
+ 648:     -	0358          	checktrack:
+ 649: 4058+16	0358  2AF304  			LD	HL, (drive)			;load
+ 650: 4074+19	035B  DD5602  			LD	D, (IX + DSKTRK)		;high
+ 651: 4093+19	035E  DD5E01  			LD	E, (IX + DSKDRV)		;low
+ 652: 4112+4	0361  B7      			OR	A				;clear carry
+ 653: 4116+15	0362  ED52    			SBC	HL, DE
+ 654: 4131+10	0364  C9      			RET
+ 655:				;
+ 656:				
+ 657:					ENDIF
+ 658:					
+ 659:				;--------------------------------------------------
+ 660:				;--------------------------------------------------
+ 661:				;
+ 662:				; common code for SALLYRS 0 or 1 starts here
  663:				;
- 664:				; common code for SALLYRS 0 or 1 starts here
- 665:				;
- 666:				;--------------------------------------------------
- 667:				;--------------------------------------------------
- 668:				
- 669:				
+ 664:				;--------------------------------------------------
+ 665:				;--------------------------------------------------
+ 666:				
+ 667:				
+ 668:				;--------------------------------------------------
+ 669:				; get Pokeydivisor command '?'
  670:				;--------------------------------------------------
- 671:				; get Pokeydivisor command '?'
- 672:				;--------------------------------------------------
- 673:				;
- 674:				;
- 675:     -	0365          	getspeed:
- 676:				;		LD	A, '?'
- 677:				;		CALL	seroutfn
- 678:				
- 679: 4141+17	0365  CD35FC  			CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
- 680: 4158+5+6	0368  D8      			RET	C				;EXIT IF NOT A DRIVE IN OUR BOX
- 681:				
- 682:				;		CALL	HASPARMS
- 683:				;		RET	Z				;EXIT IF DISK PARAMS NOT KNOWN
+ 671:				;
+ 672:				;
+ 673:     -	0365          	getspeed:
+ 674:				;		LD	A, '?'
+ 675:				;		CALL	seroutfn
+ 676:				
+ 677: 4141+17	0365  CD35FC  			CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
+ 678: 4158+5+6	0368  D8      			RET	C				;EXIT IF NOT A DRIVE IN OUR BOX
+ 679:				
+ 680:				;		CALL	HASPARMS
+ 681:				;		RET	Z				;EXIT IF DISK PARAMS NOT KNOWN
+ 682:				
+ 683: 4163+17	0369  CD5BFC  			CALL	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
  684:				
- 685: 4163+17	0369  CD5BFC  			CALL	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+ 685: 4180+10	036C  21FFC2  			LD	HL, IOBUFF+LEN-1
  686:				
- 687: 4180+10	036C  21FFC2  			LD	HL, IOBUFF+LEN-1
- 688:				
- 689:     -	0001          		IF NOHIGHSPEEDSIO <> 1
- 690: 4190+7	036F  3E09    			LD	A, SIOFAST
- 691: 4197+7	0371  77      			LD	(HL), A
- 692:					ELSE
- 694:					ENDIF	; HIGHSPEEDSIO
- 695:				
- 696: 4204+10	0372  114300  			LD	DE, 'C'
- 697: 4214+10	0375  C36CF6  			JP	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
- 698:				
- 699:				
+ 687:     -	0001          		IF NOHIGHSPEEDSIO <> 1
+ 688: 4190+7	036F  3E09    			LD	A, SIOFAST
+ 689: 4197+7	0371  77      			LD	(HL), A
+ 690:					ELSE
+ 692:					ENDIF	; HIGHSPEEDSIO
+ 693:				
+ 694: 4204+10	0372  114300  			LD	DE, 'C'
+ 695: 4214+10	0375  C36CF6  			JP	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME
+ 696:				
+ 697:				
+ 698:				;--------------------------------------------------
+ 699:				; cmdwaitfn
  700:				;--------------------------------------------------
- 701:				; cmdwaitfn
- 702:				;--------------------------------------------------
- 703: 4224+13	0378  3A55FF  	cmdwaitfn:	ld	A, (CMDFLG)
- 704: 4237+4	037B  B7      			or	A				;see if command frame has arrived
- 705: 4241+5+6	037C  C8      			ret	Z				;exit if nothing has happened
- 706:				
- 707:						;call	sercmd
- 708:						
- 709: 4246+13	037D  3A55FF  			ld	A, (CMDFLG)
- 710: 4259+7	0380  FE01    			cp	1
- 711:				
- 712: 4266+4	0382  F3      			di						;else reset interrupt and start again
- 713: 4270+7	0383  3E03    			ld	a, CTC_D1_SW_RST + CTC_D0_CONTROL	;software reset ctc0
- 714: 4277+11	0385  D380    			out	(CTC0), a				;perform the reset
- 715: 4288+11	0387  D383    			out	(CTC3), a
- 716: 4299+4	0389  FB      			ei
- 717:				
- 718:				;		JP	Z, CMDL4				;good cmd-frame
- 719:												;fall through
- 720: 4303+7+5	038A  2003    			JR	NZ, togglebaud
- 721:     -	0000          		IF SALLYRS = 1
- 723:					ENDIF
- 724: 4310+10	038C  C3F3F7  			JP	CMDL4
- 725:						
+ 701: 4224+13	0378  3A55FF  	cmdwaitfn:	ld	A, (CMDFLG)
+ 702: 4237+4	037B  B7      			or	A				;see if command frame has arrived
+ 703: 4241+5+6	037C  C8      			ret	Z				;exit if nothing has happened
+ 704:				
+ 705:						;call	sercmd
+ 706:						
+ 707: 4246+13	037D  3A55FF  			ld	A, (CMDFLG)
+ 708: 4259+7	0380  FE01    			cp	1
+ 709:				
+ 710: 4266+4	0382  F3      			di						;else reset interrupt and start again
+ 711: 4270+7	0383  3E03    			ld	a, CTC_D1_SW_RST + CTC_D0_CONTROL	;software reset ctc0
+ 712: 4277+11	0385  D380    			out	(CTC0), a				;perform the reset
+ 713: 4288+11	0387  D383    			out	(CTC3), a
+ 714: 4299+4	0389  FB      			ei
+ 715:				
+ 716:				;		JP	Z, CMDL4				;good cmd-frame
+ 717:												;fall through
+ 718: 4303+7+5	038A  2003    			JR	NZ, togglebaud
+ 719:     -	0000          		IF SALLYRS = 1
+ 721:					ENDIF
+ 722: 4310+10	038C  C3F3F7  			JP	CMDL4
+ 723:						
+ 724:				;--------------------------------------------------
+ 725:				; togglebaud
  726:				;--------------------------------------------------
- 727:				; togglebaud
- 728:				;--------------------------------------------------
- 729:     -	038F          	togglebaud:
- 730: 4320+13	038F  3AF204  			LD	A, (pokeydiv)
- 731: 4333+7	0392  FE28    			CP	SIONORMAL
- 732: 4340+7	0394  3E09    			LD	A, SIOFAST
- 733: 4347+7+5	0396  2802    			JR	Z, togglebaud1
- 734: 4354+7	0398  3E28    			LD	A, SIONORMAL
- 735:     -	039A          	togglebaud1:
- 736: 4361+13	039A  32F204  			LD	(pokeydiv), A
- 737:						;CALL	serhexspace
- 738: 4374+10	039D  C30EF8  			JP	CMDL5
- 739:				
+ 727:     -	038F          	togglebaud:
+ 728: 4320+13	038F  3AF204  			LD	A, (pokeydiv)
+ 729: 4333+7	0392  FE28    			CP	SIONORMAL
+ 730: 4340+7	0394  3E09    			LD	A, SIOFAST
+ 731: 4347+7+5	0396  2802    			JR	Z, togglebaud1
+ 732: 4354+7	0398  3E28    			LD	A, SIONORMAL
+ 733:     -	039A          	togglebaud1:
+ 734: 4361+13	039A  32F204  			LD	(pokeydiv), A
+ 735:						;CALL	serhexspace
+ 736: 4374+10	039D  C30EF8  			JP	CMDL5
+ 737:				
+ 738:				;--------------------------------------------------
+ 739:				; xmitbuffn
  740:				;--------------------------------------------------
- 741:				; xmitbuffn
- 742:				;--------------------------------------------------
- 743:     -	03A0          	xmitbuffn:
- 744: 4384+4	03A0  F3      			DI
- 745: 4388+13	03A1  3AF204  			LD	A, (pokeydiv)				;is fast?
- 746: 4401+7	03A4  FE28    			CP	SIONORMAL
- 747: 4408+7+5	03A6  2006    			JR	NZ, xmitfast				;yes, jump
- 748: 4415+10	03A8  0119F7  			LD	BC, STARBIT
- 749: 4425+10	03AB  C388F6  			JP	SalyXMITBUF
- 750:				
- 751:				
- 752:     -	03AE          	xmitfast:
- 753: 4435+7	03AE  3E07    			LD	A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
- 754: 4442+11	03B0  D381    			OUT	(CTC1), A				;SOFWARE RESET CTC1
- 755: 4453+7	03B2  3E01    			LD	A, 1					;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
- 756: 4460+11	03B4  D381    			OUT	(CTC1), A
- 757:				
- 758:     -	03B6          	xmitfast1:
- 759: 4471+7	03B6  7E      			LD	A, (HL)					;7
- 760: 4478+6	03B7  23      			INC	HL					;6
- 761: 4484+4	03B8  AA      			XOR	D					;4
- 762: 4488+4	03B9  4F      			LD	C, A					;4
- 763: 4492+4	03BA  83      			ADD	A, E					;4
- 764: 4496+7	03BB  CE00    			ADC	0					;7	carry clear!
- 765: 4503+4	03BD  5F      			LD	E, A					;4
- 766:				
- 767: 4507+4	03BE  79      			ld	a, c					;4
- 768: 4511+4	03BF  17      			rla						;4 carry clear = start bit
- 769: 4515+7	03C0  0609    			ld	b, 9					;7
- 770:				
- 771: 4522+11	03C2  D350    	fastsend:	OUT	(ATROUT), A				;11
- 772: 4533+4	03C4  1F      			RRA						;4
- 773: 4537+4	03C5  37      			scf						;4 make stop bit
- 774:				
- 775: 4541+11	03C6  E5      			push	hl					;11
- 776: 4552+19	03C7  E3      			ex	(sp), hl				;19
- 777: 4571+10	03C8  E1      			pop	hl					;10 waste 40 T-states
- 778:						
- 779: 4581+8+5	03C9  10F7    			DJNZ	fastsend				;13 / 8 = 72
- 780: 4589+11	03CB  D350    			OUT	(ATROUT), A				;stop bit, don't loose time
- 781:				
- 782: 4600+4	03CD  7C      			LD	A, H					;4
- 783: 4604+7	03CE  FEC3    			CP	HIGH (IOBUFF+LEN)			;7
- 784: 4611+7+5	03D0  38E4    			JR	C, xmitfast1				;12/7 loop if buffer end not reached
- 785:				
- 786: 4618+7	03D2  3E03    			LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL
- 787: 4625+11	03D4  D381    			OUT	(CTC1), A				;SOFWARE RESET CTC1
- 788: 4636+4	03D6  FB      			EI
- 789: 4640+10	03D7  C9      			RET
- 790:						
- 791:				
+ 741:     -	03A0          	xmitbuffn:
+ 742: 4384+4	03A0  F3      			DI
+ 743: 4388+13	03A1  3AF204  			LD	A, (pokeydiv)				;is fast?
+ 744: 4401+7	03A4  FE28    			CP	SIONORMAL
+ 745: 4408+7+5	03A6  2006    			JR	NZ, xmitfast				;yes, jump
+ 746: 4415+10	03A8  0119F7  			LD	BC, STARBIT
+ 747: 4425+10	03AB  C388F6  			JP	SalyXMITBUF
+ 748:				
+ 749:				
+ 750:     -	03AE          	xmitfast:
+ 751: 4435+7	03AE  3E07    			LD	A, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+ 752: 4442+11	03B0  D381    			OUT	(CTC1), A				;SOFWARE RESET CTC1
+ 753: 4453+7	03B2  3E01    			LD	A, 1					;TIME CONSTANT OF 1 - 4uS pulses (1/4Mhz)*16
+ 754: 4460+11	03B4  D381    			OUT	(CTC1), A
+ 755:				
+ 756:     -	03B6          	xmitfast1:
+ 757: 4471+7	03B6  7E      			LD	A, (HL)					;7
+ 758: 4478+6	03B7  23      			INC	HL					;6
+ 759: 4484+4	03B8  AA      			XOR	D					;4
+ 760: 4488+4	03B9  4F      			LD	C, A					;4
+ 761: 4492+4	03BA  83      			ADD	A, E					;4
+ 762: 4496+7	03BB  CE00    			ADC	0					;7	carry clear!
+ 763: 4503+4	03BD  5F      			LD	E, A					;4
+ 764:				
+ 765: 4507+4	03BE  79      			ld	a, c					;4
+ 766: 4511+4	03BF  17      			rla						;4 carry clear = start bit
+ 767: 4515+7	03C0  0609    			ld	b, 9					;7
+ 768:				
+ 769: 4522+11	03C2  D350    	fastsend:	OUT	(ATROUT), A				;11
+ 770: 4533+4	03C4  1F      			RRA						;4
+ 771: 4537+4	03C5  37      			scf						;4 make stop bit
+ 772:				
+ 773: 4541+11	03C6  E5      			push	hl					;11
+ 774: 4552+19	03C7  E3      			ex	(sp), hl				;19
+ 775: 4571+10	03C8  E1      			pop	hl					;10 waste 40 T-states
+ 776:						
+ 777: 4581+8+5	03C9  10F7    			DJNZ	fastsend				;13 / 8 = 72
+ 778: 4589+11	03CB  D350    			OUT	(ATROUT), A				;stop bit, don't loose time
+ 779:				
+ 780: 4600+4	03CD  7C      			LD	A, H					;4
+ 781: 4604+7	03CE  FEC3    			CP	HIGH (IOBUFF+LEN)			;7
+ 782: 4611+7+5	03D0  38E4    			JR	C, xmitfast1				;12/7 loop if buffer end not reached
+ 783:				
+ 784: 4618+7	03D2  3E03    			LD	A, CTC_D1_SW_RST + CTC_D0_CONTROL
+ 785: 4625+11	03D4  D381    			OUT	(CTC1), A				;SOFWARE RESET CTC1
+ 786: 4636+4	03D6  FB      			EI
+ 787: 4640+10	03D7  C9      			RET
+ 788:						
+ 789:				
+ 790:				;--------------------------------------------------
+ 791:				; rxblck
  792:				;--------------------------------------------------
- 793:				; rxblck
- 794:				;--------------------------------------------------
- 795:     -	03D8          	rxblck:
- 796: 4650+13	03D8  3AF204  			ld	A, (pokeydiv)				;is fast?
- 797: 4663+7	03DB  FE28    			cp	SIONORMAL
- 798: 4670+10	03DD  CAE903  			jp	Z, rxblck1
- 799:				
- 800: 4680+17	03E0  CDF403  			call	fastrecv				;yes, fast speed
- 801: 4697+7	03E3  3E03    			ld	A, CTC_D1_SW_RST + CTC_D0_CONTROL
- 802: 4704+11	03E5  D383    			out	(CTC3), A				;SOFWARE RESET CTC3
- 803: 4715+4	03E7  4A      			ld	C, D					;checksum in c
- 804: 4719+10	03E8  C9      			ret
- 805:				
- 806: 4729+10	03E9  010000  	rxblck1:	ld	BC, 0					;no, normal speed
- 807: 4739+10	03EC  C3DCF6  			jp	SalyRXBLOCK
- 808:				
- 809:				
+ 793:     -	03D8          	rxblck:
+ 794: 4650+13	03D8  3AF204  			ld	A, (pokeydiv)				;is fast?
+ 795: 4663+7	03DB  FE28    			cp	SIONORMAL
+ 796: 4670+10	03DD  CAE903  			jp	Z, rxblck1
+ 797:				
+ 798: 4680+17	03E0  CDF403  			call	fastrecv				;yes, fast speed
+ 799: 4697+7	03E3  3E03    			ld	A, CTC_D1_SW_RST + CTC_D0_CONTROL
+ 800: 4704+11	03E5  D383    			out	(CTC3), A				;SOFWARE RESET CTC3
+ 801: 4715+4	03E7  4A      			ld	C, D					;checksum in c
+ 802: 4719+10	03E8  C9      			ret
+ 803:				
+ 804: 4729+10	03E9  010000  	rxblck1:	ld	BC, 0					;no, normal speed
+ 805: 4739+10	03EC  C3DCF6  			jp	SalyRXBLOCK
+ 806:				
+ 807:				
+ 808:				;--------------------------------------------------
+ 809:				; set 4ms watchdog
  810:				;--------------------------------------------------
- 811:				; set 4ms watchdog
- 812:				;--------------------------------------------------
- 813:     -	03EF          	irq4ms:
- 814: 4749+10	03EF  F1      			POP	AF					;pop irq-addr
- 815: 4759+4	03F0  B7      			OR	A					;clear carry
- 816:     -	03F1          	irq4ms1:
- 817: 4763+4	03F1  FB      			EI
- 818: 4767+14	03F2  ED4D    			RETI
- 819:				
+ 811:     -	03EF          	irq4ms:
+ 812: 4749+10	03EF  F1      			POP	AF					;pop irq-addr
+ 813: 4759+4	03F0  B7      			OR	A					;clear carry
+ 814:     -	03F1          	irq4ms1:
+ 815: 4763+4	03F1  FB      			EI
+ 816: 4767+14	03F2  ED4D    			RETI
+ 817:				
+ 818:				;--------------------------------------------------
+ 819:				; SIO receive 57600 baud
  820:				;--------------------------------------------------
- 821:				; SIO receive 57600 baud
- 822:				;--------------------------------------------------
- 823:     -	03F4          	fastrecv:
- 824: 4781+4	03F4  F3      			DI
- 825: 4785+10	03F5  01EF03  			LD	BC, irq4ms
- 826: 4795+20	03F8  ED4316FF			LD	(CTCVEC+6),bc				;SET VECTOR TO irq4ms ROUTINE
- 827: 4815+10	03FC  018300  			LD	BC, CTC3				;CLEAR B, LOAD C WITH ADDRESS OF CTC3
- 828: 4825+10	03FF  11A700  			LD	DE, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
- 829: 4835+12	0402  ED59    			OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
- 830: 4847+12	0404  ED49    			OUT	(C), C					;TIME CONSTANT OF 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
- 831: 4859+4	0406  FB      			EI
- 832:				
- 833:     -	0407          	fastrecv1:              
- 834: 4863+11	0407  DB70    			IN	A, (ATARI)				;11
- 835: 4874+4	0409  17      			RLA						;4
- 836: 4878+10	040A  DA0704  			JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
- 837:												;= 25
- 838:												
- 839: 4888+4	040D  7A      			LD	A, D					;4
- 840: 4892+4	040E  80      			ADD	A, B					;4
- 841: 4896+7	040F  CE00    			ADC	A, 0					;7 ACCUMULATE CHECKSUM ATARI STYLE
- 842: 4903+4	0411  57      			LD	D, A					;4
- 843:								
- 844: 4907+7	0412  067F    			LD	B, 07fh					;7
- 845: 4914+12	0414  1800    			jr	$+2					;12
- 846:				;
- 847:				; SERIAL->PARALLEL CONVERSION
- 848:				; Pokey DIV 8 = 59114 / 59659 average 59400 baud equals about 68 T-states
- 849:				; Pokey DIV 9 = 55420 / 55930 average 55675 baud equals about 72 T-states, for sake of simplicity we use 73 T-states
- 850:				;
- 851:     -	0416          	fastrecv2:
- 852: 4926+19	0416  E3      			ex	(sp), hl				;19
- 853: 4945+19	0417  E3      			ex	(sp), hl				;19
- 854:						
- 855: 4964+11	0418  DB70    			IN	A, (ATARI)				;11 CYCLES
- 856: 4975+4	041A  17      			RLA						; 4 CYCLES
- 857: 4979+8	041B  CB18    			RR	B					; 8 CYCLES
- 858: 4987+7+5	041D  38F7    			JR	C, fastrecv2				;12/7 = 73 / 66 cycles
- 859:				
- 860: 4994+7	041F  70      			LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
- 861: 5001+6	0420  23      			INC	HL					;6
- 862: 5007+4	0421  7C      			LD	A, H					;4
- 863: 5011+7	0422  FEC3    			CP	HIGH (IOBUFF+LEN)			;7
- 864: 5018+4	0424  3F      			CCF						;4
- 865: 5022+5+6	0425  D8      			RET	C					;5 or RETURN WITH CARRY SET IF BUFFER FILLED
- 866:				
- 867: 5027+12	0426  ED59    			OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
- 868: 5039+12	0428  ED49    			OUT	(C), C					;12 COUNT MOD 256 - ACTUALLY C = 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
+ 821:     -	03F4          	fastrecv:
+ 822: 4781+4	03F4  F3      			DI
+ 823: 4785+10	03F5  01EF03  			LD	BC, irq4ms
+ 824: 4795+20	03F8  ED4316FF			LD	(CTCVEC+6),bc				;SET VECTOR TO irq4ms ROUTINE
+ 825: 4815+10	03FC  018300  			LD	BC, CTC3				;CLEAR B, LOAD C WITH ADDRESS OF CTC3
+ 826: 4825+10	03FF  11A700  			LD	DE, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
+ 827: 4835+12	0402  ED59    			OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+ 828: 4847+12	0404  ED49    			OUT	(C), C					;TIME CONSTANT OF 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
+ 829: 4859+4	0406  FB      			EI
+ 830:				
+ 831:     -	0407          	fastrecv1:              
+ 832: 4863+11	0407  DB70    			IN	A, (ATARI)				;11
+ 833: 4874+4	0409  17      			RLA						;4
+ 834: 4878+10	040A  DA0704  			JP	C, fastrecv1				;10	NEW BYTE IS COMING IF START BIT LOW
+ 835:												;= 25
+ 836:												
+ 837: 4888+4	040D  7A      			LD	A, D					;4
+ 838: 4892+4	040E  80      			ADD	A, B					;4
+ 839: 4896+7	040F  CE00    			ADC	A, 0					;7 ACCUMULATE CHECKSUM ATARI STYLE
+ 840: 4903+4	0411  57      			LD	D, A					;4
+ 841:								
+ 842: 4907+7	0412  067F    			LD	B, 07fh					;7
+ 843: 4914+12	0414  1800    			jr	$+2					;12
+ 844:				;
+ 845:				; SERIAL->PARALLEL CONVERSION
+ 846:				; Pokey DIV 8 = 59114 / 59659 average 59400 baud equals about 68 T-states
+ 847:				; Pokey DIV 9 = 55420 / 55930 average 55675 baud equals about 72 T-states, for sake of simplicity we use 73 T-states
+ 848:				;
+ 849:     -	0416          	fastrecv2:
+ 850: 4926+19	0416  E3      			ex	(sp), hl				;19
+ 851: 4945+19	0417  E3      			ex	(sp), hl				;19
+ 852:						
+ 853: 4964+11	0418  DB70    			IN	A, (ATARI)				;11 CYCLES
+ 854: 4975+4	041A  17      			RLA						; 4 CYCLES
+ 855: 4979+8	041B  CB18    			RR	B					; 8 CYCLES
+ 856: 4987+7+5	041D  38F7    			JR	C, fastrecv2				;12/7 = 73 / 66 cycles
+ 857:				
+ 858: 4994+7	041F  70      			LD	(HL), B					;7 THEN STORE IN MEMORY BUFFER @HL
+ 859: 5001+6	0420  23      			INC	HL					;6
+ 860: 5007+4	0421  7C      			LD	A, H					;4
+ 861: 5011+7	0422  FEC3    			CP	HIGH (IOBUFF+LEN)			;7
+ 862: 5018+4	0424  3F      			CCF						;4
+ 863: 5022+5+6	0425  D8      			RET	C					;5 or RETURN WITH CARRY SET IF BUFFER FILLED
+ 864:				
+ 865: 5027+12	0426  ED59    			OUT	(C), E					;12 PUT CTC3 IN TIMER MODE, PRESCALE 256
+ 866: 5039+12	0428  ED49    			OUT	(C), C					;12 COUNT MOD 256 - ACTUALLY C = 131 (CTC3 ADDRESS WHICH IS 083h)? 8.38ms? MAYBE MEANT , B
+ 867:				
+ 868: 5051+10	042A  C30704  			JP	fastrecv1				;10 = 82 
  869:				
- 870: 5051+10	042A  C30704  			JP	fastrecv1				;10 = 82 
- 871:				
- 872:     -	0001          		if SALLYDEBUG = 1 
+ 870:     -	0001          		if SALLYDEBUG = 1 
+ 871:				;--------------------------------------------------
+ 872:				; debug and dump rouines
  873:				;--------------------------------------------------
- 874:				; debug and dump rouines
- 875:				;--------------------------------------------------
- 876:				
- 877:     -	0000          		IF 1=0
-1067:					ENDIF
-1068:					
+ 874:				
+ 875:     -	0000          		IF 1=0
+1065:					ENDIF
+1066:					
+1067:				;--------------------------------------------------
+1068:				; RS232 sercmd
 1069:				;--------------------------------------------------
-1070:				; RS232 sercmd
-1071:				;--------------------------------------------------
-1072:     -	042D          	sercmd:
-1073: 5061+11	042D  E5      			PUSH	HL
-1074: 5072+10	042E  21FBC2  			LD	HL, CFRAME
-1075: 5082+17	0431  CD6504  			CALL	sercr
-1076: 5099+17	0434  CD3C04  			call	serouthl
-1077: 5116+17	0437  CD3C04  			call	serouthl		
-1078: 5133+12	043A  1809    			JR	serdump2
-1079:						
-1080: 5145+7	043C  7E      	serouthl:	ld	a, (hl)
-1081: 5152+6	043D  23      			inc	hl
-1082: 5158+17	043E  CD9904  			call	seroutfn
-1083: 5175+10	0441  C35D04  			jp	serspace
+1070:     -	042D          	sercmd:
+1071: 5061+11	042D  E5      			PUSH	HL
+1072: 5072+10	042E  21FBC2  			LD	HL, CFRAME
+1073: 5082+17	0431  CD6504  			CALL	sercr
+1074: 5099+17	0434  CD3C04  			call	serouthl
+1075: 5116+17	0437  CD3C04  			call	serouthl		
+1076: 5133+12	043A  1809    			JR	serdump2
+1077:						
+1078: 5145+7	043C  7E      	serouthl:	ld	a, (hl)
+1079: 5152+6	043D  23      			inc	hl
+1080: 5158+17	043E  CD9904  			call	seroutfn
+1081: 5175+10	0441  C35D04  			jp	serspace
+1082:				;--------------------------------------------------
+1083:				; RS232 dump
 1084:				;--------------------------------------------------
-1085:				; RS232 dump
-1086:				;--------------------------------------------------
-1087:     -	0444          	serdump:
-1088: 5185+11	0444  E5      			PUSH	HL
-1089:     -	0445          	serdump2:
-1090: 5196+11	0445  F5      			PUSH	AF
-1091: 5207+11	0446  C5      			PUSH	BC
-1092: 5218+11	0447  D5      			PUSH	DE
-1093:				
-1094: 5229+7	0448  1600    			LD	D, 0
-1095:     -	044A          	serdump1:
-1096: 5236+7	044A  7E      			LD	A, (HL)
-1097: 5243+4	044B  AA      			XOR	D
-1098: 5247+17	044C  CD8004  			CALL	serhex
-1099: 5264+17	044F  CD5D04  			CALL	serspace
-1100: 5281+6	0452  23      			INC	HL
-1101: 5287+4	0453  7C      			LD	A, H
-1102: 5291+7	0454  FEC3    			CP	A, 0c3h
-1103: 5298+7+5	0456  38F2    			JR	C, serdump1
-1104:				
-1105: 5305+10	0458  D1      			POP	DE
-1106: 5315+10	0459  C1      			POP	BC
-1107: 5325+10	045A  F1      			POP	AF
-1108: 5335+10	045B  E1      			POP	HL
-1109: 5345+10	045C  C9      			RET
-1110:				
+1085:     -	0444          	serdump:
+1086: 5185+11	0444  E5      			PUSH	HL
+1087:     -	0445          	serdump2:
+1088: 5196+11	0445  F5      			PUSH	AF
+1089: 5207+11	0446  C5      			PUSH	BC
+1090: 5218+11	0447  D5      			PUSH	DE
+1091:				
+1092: 5229+7	0448  1600    			LD	D, 0
+1093:     -	044A          	serdump1:
+1094: 5236+7	044A  7E      			LD	A, (HL)
+1095: 5243+4	044B  AA      			XOR	D
+1096: 5247+17	044C  CD8004  			CALL	serhex
+1097: 5264+17	044F  CD5D04  			CALL	serspace
+1098: 5281+6	0452  23      			INC	HL
+1099: 5287+4	0453  7C      			LD	A, H
+1100: 5291+7	0454  FEC3    			CP	A, 0c3h
+1101: 5298+7+5	0456  38F2    			JR	C, serdump1
+1102:				
+1103: 5305+10	0458  D1      			POP	DE
+1104: 5315+10	0459  C1      			POP	BC
+1105: 5325+10	045A  F1      			POP	AF
+1106: 5335+10	045B  E1      			POP	HL
+1107: 5345+10	045C  C9      			RET
+1108:				
+1109:				;--------------------------------------------------
+1110:				; RS232 <space>
 1111:				;--------------------------------------------------
-1112:				; RS232 <space>
-1113:				;--------------------------------------------------
-1114:     -	045D          	serspace:
-1115: 5355+11	045D  F5      			PUSH	AF
-1116: 5366+7	045E  3E20    			LD	A, ' '
-1117: 5373+17	0460  CD9904  			CALL	seroutfn
-1118: 5390+10	0463  F1      			POP	AF
-1119: 5400+10	0464  C9      			RET
-1120:				
+1112:     -	045D          	serspace:
+1113: 5355+11	045D  F5      			PUSH	AF
+1114: 5366+7	045E  3E20    			LD	A, ' '
+1115: 5373+17	0460  CD9904  			CALL	seroutfn
+1116: 5390+10	0463  F1      			POP	AF
+1117: 5400+10	0464  C9      			RET
+1118:				
+1119:				;--------------------------------------------------
+1120:				; RS232 <CR>
 1121:				;--------------------------------------------------
-1122:				; RS232 <CR>
-1123:				;--------------------------------------------------
-1124:     -	0465          	sercr:
-1125: 5410+11	0465  F5      			PUSH	AF
-1126: 5421+7	0466  3E0D    			LD	A, CR
-1127: 5428+17	0468  CD9904  			CALL	seroutfn
-1128: 5445+10	046B  F1      			POP	AF
-1129: 5455+10	046C  C9      			RET
-1130:				
+1122:     -	0465          	sercr:
+1123: 5410+11	0465  F5      			PUSH	AF
+1124: 5421+7	0466  3E0D    			LD	A, CR
+1125: 5428+17	0468  CD9904  			CALL	seroutfn
+1126: 5445+10	046B  F1      			POP	AF
+1127: 5455+10	046C  C9      			RET
+1128:				
+1129:				;--------------------------------------------------
+1130:				; RS232 output HL in hex
 1131:				;--------------------------------------------------
-1132:				; RS232 output HL in hex
-1133:				;--------------------------------------------------
-1134: 5465+11	046D  F5      	seraddr:	push	af
-1135: 5476+4	046E  7C      			ld	a, h
-1136: 5480+17	046F  CD8004  			call	serhex
-1137: 5497+4	0472  7D      			ld	a, l
-1138: 5501+17	0473  CD8004  			call	serhex
-1139: 5518+17	0476  CD5D04  			call	serspace
-1140: 5535+10	0479  F1      			pop	af
-1141: 5545+10	047A  C9      			ret
-1142:						
+1132: 5465+11	046D  F5      	seraddr:	push	af
+1133: 5476+4	046E  7C      			ld	a, h
+1134: 5480+17	046F  CD8004  			call	serhex
+1135: 5497+4	0472  7D      			ld	a, l
+1136: 5501+17	0473  CD8004  			call	serhex
+1137: 5518+17	0476  CD5D04  			call	serspace
+1138: 5535+10	0479  F1      			pop	af
+1139: 5545+10	047A  C9      			ret
+1140:						
+1141:				;--------------------------------------------------
+1142:				; RS232 output A in hex and trailing space
 1143:				;--------------------------------------------------
-1144:				; RS232 output A in hex and trailing space
-1145:				;--------------------------------------------------
-1146: 5555+17	047B  CD8004  	serhexspace:	call	serhex
-1147: 5572+12	047E  18DD    			jr	serspace
-1148:						
+1144: 5555+17	047B  CD8004  	serhexspace:	call	serhex
+1145: 5572+12	047E  18DD    			jr	serspace
+1146:						
+1147:				;--------------------------------------------------
+1148:				; RS232 output A in hex
 1149:				;--------------------------------------------------
-1150:				; RS232 output A in hex
-1151:				;--------------------------------------------------
-1152:     -	0480          	serhex:
-1153: 5584+11	0480  F5      			PUSH	AF
-1154: 5595+11	0481  F5      			PUSH	AF
-1155: 5606+4	0482  0F      			RRCA
-1156: 5610+4	0483  0F      			RRCA
-1157: 5614+4	0484  0F      			RRCA
-1158: 5618+4	0485  0F      			RRCA
-1159: 5622+17	0486  CD8F04  			CALL	sernib
-1160: 5639+10	0489  F1      			POP	AF
-1161: 5649+17	048A  CD8F04  			CALL	sernib
-1162: 5666+10	048D  F1      			POP	AF
-1163: 5676+10	048E  C9      			RET
-1164:				
-1165:     -	048F          	sernib:
-1166: 5686+7	048F  E60F    			AND	0fh
-1167: 5693+7	0491  C630    			ADD	'0'
-1168: 5700+7	0493  FE3A    			CP	'9' + 1
-1169: 5707+7+5	0495  3802    			JR	C, sernib1
-1170: 5714+7	0497  C607    			ADD	7
-1171:     -	0499          	sernib1:
+1150:     -	0480          	serhex:
+1151: 5584+11	0480  F5      			PUSH	AF
+1152: 5595+11	0481  F5      			PUSH	AF
+1153: 5606+4	0482  0F      			RRCA
+1154: 5610+4	0483  0F      			RRCA
+1155: 5614+4	0484  0F      			RRCA
+1156: 5618+4	0485  0F      			RRCA
+1157: 5622+17	0486  CD8F04  			CALL	sernib
+1158: 5639+10	0489  F1      			POP	AF
+1159: 5649+17	048A  CD8F04  			CALL	sernib
+1160: 5666+10	048D  F1      			POP	AF
+1161: 5676+10	048E  C9      			RET
+1162:				
+1163:     -	048F          	sernib:
+1164: 5686+7	048F  E60F    			AND	0fh
+1165: 5693+7	0491  C630    			ADD	'0'
+1166: 5700+7	0493  FE3A    			CP	'9' + 1
+1167: 5707+7+5	0495  3802    			JR	C, sernib1
+1168: 5714+7	0497  C607    			ADD	7
+1169:     -	0499          	sernib1:
+1170:				;--------------------------------------------------
+1171:				; RS232 out	208 T-States
 1172:				;--------------------------------------------------
-1173:				; RS232 out	208 T-States
-1174:				;--------------------------------------------------
-1175:     -	0499          	seroutfn:
-1176: 5721+11	0499  F5      			PUSH	AF
-1177: 5732+11	049A  C5      			PUSH	BC
-1178: 5743+4	049B  47      			LD	B, A
-1179: 5747+4	049C  AF      			XOR	A
-1180: 5751+4	049D  F3      			DI
-1181: 5755+11	049E  D351    			OUT	(SEROUT), A			;startbit
-1182: 5766+17	04A0  CDD004  			CALL	time19600			;17
-1183:					
-1184: 5783+4	04A3  78      			LD	A, B	
-1185: 5787+7	04A4  0608    			LD	B, 8				;7
-1186:     -	04A6          	serout1:	
-1187: 5794+11	04A6  D351    			OUT	(SEROUT), A			;11
-1188: 5805+17	04A8  CDD004  			CALL	time19600			;17
-1189: 5822+4	04AB  0F      			RRCA					;4
-1190: 5826+8+5	04AC  10F8    			DJNZ	serout1				;8
-1191: 5834+4	04AE  FB      			EI	
-1192:				
-1193: 5838+7	04AF  3E01    			LD	A, 1				;7 stopbit
-1194: 5845+11	04B1  D351    			OUT	(SEROUT), A			;11
-1195: 5856+17	04B3  CDD004  			CALL	time19600			;17
-1196:				
-1197: 5873+10	04B6  C1      			POP	BC
-1198: 5883+10	04B7  F1      			POP	AF
-1199: 5893+10	04B8  C9      			RET
-1200:				
-1201:				
+1173:     -	0499          	seroutfn:
+1174: 5721+11	0499  F5      			PUSH	AF
+1175: 5732+11	049A  C5      			PUSH	BC
+1176: 5743+4	049B  47      			LD	B, A
+1177: 5747+4	049C  AF      			XOR	A
+1178: 5751+4	049D  F3      			DI
+1179: 5755+11	049E  D351    			OUT	(SEROUT), A			;startbit
+1180: 5766+17	04A0  CDD004  			CALL	time19600			;17
+1181:					
+1182: 5783+4	04A3  78      			LD	A, B	
+1183: 5787+7	04A4  0608    			LD	B, 8				;7
+1184:     -	04A6          	serout1:	
+1185: 5794+11	04A6  D351    			OUT	(SEROUT), A			;11
+1186: 5805+17	04A8  CDD004  			CALL	time19600			;17
+1187: 5822+4	04AB  0F      			RRCA					;4
+1188: 5826+8+5	04AC  10F8    			DJNZ	serout1				;8
+1189: 5834+4	04AE  FB      			EI	
+1190:				
+1191: 5838+7	04AF  3E01    			LD	A, 1				;7 stopbit
+1192: 5845+11	04B1  D351    			OUT	(SEROUT), A			;11
+1193: 5856+17	04B3  CDD004  			CALL	time19600			;17
+1194:				
+1195: 5873+10	04B6  C1      			POP	BC
+1196: 5883+10	04B7  F1      			POP	AF
+1197: 5893+10	04B8  C9      			RET
+1198:				
+1199:				
+1200:				;--------------------------------------------------
+1201:				; RS232 in	208 T-States
 1202:				;--------------------------------------------------
-1203:				; RS232 in	208 T-States
-1204:				;--------------------------------------------------
-1205:     -	04B9          	serinfn:
-1206: 5903+11	04B9  C5      			PUSH	BC
-1207:     -	04BA          	serin2:
-1208: 5914+11	04BA  DB50    			IN	A, (SERIN)
-1209: 5925+4	04BC  07      			RLCA
-1210: 5929+7+5	04BD  38FB    			JR	C, serin2
-1211:				
-1212: 5936+19	04BF  E3      			EX	(SP), HL			;19, 4.75uS
-1213: 5955+19	04C0  E3      			EX	(SP), HL			;19  9uS
-1214:				
-1215: 5974+7	04C1  0680    			LD	B, 80h
-1216:     -	04C3          	serin1:
-1217: 5981+17	04C3  CDD004  			CALL	time19600
-1218: 5998+11	04C6  DB50    			IN	A, (SERIN)
-1219: 6009+4	04C8  07      			RLCA
-1220: 6013+8	04C9  CB18    			RR	B
-1221: 6021+7+5	04CB  30F6    			JR	NC, serin1
-1222:				
-1223: 6028+4	04CD  78      			LD	A, B
-1224: 6032+10	04CE  C1      			POP	BC
-1225: 6042+10	04CF  C9      			RET
-1226:				
-1227:     -	04D0          	time19600:
-1228: 6052+7	04D0  0E09    			LD	C, 9				;4
-1229:     -	04D2          	time19600a:
-1230: 6059+4	04D2  0D      			DEC	C				;4
-1231: 6063+7+5	04D3  20FD    			JR	NZ, time19600a			;12/7
-1232: 6070+10	04D5  C9      			RET					;10
-1233:				
-1234:					ENDIF
-1235:				ENDIF	; SALLYBUILD
-1236:				
-1237:     -	0000          	IF WD1772
-1250:				ENDIF
-1251:				
+1203:     -	04B9          	serinfn:
+1204: 5903+11	04B9  C5      			PUSH	BC
+1205:     -	04BA          	serin2:
+1206: 5914+11	04BA  DB50    			IN	A, (SERIN)
+1207: 5925+4	04BC  07      			RLCA
+1208: 5929+7+5	04BD  38FB    			JR	C, serin2
+1209:				
+1210: 5936+19	04BF  E3      			EX	(SP), HL			;19, 4.75uS
+1211: 5955+19	04C0  E3      			EX	(SP), HL			;19  9uS
+1212:				
+1213: 5974+7	04C1  0680    			LD	B, 80h
+1214:     -	04C3          	serin1:
+1215: 5981+17	04C3  CDD004  			CALL	time19600
+1216: 5998+11	04C6  DB50    			IN	A, (SERIN)
+1217: 6009+4	04C8  07      			RLCA
+1218: 6013+8	04C9  CB18    			RR	B
+1219: 6021+7+5	04CB  30F6    			JR	NC, serin1
+1220:				
+1221: 6028+4	04CD  78      			LD	A, B
+1222: 6032+10	04CE  C1      			POP	BC
+1223: 6042+10	04CF  C9      			RET
+1224:				
+1225:     -	04D0          	time19600:
+1226: 6052+7	04D0  0E09    			LD	C, 9				;4
+1227:     -	04D2          	time19600a:
+1228: 6059+4	04D2  0D      			DEC	C				;4
+1229: 6063+7+5	04D3  20FD    			JR	NZ, time19600a			;12/7
+1230: 6070+10	04D5  C9      			RET					;10
+1231:				
+1232:					ENDIF
+1233:				ENDIF	; SALLYBUILD
+1234:				
+1235:     -	0000          	IF WD1772
+1248:				ENDIF
+1249:				
+1250:				;--------------------------------------------------
+1251:				; 11 times port:value
 1252:				;--------------------------------------------------
-1253:				; 11 times port:value
-1254:				;--------------------------------------------------
-1255:     -	04D6  5001    	INITAB:		DEFB	ATROUT,1				;SET ATART OUTPUT TO MARK STATE
-1256:     -	04D8  5101    			DEFB	SEROUT,1				;SET RS232 OUTPUT TO MARK STATE
-1257:     -	04DA  8003    			DEFB	CTC0, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
-1258:     -	04DC  8010    			DEFB	CTC0, low ctcvec			;SET CTC0 BASE INTERRUPT VECTOR
-1259:     -	04DE  8107    			DEFB	CTC1, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL	;PUT CTC1 IN TIMER MODE + SET TIME CONSTANT
-1260:     -	04E0  8101    			DEFB	CTC1, 1					;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
-1261:     -	04E2  8203    			DEFB	CTC2, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC2
-1262:     -	04E4  8303    			DEFB	CTC3, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC3
-1263:     -	04E6  5701    			DEFB	CDMUX, 1				;SET MUX TO PASS ATARI DATA
-1264:     -	0000          		IF WD1772
-1267:					ELSE
-1268:     -	04E8  3000    			DEFB	LATCH,00000000B				;ZEROS TO DRIVE SELECT LATCH
-1269:     -	04EA  40D0    			DEFB	CMDREG,FINCMD				;FORCE DISK CONTROLLER INTERRUPT
-1270:					ENDIF	;WD1772
-1271:     -	0016          	ITBLEN		EQU	$-INITAB
+1253:     -	04D6  5001    	INITAB:		DEFB	ATROUT,1				;SET ATART OUTPUT TO MARK STATE
+1254:     -	04D8  5101    			DEFB	SEROUT,1				;SET RS232 OUTPUT TO MARK STATE
+1255:     -	04DA  8003    			DEFB	CTC0, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC0
+1256:     -	04DC  8010    			DEFB	CTC0, low ctcvec			;SET CTC0 BASE INTERRUPT VECTOR
+1257:     -	04DE  8107    			DEFB	CTC1, CTC_D6_MODE_TIM + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL	;PUT CTC1 IN TIMER MODE + SET TIME CONSTANT
+1258:     -	04E0  8101    			DEFB	CTC1, 1					;CTC1 TIME CONSTANT (DIVIDE BY 1 - 6.5us)
+1259:     -	04E2  8203    			DEFB	CTC2, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC2
+1260:     -	04E4  8303    			DEFB	CTC3, CTC_D1_SW_RST + CTC_D0_CONTROL	;SOFTWARE RESET CTC3
+1261:     -	04E6  5701    			DEFB	CDMUX, 1				;SET MUX TO PASS ATARI DATA
+1262:     -	0000          		IF WD1772
+1265:					ELSE
+1266:     -	04E8  3000    			DEFB	LATCH,00000000B				;ZEROS TO DRIVE SELECT LATCH
+1267:     -	04EA  40D0    			DEFB	CMDREG,FINCMD				;FORCE DISK CONTROLLER INTERRUPT
+1268:					ENDIF	;WD1772
+1269:     -	0016          	ITBLEN		EQU	$-INITAB
+1270:				;
+1271:				;
 1272:				;
-1273:				;
-1274:				;
-1275:					
+1273:					
+1274:				;--------------------------------------------------
+1275:				; variables and data structure
 1276:				;--------------------------------------------------
-1277:				; variables and data structure
-1278:				;--------------------------------------------------
-1279:     -	0001          	IF SALLYBUILD
-1280:				
-1281:     -	04EC          	idambuf:
-1282:     -	04EC  00      	idtrack:	db	0
-1283:     -	04ED  00      	idside:		db	0
-1284:     -	04EE  00      	idsector:	db	0
-1285:     -	04EF  00      	idseclen:	db	0
-1286:     -	04F0  0000    	idcrc:		dw	0
+1277:     -	0001          	IF SALLYBUILD
+1278:				
+1279:     -	04EC          	idambuf:
+1280:     -	04EC  00      	idtrack:	db	0
+1281:     -	04ED  00      	idside:		db	0
+1282:     -	04EE  00      	idsector:	db	0
+1283:     -	04EF  00      	idseclen:	db	0
+1284:     -	04F0  0000    	idcrc:		dw	0
+1285:				
+1286:     -	04F2  28      	pokeydiv:	db	SIONORMAL
 1287:				
-1288:     -	04F2  28      	pokeydiv:	db	SIONORMAL
-1289:				
-1290:     -	04F3  FF      	drive:		db	255
-1291:     -	04F4  FF      	thetrack:	db	255
-1292:				
-1293:     -	04F5          	drivedata:	equ	$
-1294:     -	05F5          			org	$ + 256				;4 * 64 bytes data for each disk
-1295:				
-1296:				
+1288:     -	04F3  FF      	drive:		db	255
+1289:     -	04F4  FF      	thetrack:	db	255
+1290:				
+1291:     -	04F5          	drivedata:	equ	$
+1292:     -	05F5          			org	$ + 256				;4 * 64 bytes data for each disk
+1293:				
+1294:				
+1295:				;--------------------------------------------------
+1296:				; additional data for SALLYRS = 0
 1297:				;--------------------------------------------------
-1298:				; additional data for SALLYRS = 0
-1299:				;--------------------------------------------------
+1298:				
+1299:     -	0001          		IF SALLYRS = 0
 1300:				
-1301:     -	0001          		IF SALLYRS = 0
-1302:				
-1303:				;
-1304:				; 32 bytes for dsktb
-1305:				; 7 commands copied in from DISKTAB, 3x7=21
-1306:				; 2 commands added '?' and 0xDD (setDirectSector)
-1307:				;
-1308:     -	05F5  00000000	dsktb:		DW	0, 0, 0, 0, 0, 0, 0, 0
+1301:				;
+1302:				; 32 bytes for dsktb
+1303:				; 7 commands copied in from DISKTAB, 3x7=21
+1304:				; 2 commands added '?' and 0xDD (setDirectSector)
+1305:				;
+1306:     -	05F5  00000000	dsktb:		DW	0, 0, 0, 0, 0, 0, 0, 0
 	              00000000
 	              00000000
 	              00000000
-1309:     -	0605  00000000			DW	0, 0, 0, 0, 0, 0, 0, 0
+1307:     -	0605  00000000			DW	0, 0, 0, 0, 0, 0, 0, 0
 	              00000000
 	              00000000
 	              00000000
-1310:					
-1311:					
-1312:				
+1308:					
+1309:					
+1310:				
+1311:				;
+1312:				; direct MSDOS sector for each drive
 1313:				;
-1314:				; direct MSDOS sector for each drive
-1315:				;
-1316:     -	0615  0000    	dsector:	DB	0, 0
-1317:     -	0617  00      	direct:		DB	0
-1318:     -	0618  0000    	secptr:		DW	0
-1319:				
-1320:     -	061A  72FE    	skewtab:	DW	SKEWSD
-1321:     -	061C  E4FE    			DW	SKEW13
-1322:     -	061E  84FE    			DW	SKEWDD
-1323:     -	0620  FEFE    			DW	SKEW17
-1324:				
-1325:     -	0622  00      	dcb:		DB	0				;DISK OPERATION CODE
-1326:     -	0623  00      			DB	0				;DRIVE# (WITH SIDE# IN BIT 7)
-1327:     -	0624  00      			DB	0				;TRACK#
-1328:     -	0625  00      			DB	0				;SECTOR#
-1329:     -	0626  0000    			DW	0				;READ/WRITE POINTER
-1330:     -	0628  0000    			DW	0				;AUXILLIARY PARAMETERS (2 BYTES)
-1331:     -	062A  00      			DB	0				;OPERATION COMPLETION STATUS
-1332:				
-1333:					ENDIF	
-1334:						
-1335:				ENDIF	;SALLYBUILD
-1336:				;
-1337:				;
+1314:     -	0615  0000    	dsector:	DB	0, 0
+1315:     -	0617  00      	direct:		DB	0
+1316:     -	0618  0000    	secptr:		DW	0
+1317:				
+1318:     -	061A  72FE    	skewtab:	DW	SKEWSD
+1319:     -	061C  E4FE    			DW	SKEW13
+1320:     -	061E  84FE    			DW	SKEWDD
+1321:     -	0620  FEFE    			DW	SKEW17
+1322:				
+1323:     -	0622  00      	dcb:		DB	0				;DISK OPERATION CODE
+1324:     -	0623  00      			DB	0				;DRIVE# (WITH SIDE# IN BIT 7)
+1325:     -	0624  00      			DB	0				;TRACK#
+1326:     -	0625  00      			DB	0				;SECTOR#
+1327:     -	0626  0000    			DW	0				;READ/WRITE POINTER
+1328:     -	0628  0000    			DW	0				;AUXILLIARY PARAMETERS (2 BYTES)
+1329:     -	062A  00      			DB	0				;OPERATION COMPLETION STATUS
+1330:				
+1331:					ENDIF	
+1332:						
+1333:				ENDIF	;SALLYBUILD
+1334:				;
+1335:				;
 **** ..\src\main.mac ****
   11:				
   12:     -	0000          		IF SALLYRS = 1
@@ -1199,10 +1197,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-30-g" 
+   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-31-g" 
 	              792D312E
 	              302E352D
-	              33302D67
+	              33312D67
 **** ..\src\main.mac ****
   17:						
   18: 6080+4	063B  F3      			di

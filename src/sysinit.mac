@@ -251,8 +251,6 @@ IF SALLYBUILD
 invalidate:	ld	hl, 0ffffh			;reset drive / track buffer
 		ld	(drive), hl
 		ret
-		
-
 
 	IF SALLYRS = 0
 
