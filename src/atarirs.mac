@@ -500,14 +500,16 @@ trkmatch:	call	computesecbuf
 
 diskreadfn3:	ld	de, IOBUFF+LEN-128		;make 128 byte sectors
 		ld	bc, 128
-		bit	2, (IY + MEDIA)
-		jr	Z, diskreadfn1
+		
+		ld	a, (IY + SECLEN + 1)		;is lo-byte seclen <> 0?
+		or	a
+		jr	NZ, diskreadfn1			;go for 128 b/s
 		ld	a, (siosector + 1)		;check high byte of sector
 		or	a
 		jr	NZ, diskreadfn4			;make 256 byte sector
 		ld	a, (siosector)			;check low byte (1-3)
 		cp	4
-		jr	C, diskreadfn1
+		jr	C, diskreadfn1			;go for 128 b/s
 		
 diskreadfn4:	ld	de, IOBUFF+LEN-256		;make 256 byte sector
 		ld	bc, 256
@@ -580,16 +582,17 @@ readtrk4:	ld	(IX + DSKSEC), c
 		ret
 
 ;--------------------------------------------------
-; compute hl = pointer to sector buffer in trackbuffer
+; hl = pointer to sector buffer in trackbuffer
+; de = TRKBUFFER
 ;--------------------------------------------------
-computesecbuf:	ld	h, (IX + DSKSEC)
+computesecbuf:	ld	h, (IX + DSKSEC)		;DSKSEC * 256
 		dec	h
 		ld	l, 0
 	
 		ld	a, (IY + SECLEN)		;hi
 		or	a
 		jr	NZ, computesecbuf1		;256 or 512 byte
-		srl	h
+		srl	h				;hl = hl / 2 (* 128)
 		rr	l
 		jr	computesecbuf2
 computesecbuf1:	dec	a
@@ -827,14 +830,15 @@ computeflags:	ld	(IY + PERSTEPRATE), STEPRATE1	;12ms in DD mode, 6ms in HD mode
 		ld	a, (siocmd)
 		cp	'"'
 		jr	NZ, computeflags4
-		ld	(IY + MEDIA), 0			;make MD disk
+		ld	(IY + MEDIA), 4			;make MD disk
 		ld	(IY + NSECS + 1), 26
 		ld	(IY + NSIDES), 0
 		ld	(IY + NTRKS), 40
 		
 computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
-		bit	DENSTY, (IY + MEDIA)    
-		jr	NZ, computeflags1   		;DD or HD
+		ld	a, (IY + SECLEN)
+		or	a
+		jr	Z, computeflags1   		;DD or HD
 		
 		ld	HL, IOBUFF+LEN-128		;128 byte return buffer
 		set	6, b				;and no HD
