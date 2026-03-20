@@ -118,10 +118,10 @@ FORM51:	CALL	TYP2CMD		;read sector discarding the data
 	AND	10000000B
 	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
 	
-	ld	a, e
-	call	serhex
-	ld	a, d
-	call	serhexspace
+;	ld	a, e
+;	call	serhex
+;	ld	a, d
+;	call	serhexspace
 	
 	PUSH	HL
 	PUSH	BC
