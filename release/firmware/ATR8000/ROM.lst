@@ -35,41 +35,45 @@
   21:     -	0040          	WD179X			EQU	40H		;WD TYPE DISK CONTROLLER
   22:				;		
   23:     -	0050          	SERIN			EQU	50H		;RS232 SERIAL INPUT
-  24:				;		
-  25:     -	0050          	ATROUT			EQU	50H		;ATARI SERIAL OUTPUT
-  26:     -	0051          	SEROUT			EQU	51H		;RS232 SERIAL OUTPUT
-  27:     -	0052          	BANKSW			EQU	52H		;ROM BANKSWITCH BIT
-  28:     -	0053          	STROBE			EQU	53H		;PRINTER STROBE
-  29:     -	0054          	INDXCLR			EQU	54H		;INDEX CONTROL FLOP CLEAR
-  30:     -	0055          	DTR			EQU	55H		;DTR OUTPUT CONTROL
-  31:     -	0056          	INDXSET			EQU	56H		;INDEX CONTROL FLOP SET
-  32:     -	0057          	CDMUX			EQU	57H		;ATARI CMD/DATA MUX CONTROL
-  33:				;		
-  34:     -	0070          	ATARI			EQU	70H		;ATARI INPUT BITS PORT
-  35:     -	0080          	CTC0			EQU	80H		;ZILOG COUNTER/TIMER 0
-  36:     -	0081          	CTC1			EQU	81H		;ZILOG COUNTER/TIMER 1
-  37:     -	0082          	CTC2			EQU	82H		;ZILOG COUNTER/TIMER 2
-  38:     -	0083          	CTC3			EQU	83H		;ZILOG COUNTER/TIMER 3
-  39:				;
-  40:     -	0000          	CTC_D0_VECTOR:		EQU	00000000B	;Data is a Vector
-  41:     -	0001          	CTC_D0_CONTROL:		EQU	00000001B	;Data is a Control Word
-  42:     -	0002          	CTC_D1_SW_RST:		EQU	00000010B	;Perform a software reset
-  43:     -	0004          	CTC_D2_TCNEXT:		EQU	00000100B	;Time Constant follows
-  44:     -	0000          	CTC_D3_AUTOTRG:		EQU	00000000B	;Automatic trigger when Time Constant loaded
-  45:     -	0008          	CTC_D3_CLKTRG:		EQU	00001000B	;CLK/TRIG pin pulse starts timer
-  46:     -	0000          	CTC_D4_FALLEDGE:	EQU	00000000B	;CLK/TRIG edge selection - falling edge
-  47:     -	0010          	CTC_D4_RISEEDGE:	EQU	00010000B	;CLK/TRIG edge selection - rising edge
-  48:     -	0000          	CTC_D5_PRESC_16:	EQU	00000000B	;Timer prescaler value of 16
-  49:     -	0020          	CTC_D5_PRESC256:	EQU	00100000B	;Timer prescaler value of 256
-  50:     -	0000          	CTC_D6_MODE_TIM:	EQU	00000000B	;Selects Timer mode
-  51:     -	0040          	CTC_D6_MODE_CNT:	EQU	01000000B	;Selects Counter mode
-  52:     -	0000          	CTC_D7_INT_DIS:		EQU	00000000B	;Disables Interrupt
-  53:     -	0080          	CTC_D7_INT_EN:		EQU	10000000B	;Enables Interrupt
-  54:				;
-  55:     -	0000          	NULL			EQU	00H
-  56:     -	000D          	CR			EQU	0DH
-  57:     -	000A          	LF			EQU	0AH
+  24:     -	0007          	SERRX			EQU	7		;Bit 7 : RX
+  25:     -	0003          	AT850			EQU	3		;Bit 3 : ATARI 850 present
+  26:     -	0002          	SERRI			EQU	2		;Bit 2 : RI (ring indicator)
+  27:     -	0001          	SERCTS			EQU	1		;BIT 1 : CTS (clear to send)
+  28:				;		
+  29:     -	0050          	ATROUT			EQU	50H		;ATARI SERIAL OUTPUT
+  30:     -	0051          	SEROUT			EQU	51H		;RS232 SERIAL OUTPUT
+  31:     -	0052          	BANKSW			EQU	52H		;ROM BANKSWITCH BIT
+  32:     -	0053          	STROBE			EQU	53H		;PRINTER STROBE
+  33:     -	0054          	INDXCLR			EQU	54H		;INDEX CONTROL FLOP CLEAR
+  34:     -	0055          	DTR			EQU	55H		;DTR OUTPUT CONTROL
+  35:     -	0056          	INDXSET			EQU	56H		;INDEX CONTROL FLOP SET
+  36:     -	0057          	CDMUX			EQU	57H		;ATARI CMD/DATA MUX CONTROL
+  37:				;		
+  38:     -	0070          	ATARI			EQU	70H		;ATARI INPUT BITS PORT
+  39:     -	0080          	CTC0			EQU	80H		;ZILOG COUNTER/TIMER 0
+  40:     -	0081          	CTC1			EQU	81H		;ZILOG COUNTER/TIMER 1
+  41:     -	0082          	CTC2			EQU	82H		;ZILOG COUNTER/TIMER 2
+  42:     -	0083          	CTC3			EQU	83H		;ZILOG COUNTER/TIMER 3
+  43:				;
+  44:     -	0000          	CTC_D0_VECTOR:		EQU	00000000B	;Data is a Vector
+  45:     -	0001          	CTC_D0_CONTROL:		EQU	00000001B	;Data is a Control Word
+  46:     -	0002          	CTC_D1_SW_RST:		EQU	00000010B	;Perform a software reset
+  47:     -	0004          	CTC_D2_TCNEXT:		EQU	00000100B	;Time Constant follows
+  48:     -	0000          	CTC_D3_AUTOTRG:		EQU	00000000B	;Automatic trigger when Time Constant loaded
+  49:     -	0008          	CTC_D3_CLKTRG:		EQU	00001000B	;CLK/TRIG pin pulse starts timer
+  50:     -	0000          	CTC_D4_FALLEDGE:	EQU	00000000B	;CLK/TRIG edge selection - falling edge
+  51:     -	0010          	CTC_D4_RISEEDGE:	EQU	00010000B	;CLK/TRIG edge selection - rising edge
+  52:     -	0000          	CTC_D5_PRESC_16:	EQU	00000000B	;Timer prescaler value of 16
+  53:     -	0020          	CTC_D5_PRESC256:	EQU	00100000B	;Timer prescaler value of 256
+  54:     -	0000          	CTC_D6_MODE_TIM:	EQU	00000000B	;Selects Timer mode
+  55:     -	0040          	CTC_D6_MODE_CNT:	EQU	01000000B	;Selects Counter mode
+  56:     -	0000          	CTC_D7_INT_DIS:		EQU	00000000B	;Disables Interrupt
+  57:     -	0080          	CTC_D7_INT_EN:		EQU	10000000B	;Enables Interrupt
   58:				;
+  59:     -	0000          	NULL			EQU	00H
+  60:     -	000D          	CR			EQU	0DH
+  61:     -	000A          	LF			EQU	0AH
+  62:				;
 **** ..\src\main.mac ****
    7:				;--------------------------------------------------
    8:				; Code executed after Reset
@@ -1197,10 +1201,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-31-g" 
+   1:     -	062B  73616C6C	SVERSION DB "sally-1.0.5-34-g" 
 	              792D312E
 	              302E352D
-	              33312D67
+	              33342D67
 **** ..\src\main.mac ****
   17:						
   18: 6080+4	063B  F3      			di
@@ -4610,7 +4614,7 @@ Statistics:
 
      5	passes
      0	jr promotions
-   562	symbols
+   566	symbols
   5293	bytes
 
 
@@ -4622,6 +4626,7 @@ ACTIVON         F03C      61500
 ACTIVTY         F050      61520
 ACTV2           F064      61540
 ASCHEX          F483      62595
+AT850          =03        3
 ATARI          =70        112
 ATROUT         =50        80
 BADCMD         =00        0
@@ -4950,9 +4955,12 @@ SENDCOMP        FC66      64614
 SENDNACK        FC57      64599
 SEQNUM         =FFBF      65471
 SEQPTR         =FFC1      65473
+SERCTS         =01        1
 SERIN          =50        80
 SEROUT         =51        81
 SERPAGE        =F719      63257
+SERRI          =02        2
+SERRX          =07        7
 SETSSO          F0AB      61611
 SETSTAT         F9E8      63976
 SETTLE         =04        4

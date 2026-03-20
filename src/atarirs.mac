@@ -31,7 +31,7 @@ SalyLOGN2:
 	LD	A,38H		;LOAD ACC WITH 'JR C,XX' OPCODE
 	LD	(KLUDGE),A	;CRIPPLE READY ERROR FROM 'SELECT'
 	IN	A,(SERIN)
-	BIT	3,A
+	BIT	AT850, A
 	JR	NZ,HAS850	;JUMP IF 850 JUMPER PRESENT
 
 	LD	A,255
@@ -829,46 +829,42 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	ld	c, STEPRATE1			;12ms in DD mode, 6ms in HD mode
-		ld	d, (IY + NTRKS)
-		
+computeflags:	ld	de, STEPRATE1 * 256 + steprate0	;d = STEPRATE1: 12/6ms, e = STEPRATE0: 6/3ms 
+
 		call	getdrivelatch
 		ld	b, a				;start with HD, MFM
 		
 computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
-		ld	a, (IY + SECLEN + 1)
+		ld	a, (IY + SECLEN + 1)		;low-byte seclen
 		or	a
-		jr	Z, computeflags1
+		jr	Z, computeflags1		;HD or DD
 		
 		ld	HL, IOBUFF+LEN-128		;128 byte return buffer
 		bit	DENSTY, (iy + MEDIA)		;MFM encoding?	
 		jr	NZ, computeflags5		;yes
 		set	FLAGMFMFM, b			;set single density (FM)
 		jr	computeflags5
+
 ;
 ; HD/DD selection
 ; number sector >= 26 and sector-size > 128 then hd
 ;
 computeflags1:	ld	a, (IY + NSECS + 1)
 		cp	26
-		jr	C, computeflags5		;< 26 DD
-		
-		ld	a, d				;HD <> 80 trks?
-		cp	80
-		jr	NZ, computeflags2
-		ld	c, STEPRATE0			;3ms in HD mode
-		jr	computeflags2
+		jr	NC, computeflags3		;>= 26 HD
 		
 computeflags5:	set	FLAGHDDD, b			;< 26 sectores, no HD
-		ld	c, STEPRATE0			;6ms in DD mode
-		ld	a, d
+		ld	d, e				;d = STEPRATE0: 6/3ms
+		ld	e, STEPRATE3			;e = STEPRATE0: 3/1.5ms
+
+computeflags3:	ld	a, (IY + NTRKS)
 		cp	80
 		jr	NZ, computeflags2
-		ld	c, STEPRATE3			;3ms in DD mode
+		ld	d, e
 		
 computeflags2:	ld	a, b
 		ld	(iy + FLAGS), a
-		ld	(iy + PERSTEPRATE), c
+		ld	(iy + PERSTEPRATE), d
 		ret
 		
 ;
@@ -1491,16 +1487,25 @@ sec2trk2:	sbc	hl, de				;compute track number siosector / NSECS
 		inc	a
 		jr	sec2trk2
 		
-sec2trk1:	ld	(DKIOCB + DSKTRK), a		;track to be read
+sec2trk1:	ld	(DKIOCB + DSKTRK), a		;store track 
+		ld	c, (IY + NTRKS)
 		dec	b
-		jr	NZ, sec2trk4
-		sub	(IY + PERTRKS)
-		jr	sec2trk5
-sec2trk4	sub	(IY + NTRKS)			;check if > NTRKS
+		jr	NZ, sec2trk5			;NTRKS <> 1
+		ld	c, (IY + PERTRKS)		
 sec2trk5:	inc	b
-		jr	C, sec2trk3	
-		ld	(DKIOCB + DSKTRK), a	
-		ld	a, (OUTCPY)	
+		sub	a, c
+		jr	C, sec2trk3			;no second side
+				
+		ld	(DKIOCB + DSKTRK), a
+		in	a, (SERIN)			;XF551 mode?
+		bit	SERRI, a
+		jr	NZ, sec2trk4			;no
+		ld	a, c				;compute MAXTRACK-1-curtrack
+		dec	a
+		sub	(IX + DSKTRK)
+		ld	(DKIOCB + DSKTRK), a
+		
+sec2trk4:	ld	a, (OUTCPY)	
 		set	5, a				;set head 1
 		ld	(OUTCPY), a	
 		out	(LATCH), a	
