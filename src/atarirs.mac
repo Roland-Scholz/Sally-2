@@ -718,16 +718,21 @@ diskformat:
 		call	SENDACK                 	;send acknowledge
 		
 		call	STOPTMR				;THEN KILL CTC3 TO STOP DISK TIMER
-		
+				
 		ld	a, 'C'
 		ld	(siorc), a
 		
-		ld	a, (siocmd)
+		bit	PERCONF, (iy + DSKBITS)
+		jr	NZ, diskformat10
+		call	makesd
+		
+diskformat10:	ld	a, (siocmd)
 		cp	'"'
 		jr	NZ, diskformat4
 		call	makemd
 
-diskformat4:	call	computeflags
+diskformat4:	call	dumppercom
+		call	computeflags
 		ld	(OUTCPY), a
 		out	(LATCH), a
 		
@@ -870,8 +875,11 @@ computeflags2:	ld	a, b
 ;
 ;
 ;
-makemd:		ld	b, 64
-		ld	hl, percommd
+makesd:		ld	hl, percomsd
+		jr	makemd4
+		
+makemd:		ld	hl, percommd
+makemd4:	ld	b, 64
 		push	iy
 		
 makemd1:	ld	a, (hl)
@@ -893,6 +901,14 @@ percommd:	defb	40				;# tracks
 		defb	0, 26				;secs/trk
 		defb	0				;sides
 		defb	4				;mfm
+		defb	0, 128				;seclen
+		defb	40h				;dskbits
+
+percomsd:	defb	40				;# tracks
+		defb	STEPRATE1			;steprate
+		defb	0, 18				;secs/trk
+		defb	0				;sides
+		defb	0				;mfm
 		defb	0, 128				;seclen
 		defb	40h				;dskbits
 
@@ -1676,8 +1692,8 @@ PUTPARAMS:
 		call	dumppercom
 		call	computeflags
 		call	computemaxsec			;compute maxsector
-		set	PRESENT, (iy + DSKBITS)		;mark percom-block configured
-
+		;set	PRESENT, (iy + DSKBITS)		;mark percom-block configured
+		ld	(iy + DSKBITS), 041h
 		call	dumppercom
 		
 		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
