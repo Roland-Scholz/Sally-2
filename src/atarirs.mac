@@ -277,18 +277,18 @@ SENDNACK:
 SENDACK:
 	LD	L, 'A'
 SENDACK1:
-	IN	A,(ATARI)
-	BIT	1,A
-	JR	Z,SENDACK1	;wait until CMD goes high
+	IN	a, (ATARI)
+	BIT	1, a
+	JR	Z, SENDACK1	;wait until CMD goes high
 
 	LD	A, L
 	JR	SENDCHAR
 ;
 SENDCOMP:
-	LD	A,'C'
+	LD	A, 'C'
 SENDCHAR:
-	LD	HL,IOBUFF+LEN+1
-	LD	(HL),A
+	LD	HL, IOBUFF+LEN+1
+	LD	(HL), A
 	LD	D,0		;SET FOR TRUE DATA
 	JP	XMITBUF		;SEND 1 BYTE BLOCK TO ATARI
 
@@ -721,8 +721,13 @@ diskformat:
 		
 		ld	a, 'C'
 		ld	(siorc), a
+		
+		ld	a, (siocmd)
+		cp	'"'
+		jr	NZ, diskformat4
+		call	makemd
 
-diskformat4:	call	computeflags			;MD will be taken care of here, hl set here
+diskformat4:	call	computeflags
 		ld	(OUTCPY), a
 		out	(LATCH), a
 		
@@ -746,22 +751,23 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	b, 4
 		jr	diskformat1
 		
-diskformat7:	ld	de, 1680h
-		ld	l, (iy + MAXSEC)
+diskformat7:	ld	de, 1680h			;chekc if 1.44 MB format
+		ld	l, (iy + MAXSEC)		;has ist 5760 sectors?
 		ld	h, (iy + MAXSEC + 1)
 		or	a
 		sbc	hl, de
 		jr	NZ, diskformat1
-		bit	2, (iy + MEDIA)			;check double density
+			
+		bit	DENSTY, (iy + MEDIA)		;check MFM
 		jr	Z, diskformat1
-		ld	a, (iy + SECLEN + 1)		;low-byte seclen = 0
+		ld	a, (iy + SECLEN + 1)		;low-byte seclen = 0?
 		or	a
-		jr	NZ, diskformat1
+		jr	NZ, diskformat1			;no
 		
 		ld	b, 5				;format 1.44MB
-		ld	(iy + PERTRKS), 80
+		ld	(iy + PERTRKS), 80		;make 36 * 80 format
 		ld	(iy + PERSECS), 36
-		
+
 diskformat1:	ld	hl, (FMTPTR)
 		ld	a, b
 		ld	bc, FMTLEN
@@ -823,29 +829,21 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	ld	(IY + PERSTEPRATE), STEPRATE1	;12ms in DD mode, 6ms in HD mode
+computeflags:	ld	c, STEPRATE1			;12ms in DD mode, 6ms in HD mode
+		ld	d, (IY + NTRKS)
+		
 		call	getdrivelatch
 		ld	b, a				;start with HD, MFM
-
-		ld	a, (siocmd)
-		cp	'"'
-		jr	NZ, computeflags4
-		ld	(IY + MEDIA), 4			;make MD disk
-		ld	(IY + NSECS + 1), 26
-		ld	(IY + NSIDES), 0
-		ld	(IY + NTRKS), 40
 		
 computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
-		ld	a, (IY + SECLEN)
+		ld	a, (IY + SECLEN + 1)
 		or	a
-		jr	Z, computeflags1   		;DD or HD
+		jr	Z, computeflags1
 		
 		ld	HL, IOBUFF+LEN-128		;128 byte return buffer
-		set	6, b				;and no HD
-		ld	a, (IY + NSECS + 1)		;if 26 sectors, then no FM
-		cp	26
-		jr	Z, computeflags5
-		set	7, b				;set single density (FM)
+		bit	DENSTY, (iy + MEDIA)		;MFM encoding?	
+		jr	NZ, computeflags5		;yes
+		set	FLAGMFMFM, b			;set single density (FM)
 		jr	computeflags5
 ;
 ; HD/DD selection
@@ -853,22 +851,54 @@ computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
 ;
 computeflags1:	ld	a, (IY + NSECS + 1)
 		cp	26
-		jr	NC, computeflags3		;>= 26 HD
-		set	6, b				;< 26 sectores, no HD
-computeflags5:	ld	(IY + PERSTEPRATE), STEPRATE0	;6ms in DD mode
-		ld	a, (IY + NTRKS)
+		jr	C, computeflags5		;< 26 DD
+		
+		ld	a, d				;HD <> 80 trks?
 		cp	80
 		jr	NZ, computeflags2
-		ld	(IY + PERSTEPRATE), STEPRATE3	;3ms in DD mode
+		ld	c, STEPRATE0			;3ms in HD mode
 		jr	computeflags2
-computeflags3:	ld	a, (IY + NTRKS)
+		
+computeflags5:	set	FLAGHDDD, b			;< 26 sectores, no HD
+		ld	c, STEPRATE0			;6ms in DD mode
+		ld	a, d
 		cp	80
 		jr	NZ, computeflags2
-		ld	(IY + PERSTEPRATE), STEPRATE0	;3ms in HD mode
+		ld	c, STEPRATE3			;3ms in DD mode
+		
 computeflags2:	ld	a, b
-		ld	(IY + FLAGS), a
+		ld	(iy + FLAGS), a
+		ld	(iy + PERSTEPRATE), c
 		ret
 		
+;
+;
+;
+makemd:		ld	b, 64
+		ld	hl, percommd
+		push	iy
+		
+makemd1:	ld	a, (hl)
+makemd3:	ld	(iy), a
+		inc	hl
+		inc	iy
+		ld	a, b
+		cp	57
+		jr	C, makemd2
+		djnz	makemd1
+makemd2:	xor	a
+		djnz	makemd3
+
+		pop	iy
+		ret
+
+percommd:	defb	40				;# tracks
+		defb	STEPRATE1			;steprate
+		defb	0, 26				;secs/trk
+		defb	0				;sides
+		defb	4				;mfm
+		defb	0, 128				;seclen
+		defb	40h				;dskbits
 
 ;--------------------------------------------------
 ; clearpercom, clear all 256 bytes drivedata
@@ -955,21 +985,21 @@ diskanalyse:	ld	a, 'C'
 		
 		ld	a, (iy + PERSKEWTAB)		;skewtab filled?
 		or	a
-		jr	Z, diskanalyse9
+		jr	Z, diskanalyse9			;no, do diskanalysis
 		
-		ld	a, (IY + FLAGS)			;check if percom empty
+		ld	a, (iy + FLAGS)			;check if percom empty
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
 		out	(LATCH), a
 		or	a
 		ret	NZ				;no continue without disk analysis
 		
-diskanalyse9:	ld	(IY + MEDIA), 4			;set DD (MFM)
-		ld	(IY + NSIDES), 0
+diskanalyse9:	ld	(iy + MEDIA), 4			;set DD (MFM)
+		ld	(iy + NSIDES), 0
 
-		ld	(IY + PERSTEPRATE), STEPRATE1	;select 12ms/6ms, in fact 6ms as we are starting with HD
+		ld	(iy + PERSTEPRATE), STEPRATE1	;select 12ms/6ms, in fact 6ms as we are starting with HD
 		
 		call	getdrivelatch			;get select bit for drive in A
-		ld	(IY + FLAGS), a
+		ld	(iy + FLAGS), a
 		out	(LATCH), a
 		ld	(OUTCPY), a
 
@@ -978,7 +1008,7 @@ diskanalyse9:	ld	(IY + MEDIA), 4			;set DD (MFM)
 		call	getperiod
 		jr	NC, diskanalyse3		;if no period, error
 
-diskanalyse2:	ld	a, '-'
+diskanalyse2:	ld	a, '-'				;error
 		call	seroutfn
 		ld	a, (IY + FLAGS)
 		and	00001111b
@@ -986,7 +1016,8 @@ diskanalyse2:	ld	a, '-'
 		ld	(IY + FLAGS), a			;make 90k Disk
 		ld	(IY + NSECS + 1), 40
 		ld	(IY + SECLEN + 1), 128
-		call	computemaxsec		
+		ld	(iy + PERSKEWTAB), 0		;clear skewtab (forces diskanalysis)
+		call	computemaxsec
 		or	a				;clear carry
 		ret
 ;		jp	setsioerror
@@ -1083,8 +1114,8 @@ diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 
 		ld	a, (idseclen)			;compute sector length
 		and	3				;from IDAM field
-		jr	NZ, compseclen1
-		ld	(IY + MEDIA), 0			;MEDIA = SD if 128 b/s
+;		jr	NZ, compseclen1
+;		ld	(IY + MEDIA), 0			;MEDIA = SD if 128 b/s
 compseclen1:	inc	a
 		ld	hl, 64
 compseclen:	add	hl, hl
@@ -1630,7 +1661,7 @@ PUTPARAMS:
 		ret	NZ				;ERROR IF DATA FRAME NOT 12 BYTES
 
 		call	SENDACK				;ELSE SEND 'ACK' FOR DATA FRAME
-;		set	CONFIG,(IY+FLAGS)  		;INDICATE DRIVE IS NOW CONFIGURED
+;		set	CONFIG, (iy + FLAGS)  		;INDICATE DRIVE IS NOW CONFIGURED
 		ld	hl, IOBUFF
 		push	iy
 		pop	de				;POINT DE TO PARAMETERS FOR DRIVE(N)
@@ -1640,8 +1671,8 @@ PUTPARAMS:
 		call	dumppercom
 		call	computeflags
 		call	computemaxsec			;compute maxsector
-		set	PRESENT, (IY + DSKBITS)		;mark percom-block configured
-		
+		set	PRESENT, (iy + DSKBITS)		;mark percom-block configured
+
 		call	dumppercom
 		
 		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
@@ -1668,8 +1699,8 @@ diskstatus:	CALL	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		jr	z, diskstatus1			;no
 		set	ACTIVE, a	
 	
-diskstatus1:	bit	DENSTY, (IY + MEDIA)		;double density?
-		jr	z, diskstatus2			;no
+diskstatus1:	bit	7, (iy + SECLEN + 1)		;secsize > 128?
+		jr	NZ, diskstatus2			;no
 		set	SEC256, a	
 	
 diskstatus2:	bit	WRPROT, (IY + CMDSTS)		;last command wp?
@@ -1975,7 +2006,7 @@ FLAGSIDE	equ	5
 ;	EQUATES FOR BITS IN 'MEDIA' BYTE
 ;
 SIZE	EQU	1		;DISK SIZE (1=EIGHT, 0=FIVE)
-DENSTY	EQU	2		;DENSITY (1=DOUBLE, 0=SINGLE)
+DENSTY	EQU	2		;DENSITY (1=MFM, 0=FM)
 ;
 ;
 ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
