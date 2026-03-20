@@ -834,7 +834,7 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 ;--------------------------------------------------
 ; computeflags
 ;--------------------------------------------------
-computeflags:	ld	de, STEPRATE1 * 256 + steprate0	;d = STEPRATE1: 12/6ms, e = STEPRATE0: 6/3ms 
+computeflags:	ld	de, STEPRATE1 * 256 + STEPRATE0	;d = STEPRATE1: 12/6ms, e = STEPRATE0: 6/3ms 
 
 		call	getdrivelatch
 		ld	b, a				;start with HD, MFM
@@ -863,9 +863,11 @@ computeflags5:	set	FLAGHDDD, b			;< 26 sectores, no HD
 		ld	e, STEPRATE3			;e = STEPRATE0: 3/1.5ms
 
 computeflags3:	ld	a, (IY + NTRKS)
+		cp	1
+		jr	Z, computeflags6
 		cp	80
 		jr	NZ, computeflags2
-		ld	d, e
+computeflags6:	ld	d, e
 		
 computeflags2:	ld	a, b
 		ld	(iy + FLAGS), a
