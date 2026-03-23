@@ -388,7 +388,7 @@ PTRID:	DEFB	'@'		;PRINTER CONTROLLER ID CODE
 	DEFB	'Z'		;Z80 LOAD/DUMP/GOTO
 
 	DEFW	Z80TAB
-SalyDISKID:
+
 	DEFW	DISKTAB
 	DEFW	DISKTAB
 	DEFW	DISKTAB
@@ -487,10 +487,10 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 		rla	
 		and	10000000b	
 		or	(IX + DSKDRV)	
-		ld	b, a	
-		ld	c, (IX + DSKTRK)		;BC = DRIVE/TRACK
+		ld	c, a	
+		ld	b, (IX + DSKTRK)		;b = track, c = drive
 			
-		ld	hl, (drive)	
+		ld	hl, (drive)			;h = track, l = drive	
 		sbc	hl, bc				;or above, carry clear!
 		jr	z, trkmatch	
 			
@@ -529,7 +529,7 @@ diskreadfn1:	push	de
 readtrk:	;ret
 		ld	(drive), bc
 
-		call	readidam
+readtrk7:	call	readidam
 		jp	NZ, readtrk5			;no error proceed
 		
 readtrk5:	ld	h, (IY + SECLEN)		;copy SECLEN to DSKAUX
@@ -606,13 +606,14 @@ computesecbuf2:	ld	de, TRKBUFFER
 ;--------------------------------------------------
 ; compute hl = pointer to skewtab of this drive
 ;--------------------------------------------------
-getskewtab:
-		push	iy
+getskewtab:	push	iy
 		pop	hl
 		ld	de, PERSKEWTAB
 		add	hl, de
 		ret
 
+
+		
 ;--------------------------------------------------
 ; command 'W' and 'P' disk write and put
 ;--------------------------------------------------
@@ -722,7 +723,7 @@ diskformat:
 		ld	a, 'C'
 		ld	(siorc), a
 		
-		bit	PERCONF, (iy + DSKBITS)
+		bit	PERCONF, (iy + PERFLAGS)
 		jr	NZ, diskformat10
 		call	makesd
 		
@@ -791,7 +792,7 @@ diskformat9:	call	seraddr
 	
 		ld	a, (iy + nsides)		;set for SS/DS init
 		ld	(sides), a
-		ld	a,( iy + ntrks)			;set for number of tracks
+		ld	a, (iy + ntrks)			;set for number of tracks
 		cp	1
 		jr	NZ, diskformat8
 		ld	(sides), a
@@ -918,77 +919,14 @@ percomsd:	defb	40				;# tracks
 ; clearpercom, clear all 256 bytes drivedata
 ; and make 4x SD PERCOM
 ;--------------------------------------------------
-clearpercom:	ld	hl, drivedata
-		push	hl
-		xor	a
-		ld	b, a
-clearpercom1:	ld 	(hl), a
-		inc	hl
-		djnz	clearpercom1
-		
-		pop	iy
-		ld	bc, 64
-		ld	e, 4
-clearpercom2:	ld	(iy + NTRKS), 40		;make SD Disk
-		ld	(iy + NSECS + 1), 18
-		ld	(iy + SECLEN + 1), 128
-		ld	(iy + MAXSEC), 0d0h		;720 secs
-		ld	(iy + MAXSEC + 1), 2
-		add	iy, bc
-		dec	e
-		jr	NZ, clearpercom2
-		ret
+clearpercom:	ld	iy, drivedata
+		ld	de, 64
+		ld	c, 4
 
-;--------------------------------------------------
-; makesddisk
-;--------------------------------------------------
-makesddisk:	ld	b, 12				;clear percom
-		push	iy
-		pop	hl
-		xor	a
-makesddisk1:	ld	(hl), a
-		inc	hl 
-		djnz	makesddisk1
-		
-		ld	(IY + NTRKS), 40		;make SD Disk
-		ld	(IY + NSECS + 1), 18
-		ld	(IY + SECLEN + 1), 128
-		set	PRESENT, (IY + DSKBITS)
-		ret
-
-;--------------------------------------------------
-; adjustsiobufbuf
-; if sector < 4, copy data to IOBUF+LEN - 128
-; return start of SIo buffer in HL
-;--------------------------------------------------
-adjustsiobuf:	
-		ld	a, (IY + FLAGS)
-		or	a
-		jr	NZ, adjustsiobuf1
-		ld	hl, IOBUFF+256
-		xor	a
-		jr 	adjustsiobuf2
-
-adjustsiobuf1:	ld	hl, (DKIOCB + DSKPTR)
-		ld	a, (IX + DSKAUX)		;sectorlen < 256
-		or	a
-		ret	NZ				;yes, do nothing
-		
-adjustsiobuf2:	ld	a, (siosector + 1)		;hi-byte <> 0
-		or	a
-		ret	NZ				;yes, do nothing
-		
-		ld	a, (siosector)		
-		cp	4
-		ret	NC				;>= 4
-
-		push	hl
-		ld	bc, 128
-		add	hl, bc
-		ex	de, hl				;de = hl+128
-		pop	hl				;hl = diskbuffer
-		ldir
-
+clearpercom1:	call	makesd
+		add	iy, de
+		dec	c
+		jr	NZ, clearpercom1
 		ret
 		
 ;--------------------------------------------------
@@ -1024,14 +962,7 @@ diskanalyse9:	ld	(iy + MEDIA), 4			;set DD (MFM)
 
 diskanalyse2:	ld	a, '-'				;error
 		call	seroutfn
-		ld	a, (IY + FLAGS)
-		and	00001111b
-		or	11000000b
-		ld	(IY + FLAGS), a			;make 90k Disk
-		ld	(IY + NSECS + 1), 40
-		ld	(IY + SECLEN + 1), 128
-		ld	(iy + PERSKEWTAB), 0		;clear skewtab (forces diskanalysis)
-		call	computemaxsec
+		call	makesd
 		or	a				;clear carry
 		ret
 ;		jp	setsioerror
@@ -1152,8 +1083,8 @@ compseclen:	add	hl, hl
 		ld	(IY + NSECS + 1), a
 		ld	a, (IY + MAXSEC + 1)
 		ld	(IY + NSECS), a
-		ld	a, (IY + NSIDES)
-		ld	(IY + PERSIDES), a
+;		ld	a, (IY + NSIDES)
+;		ld	(IY + PERSIDES), a
 		ld	(IY + NSIDES), 0
 		
 		
@@ -1506,38 +1437,53 @@ sec2trk2:	sbc	hl, de				;compute track number siosector / NSECS
 		jr	sec2trk2
 		
 sec2trk1:	ld	(DKIOCB + DSKTRK), a		;store track 
-		ld	c, (IY + NTRKS)
+		ld	d, (IY + NTRKS)
 		dec	b
 		jr	NZ, sec2trk5			;NTRKS <> 1
-		ld	c, (IY + PERTRKS)		
+		ld	d, (IY + PERTRKS)		
 sec2trk5:	inc	b
-		sub	a, c
-		jr	C, sec2trk3			;no second side
-				
-		ld	(DKIOCB + DSKTRK), a
-		in	a, (SERIN)			;XF551 mode?
-		bit	SERRI, a
-		jr	NZ, sec2trk4			;no
-		ld	a, c				;compute MAXTRACK-1-curtrack
-		dec	a
-		sub	(IX + DSKTRK)
-		ld	(DKIOCB + DSKTRK), a
+		sub	a, d
+		jr	C, sec2trk3			;not at second side				
 		
-sec2trk4:	ld	a, (OUTCPY)	
+		ld	(DKIOCB + DSKTRK), a
+		ld	a, (OUTCPY)
 		set	5, a				;set head 1
 		ld	(OUTCPY), a	
 		out	(LATCH), a	
 		
 sec2trk3:	ld	a, l
-		dec	b
+		ld	c, (IY + NSECS + 1)
+		dec	b				;NTRKS = 1?
 		jr	NZ, sec2trk7
-		add	a, (IY + PERSECS)
-		jr	sec2trk8
-sec2trk7:	add	a, (IY + NSECS + 1)		;add NSECS we have subtracted too much 
-sec2trk8:	inc 	a				;offset by 1
+		ld	c, (IY + PERSECS)
+sec2trk7:	inc	b				;restore b (not needed at the moment)
+		add	a, c				;add NSECS we have subtracted too much 
+		inc	a				;offset by 1
 		ld	(DKIOCB + DSKSEC), a		;store in IOCB
-							;fall through
-							
+	
+		in	a, (SERIN)			;XF551 mode?
+		bit	SERRI, a
+		jr	NZ, sec2trk9			;no
+		
+		ld	a, (OUTCPY)			;2nd side?
+		bit	5, a
+		jr	Z, sec2trk4			;no
+		
+		ld	a, d				;load NTRKS
+		sub	(IX + DSKTRK)
+		dec	a
+		ld	(DKIOCB + DSKTRK), a
+		
+		ld	a, c				;load NSECS
+		sub	(IX + DSKSEC)
+		inc	a
+		ld 	(DKIOCB + DSKSEC), a
+		
+		ld	a, 2
+		jr	sec2trk8
+sec2trk4:	xor	a
+sec2trk8:	call	reverseskew	
+sec2trk9:						;fall through
 ;--------------------------------------------------
 ; seektrack
 ;--------------------------------------------------
@@ -1552,6 +1498,36 @@ seektrack:
 seektrack1:	out	(CMDREG), a			;issue step command
 		jp	waitstatus
 
+
+;--------------------------------------------------
+; reverse the skewtab
+;--------------------------------------------------
+reverseskew:	xor	(iy + PERFLAGS)
+		bit	XFSIDE, a
+		ret	Z				;nothing to do
+
+;		call	dumppercom
+		call	getskewtab			;hl = ptr to skewtab
+		ld	b, (iy + NSECS + 1)		;b = NSECS or PERSECS
+		ld	a, (iy + NTRKS)
+		dec	a
+		jr	NZ, reverseskew1
+		ld	b, (iy + PERSECS)
+
+reverseskew1:	ld	c, b
+reverseskew2:	ld	a, c
+		sub	(hl)
+		inc	a
+		ld	(hl), a
+		inc	hl
+		djnz	reverseskew2			;do NSECTS times
+		
+		ld	a, (iy + PERFLAGS)		;invert XFSIDE
+		xor	1 << XFSIDE
+		ld	(iy + PERFLAGS), a
+;		call	dumppercom
+
+		ret
 
 ;--------------------------------------------------
 ; set timer for checkidam 50ms
@@ -1695,7 +1671,9 @@ PUTPARAMS:
 		call	computeflags
 		call	computemaxsec			;compute maxsector
 		;set	PRESENT, (iy + DSKBITS)		;mark percom-block configured
-		ld	(iy + DSKBITS), 041h
+		ld	(iy + DSKBITS), 040h
+		set	PERCONF, (iy + PERFLAGS)
+		
 		call	dumppercom
 		
 		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
@@ -1924,8 +1902,7 @@ FMTS:
 		DEFW	10416			
 				
 		DEFW	DD5N18				;DOUBLE DENSITY 5 INCH
-		;DEFW	SKEWDD			
-		DEFW	SKEWSD
+		DEFW	SKEW15
 		DEFB	18			
 		DEFW	6250				
 				
@@ -1948,7 +1925,7 @@ FMTS:
 		DEFW	SKEW36
 		DEFB	36
 		DEFW	12150
-		
+
 ;
 ;
 ;
@@ -1981,7 +1958,8 @@ SKEWMD:		DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
 SKEW36:		DEFB	1, 3, 5, 7,  9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35
 		DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36
 
-
+SKEW15:		DEFB	1, 7, 13, 6, 12, 18, 5, 11, 17
+		DEFB	4, 10, 16, 3, 9, 15, 2, 8, 14
 	
 ;--------------------------------------------------
 ; variables and data structure
@@ -2016,7 +1994,7 @@ PERSTEPRATE	equ	18			;steprate in FDC encoding
 PERSECLEN	equ	19			;seclen in FDC encoding (0-3)
 PERTRKS		equ	20			;if NTRKS = 1, number of tracks
 PERSECS		equ	21			;if NTRKS = 1, number of secs
-PERSIDES	equ 	22			;if NTRKS = 1, number of heads	
+PERFLAGS	equ 	22			;if NTRKS = 1, number of heads	
 PERSKEWTAB	equ	23			;NSECS+1 bytes for sector skew
 ;
 ; Bits for FLAGS
@@ -2035,6 +2013,10 @@ DENSTY	EQU	2		;DENSITY (1=MFM, 0=FM)
 ;	EQUATES FOR BITS IN 'DSKBITS' BYTE
 ;
 PRESENT	EQU	6		;DRIVE PRESENT (1=PRESENT)
+;
+;	EQUATES FOR BITS IN 'PERFLAGS' BYTE
+;
+XFSIDE	EQU	1		;XF551 SKEW
 PERCONF EQU	0		;PERCOM (1=configured)
 ;
 ;

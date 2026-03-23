@@ -399,9 +399,13 @@ TESTSEC4:	lda	DAUX2
 		jsr	puthex
 		lda	DAUX1
 		jsr	puthex
-		jsr	NEWLINE
 		jsr	CALLSIO
 		bmi	TESTSEC3			;if error, quit read loop
+		lda	BUFFER+1
+		jsr	puthex
+		lda	BUFFER
+		jsr	puthex
+		jsr	NEWLINE
 		inc	DAUX1				;increment DAUX1/2
 		bne	TESTSEC1
 		inc	DAUX2	

@@ -104,8 +104,23 @@ FORM4:	IN	A,(STSREG)
 	LD	A,(NSECTS)
 	LD	B,A
 	LD	IX,(SKWPTR)	;POINT TO SECTOR TABLE
-FORM5:	LD	A,(IX)
-	INC	IX
+
+FORM5:
+	IF SALLYRS = 1
+	LD	A,(OUTCPY)
+	AND	00100000b
+	jr	Z, FORM5A	;not side 1
+	in	a, (SERIN)	;check if XF551 mode
+	bit	SERRI, a
+	jr	NZ, FORM5A	;=1, no
+	ld	a, (NSECTS)
+	sub	(IX)
+	inc	a
+	jr	FORM5B
+	ENDIF
+	
+FORM5A:	LD	A,(IX)
+FORM5B:	INC	IX
 	OUT	(SECREG),A
 	LD	A,(OUTCPY)
 	AND	00100000b
@@ -116,13 +131,7 @@ FORM51:	CALL	TYP2CMD		;read sector discarding the data
 	AND	10011000B	;TEST FOR READY/RNF/CRC ERROR INDICATION
 	JR	Z,FORM6		;JUMP IF SECTOR READ OK
 	AND	10000000B
-	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR
-	
-;	ld	a, e
-;	call	serhex
-;	ld	a, d
-;	call	serhexspace
-	
+	JR	NZ,FORMX	;QUIT TRYING IF NOT-READY ERROR	
 	PUSH	HL
 	PUSH	BC
 	LD	BC,IOBUFF+LEN-3
@@ -195,8 +204,20 @@ BUILD3:	LD	A,(TRACK)
 	jr	z,bild31	;jump if formatting side 0
 	inc	a
 bild31:	ld	(ix+9),a	;store side# in id
-	LD	A,(IY)
-	INC	IY
+
+	IF SALLYRS = 1
+	jr	Z, bild32	;not side 1
+	in	a, (SERIN)	;check if XF551 mode
+	bit	SERRI, a
+	jr	NZ, bild32	;=1, no
+	ld	a, (NSECTS)
+	sub	(IY)
+	inc	a
+	jr	bild33
+	ENDIF
+	
+bild32:	LD	A,(IY)
+bild33:	INC	IY
 	LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
 
 	PUSH	IX
@@ -379,6 +400,7 @@ DD8N26:	DEFB	5
 ;
 SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
 	DEFB	2,15,4,17,6,19,8,21,10,23,12,25
+	
 ;
 ;
 SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
