@@ -1230,10 +1230,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	0654  73616C6C	SVERSION DB "sally-1.0.5-38-g" 
+   1:     -	0654  73616C6C	SVERSION DB "sally-1.0.5-39-g" 
 	              792D312E
 	              302E352D
-	              33382D67
+	              33392D67
 **** ..\src\main.mac ****
   17:						
   18: 6271+4	0664  F3      			di

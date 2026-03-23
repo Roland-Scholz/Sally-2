@@ -72,8 +72,8 @@ START:		lda	#0
 		beq	DONACK
 		cmp	#'P'
 		beq	DOPERCOM
-;		cmp	#'R'
-;		beq	DORESET
+		cmp	#'R'
+		beq	DOREAD
 		cmp	#'S'
 		beq	DOGETSTAT
 		cmp	#'T'
@@ -94,6 +94,7 @@ DOGOTO:		jmp	GOTO
 DONACK:		jmp	NACK
 DOGETSTAT:	jmp	GETSTAT
 DORESET:	jmp	RESET
+DOREAD:		jmp	READSEC
 DOTESTSEC:	jmp	TESTSEC
 DOUPLOAD:	jmp	UPLOAD
 DOVERSION:	jmp	VERSION
@@ -361,6 +362,60 @@ GOTOEND:	jmp	START
 ;
 ;
 ;
+READSEC:	jsr	getadr
+		jsr	NEWLINE
+		lda	WORD
+		sta 	DAUX1
+		lda	WORD + 1
+		sta 	DAUX2
+		
+		lda	#'1'
+		sta	DDEVIC
+		lda	#'R'
+		sta	DCOMND
+		lda	#<BUFFER
+		sta	DBUFLO
+		lda	#>BUFFER
+		sta	DBUFHI
+READSEC1:	lda	#CREAD
+		sta	DSTATS
+		lda	#128				;standard 128 bytes/sec
+		sta	DBYTLO
+		lda	#0
+		sta	DBYTHI
+		
+		lda	DAUX2				;yes, check if DAUX2 > 0
+		bne	READSEC2			;yes, switch to 256 bytes/sec
+		lda	DAUX1				;no, check if sector 1-3
+		cmp	#4
+		bcc	READSEC4			;yes, just read 128 bytes
+
+READSEC2:	ldx	PERBYT
+		txa
+		jsr	puthex
+		
+READSEC5:	asl	DBYTLO
+		rol	DBYTHI
+		dex
+		bne	READSEC5
+
+READSEC4:	lda	DBYTHI
+		jsr	puthex
+		lda	DBYTLO
+		jsr	puthex
+		jsr	NEWLINE
+		jsr	CALLSIO
+		bmi	READSEC3			;if error, quit read loop
+		
+		lda	#<BUFFER
+		sta	SALLYADR
+		lda	#>BUFFER
+		sta	SALLYADR+1
+		jsr	dumpbuf
+
+READSEC3:	jsr	GETKEY
+		jmp	START		
+
 TESTSEC:	jsr	getadr
 		lda	WORD
 		sta 	DAUX1
@@ -393,8 +448,13 @@ TESTSEC1:	lda	#CREAD
 		lda	DAUX1				;no, check if sector 1-3
 		cmp	#4
 		bcc	TESTSEC4			;yes, just read 128 bytes
+
+		ldx	PERBYT		
 TESTSEC2:	asl	DBYTLO
 		rol	DBYTHI
+		dex
+		bne	TESTSEC2
+		
 TESTSEC4:	lda	DAUX2
 		jsr	puthex
 		lda	DAUX1
@@ -971,7 +1031,7 @@ SALLYMSG:	.byte	CLS
 		.byte	"F - Format", EOL
 		.byte	"N - Test NACK (Cmd 'X')", EOL
 		.byte	"P - Percom Block Config", EOL
-		;.byte	"R - Reset Sally", EOL
+		.byte	"R - Read Sector", EOL
 		.byte	"S - Get Status", EOL
 		.byte	"T - Test (read) all sectors", EOL
 		.byte	"U - upload sally2.com", EOL
