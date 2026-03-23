@@ -1507,6 +1507,10 @@ sec2trk7:	inc	b				;restore b (not needed at the moment)
 		bit	SERRI, a
 		jr	NZ, sec2trk9			;no
 		
+		ld	a, (iy + NTRKS)			;and only for 40 tracks
+		cp	40
+		jr	NZ, sec2trk9
+		
 		ld	a, (OUTCPY)			;2nd side?
 		bit	5, a
 		jr	Z, sec2trk4			;no

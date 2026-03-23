@@ -113,6 +113,9 @@ FORM5:
 	in	a, (SERIN)	;check if XF551 mode
 	bit	SERRI, a
 	jr	NZ, FORM5A	;=1, no
+	ld	a, (tracks)
+	cp	40
+	jr	NZ, FORM5A
 	ld	a, (NSECTS)
 	sub	(IX)
 	inc	a
