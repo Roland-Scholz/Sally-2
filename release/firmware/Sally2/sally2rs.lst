@@ -133,10 +133,10 @@
   49:				;
   50:  191+10	002E  211C0F  			LD	HL,MONCOPY
   51:  201+10	0031  1100F0  			LD	DE,MONITOR
-  52:  211+10	0034  01D609  			LD	BC,MONSIZE
+  52:  211+10	0034  01DD09  			LD	BC,MONSIZE
   53:  221+16+5	0037  EDB0    			LDIR					;COPY RESIDENT CODE INTO RAM
   54:				
-  55:  237+10	0039  21F218  			LD	HL,VARCOPY
+  55:  237+10	0039  21F918  			LD	HL,VARCOPY
   56:  247+10	003C  1120FF  			LD	DE,glbvars
   57:  257+10	003F  012F00  			LD	BC,glbsize
   58:  267+16+5	0042  EDB0    			LDIR					;INITIALIZE GLOBAL VARIABLES
@@ -2705,23 +2705,23 @@
 1955:				;
 1956:				;
 1957:     -	0E59          	FMTS:
-1958:     -	0E59  79F9    			DEFW	DD8N26				;DOUBLE DENSITY 8 INCH
-1959:     -	0E5B  BCF9    			DEFW	SKEW17			
+1958:     -	0E59  80F9    			DEFW	DD8N26				;DOUBLE DENSITY 8 INCH
+1959:     -	0E5B  C3F9    			DEFW	SKEW17			
 1960:     -	0E5D  1A      			DEFB	26			
 1961:     -	0E5E  B028    			DEFW	10416			
 1962:								
-1963:     -	0E60  0FF9    			DEFW	DD5N18				;DOUBLE DENSITY 5 INCH
+1963:     -	0E60  16F9    			DEFW	DD5N18				;DOUBLE DENSITY 5 INCH
 1964:     -	0E62  E40E    			DEFW	SKEW15
 1965:     -	0E64  12      			DEFB	18			
 1966:     -	0E65  6A18    			DEFW	6250				
 1967:								
-1968:     -	0E67  54F9    			DEFW	SD8N26				;SINGLE DENSITY 8 INCH
-1969:     -	0E69  A2F9    			DEFW	SKEW13			
+1968:     -	0E67  5BF9    			DEFW	SD8N26				;SINGLE DENSITY 8 INCH
+1969:     -	0E69  A9F9    			DEFW	SKEW13			
 1970:     -	0E6B  1A      			DEFB	26			
 1971:     -	0E6C  5814    			DEFW	5208			
 1972:								
-1973:     -	0E6E  F0F8    			DEFW	SD5N18				;SINGLE DENSITY 5 INCH
-1974:     -	0E70  30F9    			DEFW	SKEWSD			
+1973:     -	0E6E  F7F8    			DEFW	SD5N18				;SINGLE DENSITY 5 INCH
+1974:     -	0E70  37F9    			DEFW	SKEWSD			
 1975:     -	0E72  12      			DEFB	18			
 1976:     -	0E73  350C    			DEFW	3125			
 1977:				
@@ -2730,7 +2730,7 @@
 1980:     -	0E79  1A      			DEFB	26			
 1981:     -	0E7A  9C18    			DEFW	6300				;6238
 1982:						
-1983:     -	0E7C  0FF9    			DEFW	DD5N18
+1983:     -	0E7C  16F9    			DEFW	DD5N18
 1984:     -	0E7E  C00E    			DEFW	SKEW36
 1985:     -	0E80  24      			DEFB	36
 1986:     -	0E81  762F    			DEFW	12150
@@ -2860,10 +2860,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	0EFD  73616C6C	SVERSION DB "sally-1.0.5-40-g" 
+   1:     -	0EFD  73616C6C	SVERSION DB "sally-1.0.5-41-g" 
 	              792D312E
 	              302E352D
-	              34302D67
+	              34312D67
 **** ..\src\main.mac ****
   17:						
   18:16790+4	0F0D  F3      			di
@@ -4884,7 +4884,7 @@
  192:27193+7	F874  46      		LD	B,(HL)		;LOAD B WITH # OF FIELDS IN PREAMBLE
  193:27200+6	F875  23      		INC	HL
  194:27206+20	F876  ED5BC3FF		LD	DE,(TRKPTR)
- 195:27226+17	F87A  CDE5F8  	BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
+ 195:27226+17	F87A  CDECF8  	BUILD1:	CALL	INSERT		;INSERT FIELDS OF PREAMBLE
  196:27243+8+5	F87D  10FB    		DJNZ	BUILD1
  197:				
  198:27251+7	F87F  46      		LD	B,(HL)		;LOAD B WITH NUMBER OF ITEMS IN SECTOR
@@ -4901,231 +4901,234 @@
  209:27359+19	F894  DD7709  	bild31:	ld	(ix+9),a	;store side# in id
  210:				
  211:     -	0001          		IF SALLYRS = 1
- 212:27378+7+5	F897  280F    		jr	Z, bild32	;not side 1
+ 212:27378+7+5	F897  2816    		jr	Z, bild32	;not side 1
  213:27385+11	F899  DB50    		in	a, (SERIN)	;check if XF551 mode
  214:27396+8	F89B  CB57    		bit	SERRI, a
- 215:27404+7+5	F89D  2009    		jr	NZ, bild32	;=1, no
- 216:27411+13	F89F  3ABAFF  		ld	a, (NSECTS)
- 217:27424+19	F8A2  FD9600  		sub	(IY)
- 218:27443+4	F8A5  3C      		inc	a
- 219:27447+12	F8A6  1803    		jr	bild33
- 220:					ENDIF
- 221:					
- 222:27459+19	F8A8  FD7E00  	bild32:	LD	A,(IY)
- 223:27478+10	F8AB  FD23    	bild33:	INC	IY
- 224:27488+19	F8AD  DD770B  		LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
- 225:				
- 226:27507+15	F8B0  DDE5    		PUSH	IX
- 227:27522+10	F8B2  E1      		POP	HL		;POINT HL TO SECTOR POOP
- 228:27532+11	F8B3  C5      		PUSH	BC
- 229:27543+17	F8B4  CDE5F8  	BUILD4:	CALL	INSERT
- 230:27560+8+5	F8B7  10FB    		DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
- 231:				
- 232:27568+19	F8B9  DD7E0D  		LD	A,(IX+13)
- 233:27587+17	F8BC  CD820D  		call	getsize		;compute sector size in bytes
- 234:27604+7	F8BF  3EFF    	build6:	ld	a,0ffh
- 235:27611+7	F8C1  12      		ld	(de),a		;fill sector data with ff's
- 236:27618+6	F8C2  13      		INC	DE
- 237:27624+6	F8C3  0B      		DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
- 238:27630+4	F8C4  78      		LD	A,B
- 239:27634+4	F8C5  B1      		OR	C
- 240:27638+7+5	F8C6  20F7    		JR	NZ,BUILD6
- 241:				
- 242:27645+7	F8C8  46      		LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
- 243:27652+6	F8C9  23      		INC	HL
- 244:27658+17	F8CA  CDE5F8  	BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
- 245:27675+8+5	F8CD  10FB    		DJNZ	BUILD7
- 246:27683+10	F8CF  C1      		POP	BC
- 247:				
- 248:27693+4	F8D0  0D      		DEC	C
- 249:27697+7+5	F8D1  20B1    		JR	NZ,BUILD3
+ 215:27404+7+5	F89D  2010    		jr	NZ, bild32	;=1, no
+ 216:27411+13	F89F  3ABEFF  		ld	a, (tracks)
+ 217:27424+7	F8A2  FE28    		cp	40
+ 218:27431+7+5	F8A4  2009    		jr	NZ, bild32	
+ 219:27438+13	F8A6  3ABAFF  		ld	a, (NSECTS)
+ 220:27451+19	F8A9  FD9600  		sub	(IY)
+ 221:27470+4	F8AC  3C      		inc	a
+ 222:27474+12	F8AD  1803    		jr	bild33
+ 223:					ENDIF
+ 224:					
+ 225:27486+19	F8AF  FD7E00  	bild32:	LD	A,(IY)
+ 226:27505+10	F8B2  FD23    	bild33:	INC	IY
+ 227:27515+19	F8B4  DD770B  		LD	(IX+11),A	;STORE SECTOR# INTO FORMAT CONSTANTS
+ 228:				
+ 229:27534+15	F8B7  DDE5    		PUSH	IX
+ 230:27549+10	F8B9  E1      		POP	HL		;POINT HL TO SECTOR POOP
+ 231:27559+11	F8BA  C5      		PUSH	BC
+ 232:27570+17	F8BB  CDECF8  	BUILD4:	CALL	INSERT
+ 233:27587+8+5	F8BE  10FB    		DJNZ	BUILD4		;INSERT ITEMS UP TO SECTOR DATA FIELD
+ 234:				
+ 235:27595+19	F8C0  DD7E0D  		LD	A,(IX+13)
+ 236:27614+17	F8C3  CD820D  		call	getsize		;compute sector size in bytes
+ 237:27631+7	F8C6  3EFF    	build6:	ld	a,0ffh
+ 238:27638+7	F8C8  12      		ld	(de),a		;fill sector data with ff's
+ 239:27645+6	F8C9  13      		INC	DE
+ 240:27651+6	F8CA  0B      		DEC	BC		;REPEAT TILL SECTOR IMAGE IS FILLED
+ 241:27657+4	F8CB  78      		LD	A,B
+ 242:27661+4	F8CC  B1      		OR	C
+ 243:27665+7+5	F8CD  20F7    		JR	NZ,BUILD6
+ 244:				
+ 245:27672+7	F8CF  46      		LD	B,(HL)		;GET #FIELDS IN POST-SECTOR STUFF
+ 246:27679+6	F8D0  23      		INC	HL
+ 247:27685+17	F8D1  CDECF8  	BUILD7:	CALL	INSERT		;INSERT FIELDS UP TO GAP 3
+ 248:27702+8+5	F8D4  10FB    		DJNZ	BUILD7
+ 249:27710+10	F8D6  C1      		POP	BC
  250:				
- 251:27704+16	F8D3  2AC3FF  		LD	HL,(TRKPTR)
- 252:				;	call	seraddr
- 253:				;	ex	de, hl
- 254:				;	call	seraddr
- 255:				;	ex 	de, hl
- 256:					
- 257:				;	LD	BC,10200
- 258:27720+10	F8D6  01D430  		LD	BC,12500
- 259:27730+11	F8D9  09      		ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
- 260:27741+15	F8DA  ED52    		SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
- 261:				;	call	seraddr
- 262:27756+4	F8DC  44      		LD	B,H
- 263:27760+4	F8DD  4D      		LD	C,L
- 264:27764+4	F8DE  62      		LD	H,D
- 265:27768+4	F8DF  6B      		LD	L,E
- 266:27772+6	F8E0  13      		INC	DE
- 267:27778+7	F8E1  77      		LD	(HL),A
- 268:27785+16+5	F8E2  EDB0    		LDIR			;FILL REST OF BUFFER
- 269:27801+10	F8E4  C9      		RET
- 270:				;
- 271:				;
- 272:				;
- 273:27811+11	F8E5  C5      	INSERT:	PUSH	BC
- 274:27822+7	F8E6  46      		LD	B,(HL)
- 275:27829+6	F8E7  23      		INC	HL
- 276:27835+7	F8E8  7E      		LD	A,(HL)
- 277:27842+6	F8E9  23      		INC	HL
- 278:27848+7	F8EA  12      	INS2:	LD	(DE),A
- 279:27855+6	F8EB  13      		INC	DE
- 280:27861+8+5	F8EC  10FC    		DJNZ	INS2
- 281:27869+10	F8EE  C1      		POP	BC
- 282:27879+10	F8EF  C9      		RET
- 283:				;
- 284:				;
- 285:				;
+ 251:27720+4	F8D7  0D      		DEC	C
+ 252:27724+7+5	F8D8  20AA    		JR	NZ,BUILD3
+ 253:				
+ 254:27731+16	F8DA  2AC3FF  		LD	HL,(TRKPTR)
+ 255:				;	call	seraddr
+ 256:				;	ex	de, hl
+ 257:				;	call	seraddr
+ 258:				;	ex 	de, hl
+ 259:					
+ 260:				;	LD	BC,10200
+ 261:27747+10	F8DD  01D430  		LD	BC,12500
+ 262:27757+11	F8E0  09      		ADD	HL,BC		;COMPUTE END OF LONGEST TRACK IMAGE
+ 263:27768+15	F8E1  ED52    		SBC	HL,DE		;COMPUTE BYTES NECESSARY TO GET THERE
+ 264:				;	call	seraddr
+ 265:27783+4	F8E3  44      		LD	B,H
+ 266:27787+4	F8E4  4D      		LD	C,L
+ 267:27791+4	F8E5  62      		LD	H,D
+ 268:27795+4	F8E6  6B      		LD	L,E
+ 269:27799+6	F8E7  13      		INC	DE
+ 270:27805+7	F8E8  77      		LD	(HL),A
+ 271:27812+16+5	F8E9  EDB0    		LDIR			;FILL REST OF BUFFER
+ 272:27828+10	F8EB  C9      		RET
+ 273:				;
+ 274:				;
+ 275:				;
+ 276:27838+11	F8EC  C5      	INSERT:	PUSH	BC
+ 277:27849+7	F8ED  46      		LD	B,(HL)
+ 278:27856+6	F8EE  23      		INC	HL
+ 279:27862+7	F8EF  7E      		LD	A,(HL)
+ 280:27869+6	F8F0  23      		INC	HL
+ 281:27875+7	F8F1  12      	INS2:	LD	(DE),A
+ 282:27882+6	F8F2  13      		INC	DE
+ 283:27888+8+5	F8F3  10FC    		DJNZ	INS2
+ 284:27896+10	F8F5  C1      		POP	BC
+ 285:27906+10	F8F6  C9      		RET
  286:				;
- 287:				;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
+ 287:				;
  288:				;
  289:				;
- 290:     -	F8F0  01      	SD5N18:	DEFB	1
- 291:     -	F8F1  10FF    		DEFB	16,0FFH
- 292:				
- 293:     -	F8F3  0B      		DEFB	11
- 294:     -	F8F4  0300    		DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
- 295:     -	F8F6  0300    		DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
- 296:     -	F8F8  01FE    		DEFB	1,0FEH		;ID ADDRESS MARK
- 297:     -	F8FA  0100    		DEFB	1,00H		;TRACK
- 298:     -	F8FC  0100    		DEFB	1,00H		;SIDE
- 299:     -	F8FE  0100    		DEFB	1,00H		;SECTOR
- 300:     -	F900  0100    		DEFB	1,00H		;LENGTH
- 301:     -	F902  01F7    		DEFB	1,0F7H		;GENERATE CRC
- 302:     -	F904  0BFF    		DEFB	11,0FFH		;GAP2
- 303:     -	F906  0600    		DEFB	6,00H		;GAP2
- 304:     -	F908  01FB    		DEFB	1,0FBH		;DATA ADDRESS MARK
- 305:				
- 306:     -	F90A  02      		DEFB	2
- 307:     -	F90B  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
- 308:     -	F90D  09FF    		DEFB	9,0FFH		;GAP 3
- 309:				;
- 310:				;
- 311:				;
+ 290:				;	... DISK FORMAT DATA TABLES FOR 5/8 DD/SD STANDARDS ...
+ 291:				;
+ 292:				;
+ 293:     -	F8F7  01      	SD5N18:	DEFB	1
+ 294:     -	F8F8  10FF    		DEFB	16,0FFH
+ 295:				
+ 296:     -	F8FA  0B      		DEFB	11
+ 297:     -	F8FB  0300    		DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS TO MAKE
+ 298:     -	F8FD  0300    		DEFB	3,00H		; ID FIELD COME OUT IN RIGHT LOCATION)
+ 299:     -	F8FF  01FE    		DEFB	1,0FEH		;ID ADDRESS MARK
+ 300:     -	F901  0100    		DEFB	1,00H		;TRACK
+ 301:     -	F903  0100    		DEFB	1,00H		;SIDE
+ 302:     -	F905  0100    		DEFB	1,00H		;SECTOR
+ 303:     -	F907  0100    		DEFB	1,00H		;LENGTH
+ 304:     -	F909  01F7    		DEFB	1,0F7H		;GENERATE CRC
+ 305:     -	F90B  0BFF    		DEFB	11,0FFH		;GAP2
+ 306:     -	F90D  0600    		DEFB	6,00H		;GAP2
+ 307:     -	F90F  01FB    		DEFB	1,0FBH		;DATA ADDRESS MARK
+ 308:				
+ 309:     -	F911  02      		DEFB	2
+ 310:     -	F912  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
+ 311:     -	F914  09FF    		DEFB	9,0FFH		;GAP 3
  312:				;
  313:				;
- 314:     -	F90F  01      	DD5N18:	DEFB	1
- 315:     -	F910  8C4E    		DEFB	140,4EH		;GAP 1
- 316:				
- 317:     -	F912  0C      		DEFB	12
- 318:     -	F913  0C00    		DEFB	12,00H		;SECOND PART OF GAP 3
- 319:     -	F915  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 320:     -	F917  01FE    		DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
- 321:     -	F919  0100    		DEFB	1,0		;TRACK#
- 322:     -	F91B  0100    		DEFB	1,00000000B	;SIDE
- 323:     -	F91D  0100    		DEFB	1,0		;SECTOR#
- 324:     -	F91F  0101    		DEFB	1,00000001B	;LENGTH
- 325:     -	F921  01F7    		DEFB	1,0F7H		;GENERATE CRC
- 326:     -	F923  164E    		DEFB	22,4EH		;FIRST PART OF GAP 2
- 327:     -	F925  0C00    		DEFB	12,00H		;SECOND PART OF GAP 2
- 328:     -	F927  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 329:     -	F929  01FB    		DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
- 330:				
- 331:     -	F92B  02      		DEFB	2
- 332:     -	F92C  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
- 333:     -	F92E  104E    		DEFB	16,4EH		;FIRST PART OF GAP 3
- 334:				;
- 335:				;
- 336:				;
- 337:				;SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
- 338:				;	DEFB	17,15,13,11,9,7,5,3,1
- 339:				
- 340:     -	F930  01030507	SKEWSD:	DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17
+ 314:				;
+ 315:				;
+ 316:				;
+ 317:     -	F916  01      	DD5N18:	DEFB	1
+ 318:     -	F917  8C4E    		DEFB	140,4EH		;GAP 1
+ 319:				
+ 320:     -	F919  0C      		DEFB	12
+ 321:     -	F91A  0C00    		DEFB	12,00H		;SECOND PART OF GAP 3
+ 322:     -	F91C  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+ 323:     -	F91E  01FE    		DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+ 324:     -	F920  0100    		DEFB	1,0		;TRACK#
+ 325:     -	F922  0100    		DEFB	1,00000000B	;SIDE
+ 326:     -	F924  0100    		DEFB	1,0		;SECTOR#
+ 327:     -	F926  0101    		DEFB	1,00000001B	;LENGTH
+ 328:     -	F928  01F7    		DEFB	1,0F7H		;GENERATE CRC
+ 329:     -	F92A  164E    		DEFB	22,4EH		;FIRST PART OF GAP 2
+ 330:     -	F92C  0C00    		DEFB	12,00H		;SECOND PART OF GAP 2
+ 331:     -	F92E  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+ 332:     -	F930  01FB    		DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+ 333:				
+ 334:     -	F932  02      		DEFB	2
+ 335:     -	F933  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
+ 336:     -	F935  104E    		DEFB	16,4EH		;FIRST PART OF GAP 3
+ 337:				;
+ 338:				;
+ 339:				;
+ 340:				;SKEWSD:	DEFB	18,16,14,12,10,8,6,4,2
+ 341:				;	DEFB	17,15,13,11,9,7,5,3,1
+ 342:				
+ 343:     -	F937  01030507	SKEWSD:	DEFB	1, 3, 5, 7, 9, 11, 13, 15, 17
 	              090B0D0F
 	              11
- 341:     -	F939  02040608		DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18
+ 344:     -	F940  02040608		DEFB	2, 4, 6, 8, 10, 12, 14, 16, 18
 	              0A0C0E10
 	              12
- 342:				;
- 343:     -	F942  01070D  	SKEWDD:	DEFB	1,7,13
- 344:     -	F945  060C12  		DEFB	6,12,18
- 345:     -	F948  050B11  		DEFB	5,11,17
- 346:     -	F94B  040A10  		DEFB	4,10,16
- 347:     -	F94E  03090F  		DEFB	3,9,15
- 348:     -	F951  02080E  		DEFB	2,8,14
- 349:				;
- 350:				;
- 351:				;
- 352:     -	F954  04      	SD8N26:	DEFB	4		;PREAMBLE FIELD
- 353:     -	F955  28FF    		DEFB	40,0FFH		;GAP 4
- 354:     -	F957  0600    		DEFB	6,00
- 355:     -	F959  01FC    		DEFB	1,0FCH		;INDEX ADDRESS MARK
- 356:     -	F95B  1AFF    		DEFB	26,0FFH
- 357:				
- 358:     -	F95D  0B      		DEFB	11
- 359:     -	F95E  0300    		DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
- 360:     -	F960  0300    		DEFB	3,00H		;
- 361:     -	F962  01FE    		DEFB	1,0FEH		;ID ADDRESS MARK
- 362:     -	F964  0100    		DEFB	1,00H		;TRACK
- 363:     -	F966  0100    		DEFB	1,00H		;SIDE
- 364:     -	F968  0100    		DEFB	1,00H		;SECTOR
- 365:     -	F96A  0100    		DEFB	1,00H		;LENGTH
- 366:     -	F96C  01F7    		DEFB	1,0F7H		;GENERATE CRC
- 367:     -	F96E  0BFF    		DEFB	11,0FFH		;GAP2
- 368:     -	F970  0600    		DEFB	6,00H		;GAP2
- 369:     -	F972  01FB    		DEFB	1,0FBH		;DATA ADDRESS MARK
- 370:				
- 371:     -	F974  02      		DEFB	2
- 372:     -	F975  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
- 373:     -	F977  1BFF    		DEFB	27,0FFH		;GAP 3
- 374:				;
- 375:				;
- 376:				;
- 377:     -	F979  05      	DD8N26:	DEFB	5
- 378:     -	F97A  504E    		DEFB	80,4EH		;POST-INDEX GAP
- 379:     -	F97C  0C00    		DEFB	12,00H		;INDEX SYNC
- 380:     -	F97E  03F6    		DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
- 381:     -	F980  01FC    		DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
- 382:     -	F982  324E    		DEFB	50,4EH		;GAP 1
- 383:				
- 384:     -	F984  0C      		DEFB	12
- 385:     -	F985  0C00    		DEFB	12,00H		;SECOND PART OF GAP 3
- 386:     -	F987  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 387:     -	F989  01FE    		DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
- 388:     -	F98B  0100    		DEFB	1,0		;TRACK#
- 389:     -	F98D  0100    		DEFB	1,00000000B	;SIDE
- 390:     -	F98F  0100    		DEFB	1,0		;SECTOR#
- 391:     -	F991  0101    		DEFB	1,00000001B	;LENGTH
- 392:     -	F993  01F7    		DEFB	1,0F7H		;GENERATE CRC
- 393:     -	F995  164E    		DEFB	22,4EH		;FIRST PART OF GAP 2
- 394:     -	F997  0C00    		DEFB	12,00H		;SECOND PART OF GAP 2
- 395:     -	F999  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 396:     -	F99B  01FB    		DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
- 397:				
- 398:     -	F99D  02      		DEFB	2
- 399:     -	F99E  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
- 400:     -	F9A0  354E    		DEFB	53,4EH		;FIRST PART OF GAP 3
- 401:				;
- 402:				;
- 403:				;
- 404:     -	F9A2  010E0310	SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
+ 345:				;
+ 346:     -	F949  01070D  	SKEWDD:	DEFB	1,7,13
+ 347:     -	F94C  060C12  		DEFB	6,12,18
+ 348:     -	F94F  050B11  		DEFB	5,11,17
+ 349:     -	F952  040A10  		DEFB	4,10,16
+ 350:     -	F955  03090F  		DEFB	3,9,15
+ 351:     -	F958  02080E  		DEFB	2,8,14
+ 352:				;
+ 353:				;
+ 354:				;
+ 355:     -	F95B  04      	SD8N26:	DEFB	4		;PREAMBLE FIELD
+ 356:     -	F95C  28FF    		DEFB	40,0FFH		;GAP 4
+ 357:     -	F95E  0600    		DEFB	6,00
+ 358:     -	F960  01FC    		DEFB	1,0FCH		;INDEX ADDRESS MARK
+ 359:     -	F962  1AFF    		DEFB	26,0FFH
+ 360:				
+ 361:     -	F964  0B      		DEFB	11
+ 362:     -	F965  0300    		DEFB	3,00H		;GAP 3 (DONE AS 2 FIELDS)
+ 363:     -	F967  0300    		DEFB	3,00H		;
+ 364:     -	F969  01FE    		DEFB	1,0FEH		;ID ADDRESS MARK
+ 365:     -	F96B  0100    		DEFB	1,00H		;TRACK
+ 366:     -	F96D  0100    		DEFB	1,00H		;SIDE
+ 367:     -	F96F  0100    		DEFB	1,00H		;SECTOR
+ 368:     -	F971  0100    		DEFB	1,00H		;LENGTH
+ 369:     -	F973  01F7    		DEFB	1,0F7H		;GENERATE CRC
+ 370:     -	F975  0BFF    		DEFB	11,0FFH		;GAP2
+ 371:     -	F977  0600    		DEFB	6,00H		;GAP2
+ 372:     -	F979  01FB    		DEFB	1,0FBH		;DATA ADDRESS MARK
+ 373:				
+ 374:     -	F97B  02      		DEFB	2
+ 375:     -	F97C  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
+ 376:     -	F97E  1BFF    		DEFB	27,0FFH		;GAP 3
+ 377:				;
+ 378:				;
+ 379:				;
+ 380:     -	F980  05      	DD8N26:	DEFB	5
+ 381:     -	F981  504E    		DEFB	80,4EH		;POST-INDEX GAP
+ 382:     -	F983  0C00    		DEFB	12,00H		;INDEX SYNC
+ 383:     -	F985  03F6    		DEFB	3,0F6H		;GENERATE SYNC=C1 HEX
+ 384:     -	F987  01FC    		DEFB	1,0FCH		;GENERATE INDEX ADDRESS MARK
+ 385:     -	F989  324E    		DEFB	50,4EH		;GAP 1
+ 386:				
+ 387:     -	F98B  0C      		DEFB	12
+ 388:     -	F98C  0C00    		DEFB	12,00H		;SECOND PART OF GAP 3
+ 389:     -	F98E  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+ 390:     -	F990  01FE    		DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
+ 391:     -	F992  0100    		DEFB	1,0		;TRACK#
+ 392:     -	F994  0100    		DEFB	1,00000000B	;SIDE
+ 393:     -	F996  0100    		DEFB	1,0		;SECTOR#
+ 394:     -	F998  0101    		DEFB	1,00000001B	;LENGTH
+ 395:     -	F99A  01F7    		DEFB	1,0F7H		;GENERATE CRC
+ 396:     -	F99C  164E    		DEFB	22,4EH		;FIRST PART OF GAP 2
+ 397:     -	F99E  0C00    		DEFB	12,00H		;SECOND PART OF GAP 2
+ 398:     -	F9A0  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
+ 399:     -	F9A2  01FB    		DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
+ 400:				
+ 401:     -	F9A4  02      		DEFB	2
+ 402:     -	F9A5  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
+ 403:     -	F9A7  354E    		DEFB	53,4EH		;FIRST PART OF GAP 3
+ 404:				;
+ 405:				;
+ 406:				;
+ 407:     -	F9A9  010E0310	SKEW13:	DEFB	1,14,3,16,5,18,7,20,9,22,11,24,13,26
 	              05120714
 	              09160B18
 	              0D1A
- 405:     -	F9B0  020F0411		DEFB	2,15,4,17,6,19,8,21,10,23,12,25
+ 408:     -	F9B7  020F0411		DEFB	2,15,4,17,6,19,8,21,10,23,12,25
 	              06130815
 	              0A170C19
- 406:					
- 407:				;
- 408:				;
- 409:     -	F9BC  0112091A	SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
+ 409:					
+ 410:				;
+ 411:				;
+ 412:     -	F9C3  0112091A	SKEW17:	DEFB	1,18,9,26,17,8,25,16,7,24,15,6,23
 	              11081910
 	              07180F06
 	              17
- 410:     -	F9C9  0E05160D		DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
+ 413:     -	F9D0  0E05160D		DEFB	14,5,22,13,4,21,12,3,20,11,2,19,10
 	              04150C03
 	              140B0213
 	              0A
- 411:				;
- 412:				;
+ 414:				;
+ 415:				;
 **** ..\src\main.mac ****
   70:				;
   71:				;
   72:				;
-  73:     -	18F2          			.DEPHASE
-  74:     -	09D6          	MONSIZE		EQU	$-MONCOPY
+  73:     -	18F9          			.DEPHASE
+  74:     -	09DD          	MONSIZE		EQU	$-MONCOPY
   75:				;
   76:				;
-  77:     -	18F2          	varcopy		equ	$
+  77:     -	18F9          	varcopy		equ	$
   78:     -	FF20          			.phase	0ff00h+32
   79:     -	FF00          	ram		equ	$-32		;put ram on start of 256 byte page
   80:     -	FF00          	KEYBUF		equ	ram		;16 byte keyboard input fifo
@@ -5226,24 +5229,24 @@
   92:				;
 **** ..\src\main.mac ****
   83:				;
-  84:     -	1922          			.DEPHASE
+  84:     -	1929          			.DEPHASE
   85:				;
   86:				
-  87:     -	1922          	LAST		EQU	$
+  87:     -	1929          	LAST		EQU	$
   88:				
   89:     -	0000          		IF SALLYBUILD = 0
   95:					ELSE
-  96:     -	1922  00000000			DB 0,0,0,0,0,0,0,0,0,0,0
+  96:     -	1929  00000000			DB 0,0,0,0,0,0,0,0,0,0,0
 	              00000000
 	              000000
-  97:     -	192D  53414C4C			DB  'SALLY 1 Rev 2.00'
+  97:     -	1934  53414C4C			DB  'SALLY 1 Rev 2.00'
 	              59203120
 	              52657620
 	              322E3030
   98:					ENDIF
   99:				
 **** ..\src\sally2rs.asm ****
-   9:     -	193D          	END
+   9:     -	1944          	END
 
 
 
@@ -5252,7 +5255,7 @@ Statistics:
      5	passes
      0	jr promotions
    655	symbols
-  6205	bytes
+  6212	bytes
 
 
 
@@ -5274,8 +5277,8 @@ BOOT            F461      62561
 BOOTCB          F47C      62588
 BUILD1          F87A      63610
 BUILD3          F884      63620
-BUILD4          F8B4      63668
-BUILD7          F8CA      63690
+BUILD4          F8BB      63675
+BUILD7          F8D1      63697
 CALLHL           3EF      1007
 CDMUX          =57        87
 CENT2           F4E7      62695
@@ -5332,9 +5335,9 @@ CTC_D7_INT_EN  =80        128
 DATB2           F73B      63291
 DATBIT          F72E      63278
 DATREG         =43        67
-DD5N18          F90F      63759
+DD5N18          F916      63766
 DD5N26           E83      3715
-DD8N26          F979      63865
+DD8N26          F980      63872
 DENSTY         =02        2
 DISK            F0A3      61603
 DISK2           F0BA      61626
@@ -5424,14 +5427,14 @@ INIT            00        0
 INIT1           02        2
 INIT2           0A        10
 INITAB           27B      635
-INS2            F8EA      63722
-INSERT          F8E5      63717
+INS2            F8F1      63729
+INSERT          F8EC      63724
 IOBUFF         =C100      49408
 IOPTR          =FFB3      65459
 ITBLEN         =16        22
 KEYBUF         =FF00      65280
 KLUDGE          F178      61816
-LAST           =1922      6434
+LAST           =1929      6441
 LATCH          =30        48
 LEN            = 300      768
 LF             =0A        10
@@ -5445,7 +5448,7 @@ MEMPTR           570      1392
 MINIMON         F3E0      62432
 MONCOPY        = F1C      3868
 MONITOR        =F000      61440
-MONSIZE        = 9D6      2518
+MONSIZE        = 9DD      2525
 NEWLIN          FF3E      65342
 NMIVEC         =66        102
 NOHIGHSPEEDSIO =00        0
@@ -5557,8 +5560,8 @@ SALLYBUILD     =01        1
 SALLYDEBUG     =01        1
 SALLYRS        =01        1
 SCAN             44F      1103
-SD5N18          F8F0      63728
-SD8N26          F954      63828
+SD5N18          F8F7      63735
+SD8N26          F95B      63835
 SEC256         =05        5
 SECLEN         =06        6
 SECREG         =42        66
@@ -5597,13 +5600,13 @@ SIOFAST        =09        9
 SIONORMAL      =28        40
 SIZE           =01        1
 SKCMD          =10        16
-SKEW13          F9A2      63906
+SKEW13          F9A9      63913
 SKEW15           EE4      3812
-SKEW17          F9BC      63932
+SKEW17          F9C3      63939
 SKEW36           EC0      3776
-SKEWDD          F942      63810
+SKEWDD          F949      63817
 SKEWMD           EA6      3750
-SKEWSD          F930      63792
+SKEWSD          F937      63799
 SKWPTR         =FFB8      65464
 SPARE0         =09        9
 SPARE1         =0A        10
@@ -5680,7 +5683,7 @@ TXTMP7         =F5D6      62934
 TYP1CMD         F352      62290
 TYP2CMD         F349      62281
 UNIT            FF2C      65324
-VARCOPY        =18F2      6386
+VARCOPY        =18F9      6393
 VERIFY          F27C      62076
 VFLAG          =FFB5      65461
 VIEW            F432      62514
@@ -5707,10 +5710,10 @@ Z80WRITE         539      1337
 ZEROS           45        69
 ZLENGTH          55A      1370
 bild31          F894      63636
-bild32          F8A8      63656
-bild33          F8AB      63659
+bild32          F8AF      63663
+bild33          F8B2      63666
 build           F86D      63597
-build6          F8BF      63679
+build6          F8C6      63686
 checkidam        B03      2819
 checkidam1       B0A      2826
 checkidam2       B0C      2828

@@ -213,6 +213,9 @@ bild31:	ld	(ix+9),a	;store side# in id
 	in	a, (SERIN)	;check if XF551 mode
 	bit	SERRI, a
 	jr	NZ, bild32	;=1, no
+	ld	a, (tracks)
+	cp	40
+	jr	NZ, bild32	
 	ld	a, (NSECTS)
 	sub	(IY)
 	inc	a
