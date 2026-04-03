@@ -370,7 +370,7 @@ Z80GOTO:
 	CALL	SENDACK
 	CALL	SENDCOMP
 	LD	HL, (CFRAME+2)
-	call	seraddr
+;	call	seraddr
 	jp	(hl)		;execute routine @hl
 ;
 ;
@@ -498,34 +498,33 @@ diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 
 trkmatch:	call	computesecbuf	
 		
-diskreadfn3:	push	hl
-		ld	hl, (siosector)			;check high byte of sector
-		ld	bc, 4
+diskreadfn3:	ld	b, (iy + SECLEN)		;bc = PERCOM length
+		ld	c, (iy + SECLEN + 1)
+		push	hl				;save ptr into track buffer
+		ld	hl, (siosector)
+		ld	de, 4
 		or	a
-		sbc	hl, bc
-		jr	NC, diskreadfn4			;make PERCOM-length byte sector		
-		ld	bc, 128
-		
-		ld	a, (iy + SECLEN)
+		sbc	hl, de
+		jr	NC, diskreadfn1			;>= 4 make PERCOM-length byte sector		
+		ld	bc, 128				; < 4 make length 128
+
+		ld	a, (iy + SECLEN)		;512 bytes sector?
 		cp	2
-		jr	NZ, diskreadfn1
+		jr	NZ, diskreadfn1			;no
 		
-		ld	a, (siosector)
-		pop	hl
+		ld	a, (siosector)			;read first 3 sectors
+		pop	hl				;from first 128 bytes chunks of 1st sector
 		sbc	hl, bc
 diskreadfn6:	add	hl, bc
 		dec	a
 		jr	NZ, diskreadfn6
 		push	hl
-		jr	diskreadfn1
 		
-diskreadfn4:	ld	b, (iy + SECLEN)
-		ld	c, (iy + SECLEN + 1)
 diskreadfn1:	ld	hl, IOBUFF+LEN
 		or	a
 		sbc	hl, bc
 		ex	de, hl
-		pop	hl
+		pop	hl				;get saved ptr into trackbuffer
 		
 		push	de
 		ldir
@@ -744,6 +743,9 @@ diskformat:
 		ld	a, 'C'
 		ld	(siorc), a
 		
+		ld	a, 1
+		ld	(DD5N18L + 1), a		;change sector length to 256
+
 		bit	PERCONF, (iy + PERFLAGS)
 		jr	NZ, diskformat10
 		call	makesd
@@ -778,22 +780,34 @@ diskformat5:	ld	a, (siocmd)			;check for medium density
 		ld	b, 4
 		jr	diskformat1
 		
-diskformat7:	ld	de, 1680h			;chekc if 1.44 MB format
+;
+; check HD formats 36x256b or 18x512b
+;
+diskformat7:	bit	DENSTY, (iy + MEDIA)		;check MFM
+		jr	Z, diskformat1
+
+		ld	a, (iy + SECLEN + 1)		;low-byte seclen = 0?
+		or	a
+		jr	NZ, diskformat11		;no
+
+		ld	de, 1680h			;chekc if 1.44 MB format
 		ld	l, (iy + MAXSEC)		;has ist 5760 sectors?
 		ld	h, (iy + MAXSEC + 1)
 		or	a
 		sbc	hl, de
-		jr	NZ, diskformat1
-			
-		bit	DENSTY, (iy + MEDIA)		;check MFM
-		jr	Z, diskformat1
-		ld	a, (iy + SECLEN + 1)		;low-byte seclen = 0?
-		or	a
-		jr	NZ, diskformat1			;no
-		
+		jr	NZ, diskformat11
+
 		ld	b, 5				;format 1.44MB
 		ld	(iy + PERTRKS), 80		;make 36 * 80 format
 		ld	(iy + PERSECS), 36
+		jr	diskformat11
+		
+diskformat11: 	ld	a, (iy + SECLEN)		;512 bytes/sec 
+		cp	2
+		jr	NZ, diskformat1
+		ld	b, 6
+		ld	a, 2
+		ld	(DD5N18L + 1), a		;change sector length to 512
 
 diskformat1:	ld	hl, (FMTPTR)
 		ld	a, b
@@ -876,7 +890,10 @@ computeflags4:	ld	hl, IOBUFF+LEN-256		;256 byte return buffer
 ; HD/DD selection
 ; number sector >= 26 and sector-size > 128 then hd
 ;
-computeflags1:	ld	a, (IY + NSECS + 1)
+computeflags1:	ld	a, (iy + SECLEN)		;high-byte seclen
+		cp	2				;512 Bytes -> HD
+		jr	Z, computeflags3
+		ld	a, (iy + NSECS + 1)
 		cp	26
 		jr	NC, computeflags3		;>= 26 HD
 		
@@ -884,7 +901,7 @@ computeflags5:	set	FLAGHDDD, b			;< 26 sectores, no HD
 		ld	d, e				;d = STEPRATE0: 6/3ms
 		ld	e, STEPRATE3			;e = STEPRATE0: 3/1.5ms
 
-computeflags3:	ld	a, (IY + NTRKS)
+computeflags3:	ld	a, (iy + NTRKS)
 		cp	1
 		jr	Z, computeflags6
 		cp	80
@@ -958,16 +975,20 @@ clearpercom1:	call	makesd
 ;--------------------------------------------------
 diskanalyse:	ld	a, 'C'
 		ld	(siorc), a
-		
-		ld	a, (iy + PERSKEWTAB)		;skewtab filled?
-		or	a
-		jr	Z, diskanalyse9			;no, do diskanalysis
-		
+
 		ld	a, (iy + FLAGS)			;check if percom empty
+		or	a
+		jr	Z, diskanalyse9
+
 		ld	(OUTCPY), a			;set LATCH und OUTCPY
 		out	(LATCH), a
+
+		ld	b, a
+		ld	a, (iy + PERSKEWTAB)		;skewtab filled?
 		or	a
-		ret	NZ				;no continue without disk analysis
+		jp	Z, diskanalyse8			;readskewtab
+		ld	a, b
+		ret					;continue without disk analysis
 		
 diskanalyse9:	ld	(iy + MEDIA), 4			;set DD (MFM)
 		ld	(iy + NSIDES), 0
@@ -1071,7 +1092,7 @@ diskanalyse8:	call	restoretrack			;restore and check other side
 		cp	(IY + PERSECLEN)
 		jr	NZ, diskanalyse6
 
-		inc	(IY + NSIDES)
+		ld	(IY + NSIDES), 1
 
 diskanalyse6:	res	5, (IY + FLAGS)			;set side 0
 		ld	a, (IY + FLAGS)
@@ -1170,8 +1191,8 @@ readskew5:	xor	a				;store zero at end of skew list
 		sbc	hl, de
 		ld	(IY + NSECS + 1), l
 		ld	(IY + NSECS), 0
-		ld	a, l
-		call	serhexspace
+;		ld	a, l
+;		call	serhexspace
 		ret
 		
 ;--------------------------------------------------
@@ -1727,12 +1748,13 @@ PUTPARAMS1:	call	SENDACK				;ELSE SEND 'ACK' FOR DATA FRAME
 		ld	bc, 12
 		ldir					;COPY NEW STUFF IN THE PLACE
 		
-		call	dumppercom
+		;call	dumppercom
 		call	computeflags
 		call	computemaxsec			;compute maxsector
 		ld	(iy + DSKBITS), 1 << PRESENT	;set PRESENT bit
+		ld	(iy + PERSKEWTAB), 0		;force analysis if not format
 		set	PERCONF, (iy + PERFLAGS)	;mark percom-block configured
-		
+
 		call	dumppercom
 		
 		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
@@ -1975,21 +1997,26 @@ FMTS:
 		DEFB	18			
 		DEFW	3125			
 
-		DEFW	DD5N26				;DOUBLE DENSITY 128B/sec 26 secs
-		DEFW	SKEWMD				;Medium or Enhanced density (ATARI 1050)
+		DEFW	DD5N26				;Medium or Enhanced density (ATARI 1050)
+		DEFW	SKEWMD
 		DEFB	26			
 		DEFW	6300				;6238
 		
-		DEFW	DD5N18
+		DEFW	DD5N18				;HD 1.44MB
 		DEFW	SKEW36
-		DEFB	36
+		DEFB	36				;36 sectors * 256 bytes
+		DEFW	12150
+
+		DEFW	DD5N18				;HD 1.44MB FAT12
+		DEFW	SKEW01
+		DEFB	18				;18 sectors * 512 bytes
 		DEFW	12150
 
 ;
 ;
 ;
 
-DD5N26:		DEFB	1
+DD5N26:		DEFB	1				;Medium Density 26 sec * 128 bytes
 		DEFB	50, 4EH
 			
 		DEFB	12
@@ -2019,6 +2046,9 @@ SKEW36:		DEFB	1, 3, 5, 7,  9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35
 
 SKEW15:		DEFB	1, 7, 13, 6, 12, 18, 5, 11, 17
 		DEFB	4, 10, 16, 3, 9, 15, 2, 8, 14
+		
+SKEW01:		DEFB	1, 2, 3, 4, 5, 6, 7, 8, 9
+		DEFB	10, 11, 12, 13, 14, 15, 16, 17, 18
 	
 ;--------------------------------------------------
 ; variables and data structure

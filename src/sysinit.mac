@@ -717,7 +717,7 @@ cmdwaitfn:	ld	A, (CMDFLG)
 								;fall through
 		JR	NZ, togglebaud
 	IF SALLYRS = 1
-		call	sercmd					;5-byte command frame
+;		call	sercmd					;5-byte command frame
 	ENDIF
 		JP	CMDL4
 		
@@ -1097,7 +1097,7 @@ serdump1:
 		CALL	serspace
 		INC	HL
 		LD	A, H
-		CP	A, 0c3h
+		CP	HIGH (IOBUFF + LEN)
 		JR	C, serdump1
 
 		POP	DE

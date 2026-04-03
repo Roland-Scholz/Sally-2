@@ -983,7 +983,7 @@
 1097: 5390+17	046A  CD7804  			CALL	serspace
 1098: 5407+6	046D  23      			INC	HL
 1099: 5413+4	046E  7C      			LD	A, H
-1100: 5417+7	046F  FEC3    			CP	A, 0c3h
+1100: 5417+7	046F  FEC3    			CP	HIGH (IOBUFF + LEN)
 1101: 5424+7+5	0471  38F2    			JR	C, serdump1
 1102:				
 1103: 5431+10	0473  D1      			POP	DE
@@ -1230,10 +1230,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	0654  73616C6C	SVERSION DB "sally-1.0.5-41-g" 
+   1:     -	0654  73616C6C	SVERSION DB "sally-1.0.5-42-g" 
 	              792D312E
 	              302E352D
-	              34312D67
+	              34322D67
 **** ..\src\main.mac ****
   17:						
   18: 6271+4	0664  F3      			di
@@ -4419,26 +4419,26 @@
  314:				;
  315:				;
  316:				;
- 317:     -	FE47  01      	DD5N18:	DEFB	1
- 318:     -	FE48  8C4E    		DEFB	140,4EH		;GAP 1
- 319:				
- 320:     -	FE4A  0C      		DEFB	12
- 321:     -	FE4B  0C00    		DEFB	12,00H		;SECOND PART OF GAP 3
- 322:     -	FE4D  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 323:     -	FE4F  01FE    		DEFB	1,0FEH		;GENERATE ID ADDRESS MARK
- 324:     -	FE51  0100    		DEFB	1,0		;TRACK#
- 325:     -	FE53  0100    		DEFB	1,00000000B	;SIDE
- 326:     -	FE55  0100    		DEFB	1,0		;SECTOR#
- 327:     -	FE57  0101    		DEFB	1,00000001B	;LENGTH
- 328:     -	FE59  01F7    		DEFB	1,0F7H		;GENERATE CRC
- 329:     -	FE5B  164E    		DEFB	22,4EH		;FIRST PART OF GAP 2
- 330:     -	FE5D  0C00    		DEFB	12,00H		;SECOND PART OF GAP 2
- 331:     -	FE5F  03F5    		DEFB	3,0F5H		;GENERATE SYNC=A1 HEX
- 332:     -	FE61  01FB    		DEFB	1,0FBH		;GENERATE DATA ADDRESS MARK
- 333:				
- 334:     -	FE63  02      		DEFB	2
- 335:     -	FE64  01F7    		DEFB	1,0F7H		;GENERATE CRC BYTES
- 336:     -	FE66  104E    		DEFB	16,4EH		;FIRST PART OF GAP 3
+ 317:     -	FE47  01      	DD5N18:		DEFB	1
+ 318:     -	FE48  8C4E    			DEFB	140, 4EH			;GAP 1
+ 319:							
+ 320:     -	FE4A  0C      			DEFB	12		
+ 321:     -	FE4B  0C00    			DEFB	12, 00H				;SECOND PART OF GAP 3
+ 322:     -	FE4D  03F5    			DEFB	3, 0F5H				;GENERATE SYNC=A1 HEX
+ 323:     -	FE4F  01FE    			DEFB	1, 0FEH				;GENERATE ID ADDRESS MARK
+ 324:     -	FE51  0100    			DEFB	1, 0				;TRACK#
+ 325:     -	FE53  0100    			DEFB	1, 00000000B			;SIDE
+ 326:     -	FE55  0100    			DEFB	1, 0				;SECTOR#
+ 327:     -	FE57  0101    	DD5N18L:	DEFB	1, 00000001B			;LENGTH
+ 328:     -	FE59  01F7    			DEFB	1, 0F7H				;GENERATE CRC
+ 329:     -	FE5B  164E    			DEFB	22, 4EH				;FIRST PART OF GAP 2
+ 330:     -	FE5D  0C00    			DEFB	12, 00H				;SECOND PART OF GAP 2
+ 331:     -	FE5F  03F5    			DEFB	3, 0F5H				;GENERATE SYNC=A1 HEX
+ 332:     -	FE61  01FB    			DEFB	1, 0FBH				;GENERATE DATA ADDRESS MARK
+ 333:							
+ 334:     -	FE63  02      			DEFB	2		
+ 335:     -	FE64  01F7    			DEFB	1, 0F7H				;GENERATE CRC BYTES
+ 336:     -	FE66  104E    			DEFB	16, 4EH				;FIRST PART OF GAP 3
  337:				;
  338:				;
  339:				;
@@ -4667,7 +4667,7 @@ Statistics:
 
      5	passes
      0	jr promotions
-   578	symbols
+   579	symbols
   5324	bytes
 
 
@@ -4750,6 +4750,7 @@ DATB2           F73B      63291
 DATBIT          F72E      63278
 DATREG         =43        67
 DD5N18          FE47      65095
+DD5N18L         FE57      65111
 DD8N26          FEB1      65201
 DENSTY         =02        2
 DINIT2          FB6F      64367
