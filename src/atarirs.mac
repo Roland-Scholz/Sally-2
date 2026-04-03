@@ -755,7 +755,7 @@ diskformat10:	ld	a, (siocmd)
 		jr	NZ, diskformat4
 		call	makemd
 
-diskformat4:	call	dumppercom
+diskformat4:	;call	dumppercom
 		call	computeflags
 		ld	(OUTCPY), a
 		out	(LATCH), a
@@ -818,7 +818,7 @@ diskformat2:	add	hl, bc
 		dec	a
 		jr	NZ, diskformat2			;INDEX TO PROPER PARAMS FOR DISK TYPE
 
-diskformat9:	call	seraddr
+diskformat9:	;call	seraddr
 		ld	de, FMTSTUFF
 		ldir					;THEN COPY PARAMS TO 'FMTSTUFF'
 		ld	a, (DKIOCB + DSKSTS)
@@ -841,7 +841,7 @@ diskformat8:	ld	(tracks), a
 
 
 diskformat6:	res	7, a				;mask out MOTOR ON
-		call	serhexspace
+		;call	serhexspace
 		CALL	SETSTAT				;UPDATE STATUS AS SPECIFIED BY ACC
 		
 		ld	(IY + FLAGS), 0
@@ -1005,8 +1005,8 @@ diskanalyse9:	ld	(iy + MEDIA), 4			;set DD (MFM)
 		call	getperiod
 		jr	NC, diskanalyse3		;if no period, error
 
-diskanalyse2:	ld	a, '-'				;error
-		call	seroutfn
+diskanalyse2:	;ld	a, '-'				;error
+		;call	seroutfn
 		call	makesd
 		or	a				;clear carry
 		ret
@@ -1132,7 +1132,7 @@ compseclen:	add	hl, hl
 		ld	(IY + NSIDES), 0
 		
 		
-diskanalyse5:	call	dumppercom
+diskanalyse5:	;call	dumppercom
 		
 		ld	a, 'C'
 		ld	(siorc), a
@@ -1704,7 +1704,7 @@ GETPARAMS1:	push	iy
 		ld	bc, 12
 		ldir					;COPY PARAMS TO OUTPUT BUFFER
 
-		call	dumppercom
+;		call	dumppercom
 		
 		pop	hl
 		ld	de, 'C'
@@ -1755,7 +1755,7 @@ PUTPARAMS1:	call	SENDACK				;ELSE SEND 'ACK' FOR DATA FRAME
 		ld	(iy + PERSKEWTAB), 0		;force analysis if not format
 		set	PERCONF, (iy + PERFLAGS)	;mark percom-block configured
 
-		call	dumppercom
+;		call	dumppercom
 		
 		jp	SENDCOMP			;SEND 'COMPLETE' BACK TO ATARI
 	
