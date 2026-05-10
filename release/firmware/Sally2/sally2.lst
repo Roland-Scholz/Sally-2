@@ -2904,10 +2904,10 @@
   15:					
   16:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	0F14  73616C6C	SVERSION DB "sally-1.0.5-45-g" 
-	              792D312E
-	              302E352D
-	              34352D67
+   1:     -	0F14  73616C6C	SVERSION DB "sally-2.0.0     " 
+	              792D322E
+	              302E3020
+	              20202020
 **** ..\src\main.mac ****
   17:						
   18:16743+4	0F24  F3      			di
