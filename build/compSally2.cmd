@@ -42,14 +42,13 @@ move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
 rem ****************************************************
 rem * compile sally2 firmware
 rem ****************************************************
-for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
-echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
+rem for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
+rem echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
 
-set MODULE=sally2rs
+set MODULE=sally2_ri
 call :compile %MODULE% DUMMMYSYMBOL
 if not %ERRORLEVEL%==0 goto :error
 move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
-
 
 rem ****************************************************
 rem * compile DDINIT for Sally 2

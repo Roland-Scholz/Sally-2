@@ -3,7 +3,9 @@
 ;
 		SALLYBUILD	EQU	1
 		WD1772		EQU	1
-		SALLYRS		EQU	0
+		SALLYRS		EQU	1
+		XF551		EQU	ATARI
+		
 
 		include	main.mac
 ;
