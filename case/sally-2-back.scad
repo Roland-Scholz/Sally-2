@@ -12,8 +12,9 @@ dev_bot = 21;
 
 edge=5;
 
-rotate([180,0,0])
-    shape();
+translate([0, 0, 1.6])
+    rotate([180,0,0])
+        shape();
 
 module shape() {
     difference(){
@@ -33,14 +34,20 @@ module shape() {
 
         translate([dev_x+17.5+32+32+12+86+2, dev_bot, 0])
             barrel();
-/*        
-        translate([dev_x+17.5+32+32+12+86+3+9+5, dev_bot, 0])
-            usb();
-*/
+        
+        translate([dev_x+17+32+32+12+86+3+9+2, dev_bot, 0])
+            dipswitch();
+
         translate([60+60.5, 63,0])
             floppy();
         
     }
+    
+    /*
+    translate([0,0,1]) 
+        rotate([180, 0, 0]) 
+            beschriftung();
+    */
     
     /*
     translate([edge, zmax-4*thick-edge, -thick])
@@ -55,8 +62,8 @@ module shape() {
 
 }
 
-module usb() {
-    cube([12, 11, thick]);
+module dipswitch() {
+    cube([10, 11.5, thick]);
 }
 
 module barrel() {
@@ -99,7 +106,8 @@ module base_shape_2d(th) {
 module floppy() {
     rotate([0,0,180])
     translate([0,0,-thick]) {
-    cube([60, 11, 2*thick]);
+        translate([8, 2, 0])
+    cube([52.5, 10, 2*thick]);
     
     translate([60+11.5, 5, 0])
         cylinder(2*thick, 2, 2);
@@ -115,4 +123,20 @@ module spacer_round() {
             cylinder(h=7, r=1.6);
         
     };
+}
+
+module beschriftung() {
+    
+    translate([60, -47, -1.6])
+    linear_extrude(1.0){
+        rotate([180, 0, 0])
+            text("1                SHUGART", 3, "Arial:style=Bold");
+    }
+
+     translate([33, -16, -1.6])
+    linear_extrude(0.2){
+        rotate([180, 0, 0])
+            text("SIO                                      SIO                                 CENTRONICS                       RS232          +5V  FUNC", 3, "Arial:style=Bold");
+    }
+
 }

@@ -74,6 +74,8 @@ module shape() {
     translate([edge, 6, -thick])
         cube([xmax-2*edge-4*thick, 3, 3]);
 
+    translate([91.3, 8, -thick])
+        cube([2.3, 25, 3]);
 }
 
 module led3() {
@@ -115,56 +117,4 @@ module base_shape_2d(th) {
     echo("height:", zmax-2*th);
     
     polygon([[0, zmax-edge-2*th], [0, edge], [edge,0], [xmax-edge-2*th, 0], [xmax-2*th, edge], [xmax-2*th, zmax-edge-2*th],[xmax-edge-2*th, zmax-2*th], [edge, zmax-2*th]  ]);
-}
-
-module beschriftung() {
-    
-    translate([49,-29.5, 0])
-    cube([25, 0.6, 1]);
-    translate([49,-11.75, 0])
-    cube([25, 0.6, 1]);
-    
-    linear_extrude(0.2){
-    translate([127, -25.5, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("Drive        A           B           C          D ", 3
-    , "Arial:style=Bold"  );
-    }
-    
-    translate([145, -10.5, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("DD        FM        Side B", 3
-    , "Arial:style=Bold"  );
-    }
-
-    translate([210, -16, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("Reset", 3
-    , "Arial:style=Bold"  );
-    }
-    
-    translate([22, -28, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("ON -", 3
-    , "Arial:style=Bold"  );
-    }
-
-    translate([22.25, -10.5, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("Off -", 3
-    , "Arial:style=Bold"  );
-    }
-    
-    translate([33, -5, -2 ])
-    rotate([180, 0, 0])
-    {
-        text("Power                                 A             B", 3
-    , "Arial:style=Bold"  );
-    }
-}
 }
