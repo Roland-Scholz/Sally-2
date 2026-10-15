@@ -2904,10 +2904,10 @@
   16:     -	0001          		IF SALLYBUILD = 1
   17:						include	version.asm
 **** ..\src\version.asm ****
-   1:     -	0F14  73616C6C	SVERSION DB "sally-2.0.0-6-ge" 
+   1:     -	0F14  73616C6C	SVERSION DB "sally-2.0.1     " 
 	              792D322E
-	              302E302D
-	              362D6765
+	              302E3120
+	              20202020
 **** ..\src\main.mac ****
   18:						
   19:16743+4	0F24  F3      			di
