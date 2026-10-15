@@ -40,7 +40,7 @@ if not %ERRORLEVEL%==0 goto :error
 move %OUTPUT_DIR%\%MODULE%*.* %OUTPUT_DIR%\Sally2
 
 rem ****************************************************
-rem * compile sally2 firmware
+rem * compile sally2 firmware older version (RI = XF551)
 rem ****************************************************
 rem for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
 rem echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm

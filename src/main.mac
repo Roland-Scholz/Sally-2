@@ -13,6 +13,7 @@
 		include atarirs.mac
 	ENDIF
 	
+	IF SALLYBUILD = 1
 		include	version.asm
 		
 		di
@@ -21,6 +22,7 @@
 		ld	bc,08000h
 		ldir
 		jp	RAMTST
+	ENDIF
 
 	
 ;
@@ -87,14 +89,15 @@ CTCVEC		equ	ram+16		;8 word interrupt vector table
 LAST		EQU	$
 
 	IF SALLYBUILD = 0
-; **** Hack to make sure data fits in 4K ROM ****
+;**** Hack to make sure data fits in 4K ROM ****
 	IF ($+16) GT (1000H)
 		.ERROR /4K ROM BOUNDARY CROSSED/
-		DB  'ATR8000 ver 3.02'
 	ENDIF
-	ELSE
 		DB 0,0,0,0,0,0,0,0,0,0,0
+	IF SALLYBUILD = 1
 		DB  'SALLY 1 Rev 2.00'
+	ELSE
+		DB  'ATR8000 ver 3.02'
 	ENDIF
 
 END
