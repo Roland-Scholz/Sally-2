@@ -1378,7 +1378,7 @@ waitstatus1:	LD	A,14
 checkidam:	ld	a, RIDCMD
 		out	(CMDREG), a
 		
-		call	settimer50ms
+		call	settimer100ms
 		
 checkidam1:	ld	a, 14
 checkidam2:	dec	a
@@ -1607,16 +1607,16 @@ reverseskew2:	ld	a, c
 ;--------------------------------------------------
 ; set timer for checkidam 50ms
 ;--------------------------------------------------
-settimer50ms:
+settimer100ms:
 		di
 		ld	a, CTC_D7_INT_EN + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D2_TCNEXT + CTC_D1_SW_RST + CTC_D0_CONTROL
 		out	(CTC3), a			;PUT CTC3 IN TIMER MODE, PRESCALE 256
 		xor	a				;TIME CONSTANT OF 0 WHICH MEANS 256
 		out	(CTC3), a			;COUNT MOD 256
-		ld	a, 3
+		ld	a, 6				;3 ~50ms, 6 ~100ms
 		ld	(DRVTMR), a			;STOP DRIVES AFTER 255 INTERRUPTS
 		push	hl
-		ld	hl, dotimer50ms
+		ld	hl, dotimer100ms
 		ld	(CTCVEC+6), hl			;SET VECTOR TO ACTIVITY-CHECK ROUTINE
 		pop	hl
 		ei
@@ -1625,19 +1625,19 @@ settimer50ms:
 ;--------------------------------------------------
 ; handler for checkidam 50ms
 ;--------------------------------------------------		
-dotimer50ms:	push	af
+dotimer100ms:	push	af
 
 		ld	a, (DRVTMR)
 		dec	a
 		ld	(DRVTMR), a
 
-		jr	Z, dotimer50ms2			;exit if 50ms elapsed
+		jr	Z, dotimer100ms2		;exit if 100ms elapsed
 
 		pop	af
 		ei
 		reti
 
-dotimer50ms2:	ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
+dotimer100ms2:	ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_CONTROL
 		out	(CTC3), a			;RESET INTERRUPT BUT KEEP COUNTER GOING
 
 		pop	af
@@ -1645,8 +1645,8 @@ dotimer50ms2:	ld	a, CTC_D7_INT_DIS + CTC_D6_MODE_TIM + CTC_D5_PRESC256 + CTC_D0_
 		ld	a, FINCMD
 		out	(CMDREG), a
 		ld	a, 14
-dotimer50ms1:	dec	a
-		jr	NZ, dotimer50ms1
+dotimer100ms1:	dec	a
+		jr	NZ, dotimer100ms1
 		in	a, (DATREG)
 		ld	a, 18h				;set error
 		or	a
