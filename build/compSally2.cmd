@@ -31,7 +31,7 @@ IF NOT EXIST %OUTPUT_DIR% MD %OUTPUT_DIR%
 rem ****************************************************
 rem * compile sally2 firmware
 rem ****************************************************
-for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SV=%%a              
+for /f "tokens=* usebackq" %%a in (`git describe --tags --always`) do set SVERSION=%%a              
 echo SVERSION DB "%SV:~0,16%" > %SOURCE_DIR%\version.asm
 
 set MODULE=sally2
