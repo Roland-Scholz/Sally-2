@@ -100,7 +100,7 @@ CMDWAIT:
 		JR	Z,CMDL4				;PROCESS COMMAND IF GOOD FRAME RECVD
 			
 		DI					;ELSE RESET INTERRUPT AND START AGAIN
-		LD	A, CTC_D1_SW_RST		 + CTC_D0_CONTROL	; SOFTWARE RESET CTC0
+		LD	A, CTC_D1_SW_RST		;CTC_D0_CONTROL,	SOFTWARE RESET CTC0
 		OUT	(CTC0),A			;PERFORM THE RESET
 		EI		
 		JR	CMDL5				;GO SET FSM VECTOR
@@ -429,7 +429,7 @@ Z80MAX	EQU	($-(Z80TAB+2))/3
 ;
 ;	ROUTINE TO CHECK STATUS AFTER READ/WRITE
 ;
-SETSTAT:
+SETSTAT:	;call	serhexspace
 		OR	A
 		JR	NZ,SSTS1			;JUMP IF SOME DISK ERROR INDICATED
 	
@@ -444,7 +444,7 @@ SETSTAT:
 SSTS1:		BIT	6, a				;BIT HOLDS WPROT STATUS AFTER WRITE
 		JR	Z, SSTS2
 	
-		AND	10011111B
+		;AND	10011111B			;???
 		SET	WRPROT, (IY + CMDSTS)
 SSTS2:		BIT	5, A				;HOLDS DD MARK STATUS AFTER READ
 		JR	Z, SSTS3
@@ -460,6 +460,7 @@ SSTS3:	;LD	C,A
 	;OR	00010000B				; WITH 'RNF' ERROR BIT INSTEAD
 
 SSTS4:		LD	(IY + HDWSTS), A		;STORE HARDWARE STATUS FOR ATARI
+		;call	serhexspace
 		LD	E, 'E'				;LOAD E WITH 'ERROR' CHARACTER
 		SET	BADRW, (IY + CMDSTS)
 		RET
@@ -471,7 +472,8 @@ SSTS4:		LD	(IY + HDWSTS), A		;STORE HARDWARE STATUS FOR ATARI
 diskreadfn:	call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 		
-diskreadfn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+diskreadfn2:	;call	sercmd
+		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 			
 		call	isspinning	
 		jr	C, diskreadfn3	
@@ -539,6 +541,9 @@ diskreadfn1:	ld	hl, IOBUFF+LEN
 		ld 	d, 0
 diskreadfn5:	ld	a, (siorc)
 		ld	e, a
+		;call	seroutfn
+		LD	a, (IY + HDWSTS)
+		;call	serhex
 		jp	SENDBUFF			;SEND 'C' AND PARAMS DATA FRAME	
 
 ;--------------------------------------------------
@@ -644,7 +649,8 @@ diskwritefn3:	ld	(VFLAG), a
 		call	DRVINDEX			;POINT IY TO DRIVE'S DATA AREA
 		ret	C				;EXIT IF NOT A DRIVE IN OUR BOX
 						
-diskwritefn2:	call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
+diskwritefn2:	;call	sercmd
+		call	SENDACK				;SEND 'ACK' FOR COMMAND FRAME
 	
 		call	RECVBUFF			;ATTEMPT TO READ DATA FRAME FROM ATARI
 		ret	NZ
@@ -720,6 +726,10 @@ diskwritefn7:	ld	a, (de)
 diskwritefn6:	call	SETSTAT
 		
 diskwritefn9:	ld	a, e
+		;call	seroutfn
+		LD	a, (IY + HDWSTS)
+		;call	serhex
+		ld	a, e
 diskwritefn4:	jp	SENDCHAR			;send 'C' or 'E' from SETSTAT
 
 diskwritefn8:	xor	a
@@ -741,9 +751,6 @@ diskformat:
 		call	SENDACK                 	;send acknowledge
 		
 		call	STOPTMR				;THEN KILL CTC3 TO STOP DISK TIMER
-				
-;		ld	a, 'C'
-;		ld	(siorc), a
 		
 		ld	a, 1				;change sector length to 256
 		ld	(DD5N18L + 1), a
@@ -851,7 +858,11 @@ diskformat8:	ld	(tracks), a
 diskformat6:	res	7, a				;mask out MOTOR ON
 		;call	serhexspace
 		CALL	SETSTAT				;UPDATE STATUS AS SPECIFIED BY ACC
-		
+		ld	a, e
+		ld	(siorc), a
+		cp	'C'
+		jr	NZ, diskformat12
+
 		ld	(IY + FLAGS), 0
 		call	diskanalyse			;anaylse disk
 
@@ -867,7 +878,7 @@ diskformat6:	res	7, a				;mask out MOTOR ON
 ;		call	serhexspace
 ;		djnz	diskformat3
 
-		call	invalidate
+diskformat12	call	invalidate
 		
 		pop	hl		
 		ld	d, 0
@@ -1807,15 +1818,18 @@ diskstatus3:	bit	SEC256, a			;is single density?
 		set	7, a				;set medium density
 		
 diskstatus5:	ld	hl, statbytes
+		push	hl
 		ld	(hl), a
-;		call	serhex
 		ld	a, (IY+HDWSTS)
-;		call	serhex
 		cpl
 		inc	hl
 		ld	(hl), a
+		cpl
+		inc	hl
+		inc	hl
+		ld	(hl), a		
 		
-		dec	hl
+		pop	hl
 		ld	de, IOBUFF+LEN-4
 		ld	bc, 4
 		ldir					;COPY PARAMS TO OUTPUT BUFFER
@@ -1827,16 +1841,15 @@ diskstatus4:	ld	de, 'C'				;true data
 ;--------------------------------------------------
 ; get sector size from IDAM (A) in BC
 ;--------------------------------------------------
-getsize:
-	ld	bc,128
-	and	00000011b
-	ret	z		;sector length code=0 means 128 bytes
+getsize:	ld	bc,128
+		and	00000011b
+		ret	z				;sector length code=0 means 128 bytes
 
-getsz2:	sla	c
-	rl	b		;else multiply 128 by 2,4 or 8
-	dec	a
-	jr	nz,getsz2
-	ret
+getsz2:		sla	c
+		rl	b				;else multiply 128 by 2,4 or 8
+		dec	a
+		jr	nz,getsz2
+		ret
 
 ;--------------------------------------------------
 ; Dump Percom Block in IY
