@@ -166,9 +166,9 @@ module base_shape() {
         base_shape_holder();    
     
     //reinforcement in the middle
-    translate([0, ymax/2 - 10])
+    translate([0, ymax/2 - 12])
         base_shape_holder();    
-    translate([0, ymax/2 + 14])
+    translate([0, ymax/2 + 12])
         base_shape_holder();    
 
     //reinforcement back
