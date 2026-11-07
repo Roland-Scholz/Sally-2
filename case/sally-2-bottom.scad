@@ -99,6 +99,10 @@ module shell_bottom() {
         foot_big(3, 22);
     translate([xmax-21.5,35+118,0])
         foot_big(3, 22);
+        
+    translate([xmax/2-15, 5, thick*2])
+        linear_extrude(1)
+        text("front", 8, "Arial:style=Bold"  );
 }
 
 
