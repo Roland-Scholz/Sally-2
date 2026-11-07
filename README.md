@@ -39,7 +39,7 @@ Additionally we have added:
 
 # Improvements as of November 2026
 
-- Nearly the entire SIO intererface and disk access logic as been rewritten
+- Nearly the entire SIO intererface and disk access logic has been rewritten
 
 - Adheres to ATARI SIO standards
 
@@ -49,18 +49,18 @@ Additionally we have added:
 
 ## Typical formats:
 
-| Name | KB    | Sides | Tracks | Sectors | Bytes/Sec | Encoding |
-| ---- | ----- | ----- | ------ | ------- | --------- | -------- |
-| SD   | 90    | 1     | 40     | 18      | 128       | FM       |
-| MD   | 130   | 1     | 40     | 26      | 128       | MFM      |
-| DD1  | 180   | 1     | 40     | 18      | 256       | MFM      |
-| DD2  | 360   | 1     | 80     | 18      | 256       | MFM      |
-| DD3  | 360   | 2     | 40     | 18      | 256       | MFM      |
-| DD4  | 720   | 2     | 80     | 18      | 256       | MFM      |
-| HD1  | 500,5 | 2     | 77     | 26      | 128       | FM       |
-| HD2  | 1001  | 2     | 77     | 26      | 256       | MFM      |
-| HD3  | 1440  | 2     | 80     | 36      | 256       | MFM      |
-| HD4  | 1440  | 2     | 80     | 18      | 512       | MFM      |
+| Name | KB    | Sides | Tracks | Sectors | Bytes/Sec | Encoding | Freq      |
+| ---- | ----- | ----- | ------ | ------- | --------- | -------- | --------- |
+| SD   | 90    | 1     | 40     | 18      | 128       | FM       | 250kbit/s |
+| MD   | 130   | 1     | 40     | 26      | 128       | MFM      | 250kbit/s |
+| DD1  | 180   | 1     | 40     | 18      | 256       | MFM      | 250kbit/s |
+| DD2  | 360   | 1     | 80     | 18      | 256       | MFM      | 250kbit/s |
+| DD3  | 360   | 2     | 40     | 18      | 256       | MFM      | 250kbit/s |
+| DD4  | 720   | 2     | 80     | 18      | 256       | MFM      | 250kbit/s |
+| HD1  | 500,5 | 2     | 77     | 26      | 128       | FM       | 500kbit/s |
+| HD2  | 1001  | 2     | 77     | 26      | 256       | MFM      | 500kbit/s |
+| HD3  | 1440  | 2     | 80     | 36      | 256       | MFM      | 500kbit/s |
+| HD4  | 1440  | 2     | 80     | 18      | 512       | MFM      | 500kbit/s |
 
 
 
