@@ -21,11 +21,7 @@ Join the illustrous community and take part in conventions and discussions.
 After some testing and debugging, the vRetro VR177x FDC replacement can now be recommended for use with this interface.
 See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
 
-# FAQ
-[click here for FAQ](faq.md)
 
-# ToDo:
-[click here for ToDo](todo.md)
 
 # Key features:
 
@@ -34,13 +30,39 @@ See https://www.vretrodesign.com/products/vr177x-wd1770-wd172-vl1772-replacement
 - 128k static RAM (64k usable)
 - 8k EPROM, use any 8 / 16 / 32 / 64k device (burn sally2.hex at $8000)
 - WD1772 FDC (or AJAX FDC or VR177x)
-- Z80-CTC timer/counter 
+- Z80-CTC timer/counter
 
 Additionally we have added:
 
-- 60.000 baud high speed SIO (Pokey divisor 8, drive responds to the "Get Speed Byte" command '?')
+- 57600 (actually 55.930) baud high speed SIO (Pokey divisor 9, drive responds to the "Get Speed Byte" command '?')
 - Track buffer
-- HD-support for 3 1/2" disks (ca. 1MB). (Format is same as 8", 2 sides, 77 tracks, 26 sectors/track, 256 bytes per sector)
+
+# Improvements as of November 2026
+
+- Nearly the entire SIO intererface and disk access logic as been rewritten
+
+- Adheres to ATARI SIO standards
+
+- Disk log-in and media-analysis faster and much improved
+
+- More formats, inclusive XF551 track/sector sequence. More or less any valid Percom config is possible
+
+## Typical formats:
+
+| Name | KB    | Sides | Tracks | Sectors | Bytes/Sec | Encoding |
+| ---- | ----- | ----- | ------ | ------- | --------- | -------- |
+| SD   | 90    | 1     | 40     | 18      | 128       | FM       |
+| MD   | 130   | 1     | 40     | 26      | 128       | MFM      |
+| DD1  | 180   | 1     | 40     | 18      | 256       | MFM      |
+| DD2  | 360   | 1     | 80     | 18      | 256       | MFM      |
+| DD3  | 360   | 2     | 40     | 18      | 256       | MFM      |
+| DD4  | 720   | 2     | 80     | 18      | 256       | MFM      |
+| HD1  | 500,5 | 2     | 77     | 26      | 128       | FM       |
+| HD2  | 1001  | 2     | 77     | 26      | 256       | MFM      |
+| HD3  | 1440  | 2     | 80     | 36      | 256       | MFM      |
+| HD4  | 1440  | 2     | 80     | 18      | 512       | MFM      |
+
+
 
 # Final product ready as of October 2025
 
@@ -66,6 +88,7 @@ First try, all-in-one print, label and case
 ![cpm-turbo-pascal](/pictures/cpm-turbo-pascal.png)
 
 # first attempts
+
 ![Sally-514-disk-a](pictures/sally-514-disk-a.jpg)
 ![Sally-514-disk-b](pictures/sally-514-disk-b.jpg)
 Original Sally 1 repaired (5 ICs were out of order) and tested with a 40Trk single sides drive.
